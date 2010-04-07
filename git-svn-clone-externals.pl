@@ -53,12 +53,6 @@ sub run {
 	my @externals = $self->read_externals();
 	return 0 unless @externals;
 	
-	my $externals_dir = '.git_externals';
-	unless (-d $externals_dir) {
-		die "Unable to mkdir '$externals_dir'" unless mkdir($externals_dir);
-		# insert into ignore list
-	}
-
 	my $dir = Cwd::cwd();
 
 	while (my $subdir = shift @externals) {
@@ -66,33 +60,11 @@ sub run {
 		die "svn:externals cycle detected: '$url'" if $self->known_url($url);
 
 		print "$dir: $subdir\n";
-		
-		$subdir =~ s!^\s*/+!!g;
-		$subdir =~ s!/+\s*$!!g;
-		my $subdir_flat = $subdir;
-		$subdir_flat =~ s!/!_!g;
-		
-		my $external_dir_path = "$externals_dir/$subdir_flat";
-		die "Unable to find or mkdir '$external_dir_path'" unless (-e $external_dir_path || mkdir($external_dir_path));
-		die "Expected '$external_dir_path' to be a directory" unless (-d $external_dir_path);
-		
-		$self->update_external_dir($external_dir_path, $url);
 
-		# create symlink
-		unless (-e $subdir) {
-			my @subdirs = split(m!/!, $subdir);
-			my $subdir_basename = pop @subdirs;
-			my $subdir_dirname = join('/', @subdirs); # could be empty
-
-			my $symlink_source = '';
-			if ($subdir_dirname) {
-				die "Unable to find or mkdir '$subdir_dirname'" unless (-e $subdir_dirname || File::Path::mkpath($subdir_dirname));
-				$symlink_source .= '../' x @subdirs;
-			}
-			$symlink_source .= ".git_externals/$subdir_flat";
-			die "Unable to symlink source $symlink_source target $subdir" unless symlink($symlink_source, $subdir);
-		}
+		die "Unable to find or mkdir '$subdir'" unless (-e $subdir || File::Path::mkpath($subdir));
+		die "Expected '$subdir' to be a directory" unless (-d $subdir);
 		
+		$self->update_external_dir($subdir, $url);
 	}
 	return 0;
 }
