@@ -24,6 +24,7 @@ exit $status;
 # ----------------------------
 package ExternalsProcessor;
 
+
 sub new {
 	my $self = shift;
 	my %args = @_;
@@ -34,6 +35,7 @@ sub new {
 	return $self;
 }
 
+
 sub init {
 	my $self = shift;
 	$self->{svn_info} = {map {/^([^:]+): (.*)/} $self->shell(qw(git svn info))};
@@ -41,11 +43,13 @@ sub init {
 #	print $self->shell(qw(git --version)) . "\n";
 }
 
+
 sub known_url {
 	my $self = shift;
 	my ($url) = @_;
 	return $self->{svn_info}->{URL} eq $url || $self->{parent} && $self->{parent}->known_url($url);
 }
+
 
 sub run {
 	my $self = shift;
@@ -65,9 +69,14 @@ sub run {
 		die "Expected '$subdir' to be a directory" unless (-d $subdir);
 		
 		$self->update_external_dir($subdir, $url);
+		$self->update_ignore($subdir);
 	}
+
+	$self->process_svn_ignore();
+
 	return 0;
 }
+
 
 sub update_external_dir {
 	my $self = shift;
@@ -90,10 +99,37 @@ sub update_external_dir {
 	}
 
 	# Recursively run a sub-processor for externals in the current directory
-	die if $self->new()->run();
+	die if $self->new(parent => $self)->run();
 
 	die "Unable to chdir back to '$dir'" unless chdir($dir);
 }
+
+
+sub update_ignore {
+	my $self = shift;
+	my (@external_dir_paths) = @_;
+
+	my @exclude_lines;
+	my $ignore_path = '.git/info/exclude';
+	my $ignore_file = IO::File->new($ignore_path);
+	@exclude_lines = $ignore_file->getlines() if $ignore_file;
+	chomp @exclude_lines;
+	
+	my @new_exclude_lines;
+	foreach my $path (@external_dir_paths) {
+		push @new_exclude_lines, $path unless (grep {$_ eq $path} (@exclude_lines, @new_exclude_lines));
+	}
+
+	return unless @new_exclude_lines;
+
+	my $dir = Cwd::cwd();
+	print "Updating Git ignored file list $dir/$ignore_path: @new_exclude_lines\n";
+	
+	$ignore_file = IO::File->new(">$ignore_path");
+	die "Unable to write-open '$ignore_path'" unless $ignore_file;
+	$ignore_file->print(map {"$_\n"} (@exclude_lines, @new_exclude_lines));
+}
+
 
 sub read_externals {
 	my $self = shift;
@@ -111,6 +147,19 @@ sub read_externals {
 
 	return map {m%^/(\S+)\s+(\S+)%; $1 ? ($1 => $2) : ()} @externals;
 }
+
+
+sub process_svn_ignore {
+	my $self = shift;
+
+	my @svn_ignored =
+		map {m%^/(\S+)%; $1 ? $1 : ()}
+		grep {!m%^\s*/?\s*#%}
+		$self->shell(qw(git svn show-ignore));
+
+	$self->update_ignore(@svn_ignored) if @svn_ignored;
+}
+
 
 sub shell {
 	my $self = shift;
