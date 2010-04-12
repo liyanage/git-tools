@@ -98,7 +98,7 @@ sub update_external_dir {
 		my ($branch) = $self->shell(qw(git status)) =~ /On branch (\S+)/;
 		die "Unable to determine Git branch in '$dir/$external_dir_path'\n" unless $branch;
 		die "Git branch is '$branch', should be 'master' in '$dir/$external_dir_path'\n" unless ($branch eq 'master');
-		my (@dirty) = $self->shell(qw(git status --porcelain));
+		my @dirty = grep {!/^\?\?/} $self->shell(qw(git status --porcelain));
 		die "Can't run svn rebase with dirty files in '$dir/$external_dir_path':\n" . join('', map {"$_\n"} @dirty) if @dirty;
 		$self->shell(qw(git svn rebase));
 	}
