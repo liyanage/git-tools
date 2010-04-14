@@ -63,10 +63,7 @@ sub run {
 		my $url = shift @externals;
 		die "svn:externals cycle detected: '$url'\n" if $self->known_url($url);
 
-		print "$dir: $subdir\n";
-
-		die "Unable to find or mkdir '$subdir'\n" unless (-e $subdir || File::Path::mkpath($subdir));
-		die "Expected '$subdir' to be a directory\n" unless (-d $subdir);
+		print "[$dir] updating SVN external: $subdir\n";
 		
 		$self->update_external_dir($subdir, $url);
 		$self->update_ignore($subdir);
@@ -81,6 +78,9 @@ sub run {
 sub update_external_dir {
 	my $self = shift;
 	my ($external_dir_path, $url) = @_;
+
+	die "Unable to find or mkdir '$external_dir_path'\n" unless (-e $external_dir_path || File::Path::mkpath($external_dir_path));
+	die "Expected '$external_dir_path' to be a directory\n" unless (-d $external_dir_path);
 	
 	my $dir = Cwd::cwd();
 
@@ -100,7 +100,7 @@ sub update_external_dir {
 		die "Git branch is '$branch', should be 'master' in '$dir/$external_dir_path'\n" unless ($branch eq 'master');
 		my @dirty = grep {!/^\?\?/} $self->shell(qw(git status --porcelain));
 		die "Can't run svn rebase with dirty files in '$dir/$external_dir_path':\n" . join('', map {"$_\n"} @dirty) if @dirty;
-		$self->shell(qw(git svn rebase));
+		$self->shell_echo(qw(git svn rebase));
 	}
 
 	# Recursively run a sub-processor for externals in the current directory
@@ -173,6 +173,19 @@ sub shell {
  	my @cmd = map {"'$_'"} @_;
  	my $output = qx(@cmd);
 # 	my $output = qx(@cmd | tee /dev/stderr);
+ 	my $result = $? >> 8;
+	die "Nonzero exit status for command '@_'\n" if $result;
+	my @lines = split(/\n/, $output);
+	return wantarray ? @lines : $lines[0];
+}
+
+
+sub shell_echo {
+	my $self = shift;
+	my $dir = Cwd::cwd();
+ 	print "[$dir] shell: @_\n";
+ 	my @cmd = map {"'$_'"} @_;
+ 	my $output = qx(@cmd | tee /dev/stderr);
  	my $result = $? >> 8;
 	die "Nonzero exit status for command '@_'\n" if $result;
 	my @lines = split(/\n/, $output);
