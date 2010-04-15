@@ -38,7 +38,7 @@ sub new {
 
 sub init {
 	my $self = shift;
-	$self->{svn_info} = {map {/^([^:]+): (.*)/} $self->shell(qw(git svn info))};
+	$self->{svn_info} = $self->svn_info_for_current_dir();
 	$ENV{PATH} = "/opt/local/bin:$ENV{PATH}";
 #	print $self->shell(qw(git --version)) . "\n";
 }
@@ -61,7 +61,7 @@ sub run {
 
 	while (my $subdir = shift @externals) {
 		my $url = shift @externals;
-		die "svn:externals cycle detected: '$url'\n" if $self->known_url($url);
+		die "Error: svn:externals cycle detected: '$url'\n" if $self->known_url($url);
 
 		print "[$dir] updating SVN external: $subdir\n";
 		
@@ -79,12 +79,12 @@ sub update_external_dir {
 	my $self = shift;
 	my ($external_dir_path, $url) = @_;
 
-	die "Unable to find or mkdir '$external_dir_path'\n" unless (-e $external_dir_path || File::Path::mkpath($external_dir_path));
-	die "Expected '$external_dir_path' to be a directory\n" unless (-d $external_dir_path);
+	die "Error: Unable to find or mkdir '$external_dir_path'\n" unless (-e $external_dir_path || File::Path::mkpath($external_dir_path));
+	die "Error: Expected '$external_dir_path' to be a directory\n" unless (-d $external_dir_path);
 	
 	my $dir = Cwd::cwd();
 
-	die "Unable to chdir to '$dir/$external_dir_path'\n" unless chdir($external_dir_path);
+	die "Error: Unable to chdir to '$dir/$external_dir_path'\n" unless chdir($external_dir_path);
 
 	my @contents = grep {!/^\.+$/} IO::Dir->new('.')->read();
 	if (@contents == 0) {
@@ -95,18 +95,30 @@ sub update_external_dir {
 		$self->shell(qw(git svn fetch));
 	} else {
 		# regular update, rebase to SVN head
+
+		# Check that we're on the right branch
 		my ($branch) = $self->shell(qw(git status)) =~ /On branch (\S+)/;
-		die "Unable to determine Git branch in '$dir/$external_dir_path'\n" unless $branch;
-		die "Git branch is '$branch', should be 'master' in '$dir/$external_dir_path'\n" unless ($branch eq 'master');
+		die "Error: Unable to determine Git branch in '$dir/$external_dir_path'\n" unless $branch;
+		die "Error: Git branch is '$branch', should be 'master' in '$dir/$external_dir_path'\n" unless ($branch eq 'master');
+
+		# Check that there are no uncommitted changes in the working copy that would trip up git's svn rebase
 		my @dirty = grep {!/^\?\?/} $self->shell(qw(git status --porcelain));
-		die "Can't run svn rebase with dirty files in '$dir/$external_dir_path':\n" . join('', map {"$_\n"} @dirty) if @dirty;
+		die "Error: Can't run svn rebase with dirty files in '$dir/$external_dir_path':\n" . join('', map {"$_\n"} @dirty) if @dirty;
+
+		# Check that the externals definition URL hasn't changed
+		my $info = $self->svn_info_for_current_dir();
+		if ($info->{URL} ne $url) {
+			die "Error: The svn:externals URL for '$external_dir_path' in '$dir' is defined as\n\n  $url\n\nbut the existing Git working copy in that directory is configured as\n\n  $info->{URL}\n\nThe externals definition might have changed since the working copy was created. Remove the '$dir/$external_dir_path' directory and re-run this script to check out a new version from the new URL.\n";
+		}
+
+		# All sanity checks OK, perform the update
 		$self->shell_echo(qw(git svn rebase));
 	}
 
 	# Recursively run a sub-processor for externals in the current directory
 	die if $self->new(parent => $self)->run();
 
-	die "Unable to chdir back to '$dir'\n" unless chdir($dir);
+	die "Error: Unable to chdir back to '$dir'\n" unless chdir($dir);
 }
 
 
@@ -131,7 +143,7 @@ sub update_ignore {
 	print "Updating Git ignored file list $dir/$ignore_path: @new_exclude_lines\n";
 	
 	$ignore_file = IO::File->new(">$ignore_path");
-	die "Unable to write-open '$ignore_path'\n" unless $ignore_file;
+	die "Error: Unable to write-open '$ignore_path'\n" unless $ignore_file;
 	$ignore_file->print(map {"$_\n"} (@exclude_lines, @new_exclude_lines));
 }
 
@@ -147,7 +159,7 @@ sub read_externals {
 
 	my @versioned_externals = grep {/\b-r\d+\b/i} @externals;
 	if (@versioned_externals) {
-		die "Found external(s) pegged to fixed revision: '@versioned_externals' in '$dir', don't know how to handle this.\n";
+		die "Error: Found external(s) pegged to fixed revision: '@versioned_externals' in '$dir', don't know how to handle this.\n";
 	}
 
 	return map {m%^/(\S+)\s+(\S+)%; $1 ? ($1 => $2) : ()} @externals;
@@ -166,6 +178,12 @@ sub process_svn_ignore {
 }
 
 
+sub svn_info_for_current_dir {
+	my $self = shift;
+	return {map {/^([^:]+): (.*)/} $self->shell(qw(git svn info))};
+}
+
+
 sub shell {
 	my $self = shift;
 	my $dir = Cwd::cwd();
@@ -174,7 +192,7 @@ sub shell {
  	my $output = qx(@cmd);
 # 	my $output = qx(@cmd | tee /dev/stderr);
  	my $result = $? >> 8;
-	die "Nonzero exit status for command '@_'\n" if $result;
+	die "Error: Nonzero exit status for command '@_'\n" if $result;
 	my @lines = split(/\n/, $output);
 	return wantarray ? @lines : $lines[0];
 }
@@ -187,7 +205,7 @@ sub shell_echo {
  	my @cmd = map {"'$_'"} @_;
  	my $output = qx(@cmd | tee /dev/stderr);
  	my $result = $? >> 8;
-	die "Nonzero exit status for command '@_'\n" if $result;
+	die "Error: Nonzero exit status for command '@_'\n" if $result;
 	my @lines = split(/\n/, $output);
 	return wantarray ? @lines : $lines[0];
 }
