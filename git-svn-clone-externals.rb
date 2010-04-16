@@ -49,7 +49,7 @@ def read_externals
 	if !versioned_externals.empty?
 		raise "Error: Found external(s) pegged to fixed revision: '#{versioned_externals.join ', '}' in '#{Dir.getwd}', don't know how to handle this.\n"
 	end
-	return externals.collect {|x| x =~ %r%^/(\S+)\s+(\S+)%; $~ ? $~[1,2] : nil}.reject {|x| x.nil?}
+	return externals.grep(%r%^/(\S+)\s+(\S+)%) {$~[1,2]}
 end
 
 #	foo = ['/#foo', 'bar', 'baz -r52', 'baz2 -r53']
