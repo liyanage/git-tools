@@ -54,38 +54,40 @@ sub known_url {
 sub run {
 	my $self = shift;
 
-	my @externals = $self->read_externals();
-	return 0 unless @externals;
-	
 	my $dir = Cwd::cwd();
+	
+	$self->update_current_dir();
+	$self->process_svn_ignore();
 
+	my @externals = $self->read_externals();
 	while (my $subdir = shift @externals) {
 		my $url = shift @externals;
 		die "Error: svn:externals cycle detected: '$url'\n" if $self->known_url($url);
 
 		print "[$dir] updating SVN external: $subdir\n";
-		
-		$self->update_external_dir($subdir, $url);
+
+		die "Error: Unable to find or mkdir '$subdir'\n" unless (-e $subdir || File::Path::mkpath($subdir));
+		die "Error: Expected '$subdir' to be a directory\n" unless (-d $subdir);
+
+		die "Error: Unable to chdir to '$subdir'\n" unless chdir($subdir);
+		# Recursively run a sub-processor for externals in the current directory
+		die if $self->new(parent => $self, externals_url => $url)->run();
+		die "Error: Unable to chdir back to '$dir'\n" unless chdir($dir);
+
 		$self->update_ignore($subdir);
 	}
-
-	$self->process_svn_ignore();
 
 	return 0;
 }
 
 
-sub update_external_dir {
+sub update_current_dir {
 	my $self = shift;
-	my ($external_dir_path, $url) = @_;
 
-	die "Error: Unable to find or mkdir '$external_dir_path'\n" unless (-e $external_dir_path || File::Path::mkpath($external_dir_path));
-	die "Error: Expected '$external_dir_path' to be a directory\n" unless (-d $external_dir_path);
-	
 	my $dir = Cwd::cwd();
-
-	die "Error: Unable to chdir to '$dir/$external_dir_path'\n" unless chdir($external_dir_path);
-
+	my $url = $self->{svn_info}->{URL};
+	die "Unable to determine SVN URL for '$dir'" unless $url;
+	
 	my @contents = grep {!/^\.+$/} IO::Dir->new('.')->read();
 	if (@contents == 0) {
 		# first-time clone
@@ -98,27 +100,21 @@ sub update_external_dir {
 
 		# Check that we're on the right branch
 		my ($branch) = $self->shell(qw(git status)) =~ /On branch (\S+)/;
-		die "Error: Unable to determine Git branch in '$dir/$external_dir_path'\n" unless $branch;
-		die "Error: Git branch is '$branch', should be 'master' in '$dir/$external_dir_path'\n" unless ($branch eq 'master');
+		die "Error: Unable to determine Git branch in '$dir'\n" unless $branch;
+		die "Error: Git branch is '$branch', should be 'master' in '$dir'\n" unless ($branch eq 'master');
 
 		# Check that there are no uncommitted changes in the working copy that would trip up git's svn rebase
 		my @dirty = grep {!/^\?\?/} $self->shell(qw(git status --porcelain));
-		die "Error: Can't run svn rebase with dirty files in '$dir/$external_dir_path':\n" . join('', map {"$_\n"} @dirty) if @dirty;
+		die "Error: Can't run svn rebase with dirty files in '$dir':\n" . join('', map {"$_\n"} @dirty) if @dirty;
 
 		# Check that the externals definition URL hasn't changed
-		my $info = $self->svn_info_for_current_dir();
-		if ($info->{URL} ne $url) {
-			die "Error: The svn:externals URL for '$external_dir_path' in '$dir' is defined as\n\n  $url\n\nbut the existing Git working copy in that directory is configured as\n\n  $info->{URL}\n\nThe externals definition might have changed since the working copy was created. Remove the '$dir/$external_dir_path' directory and re-run this script to check out a new version from the new URL.\n";
+		if ($self->{externals_url} && $self->{externals_url} ne $url) {
+			die "Error: The svn:externals URL for '$dir' is defined as\n\n  $self->{externals_url}\n\nbut the existing Git working copy in that directory is configured as\n\n  $url\n\nThe externals definition might have changed since the working copy was created. Remove the '$dir' directory and re-run this script to check out a new version from the new URL.\n";
 		}
 
 		# All sanity checks OK, perform the update
 		$self->shell_echo(qw(git svn rebase));
 	}
-
-	# Recursively run a sub-processor for externals in the current directory
-	die if $self->new(parent => $self)->run();
-
-	die "Error: Unable to chdir back to '$dir'\n" unless chdir($dir);
 }
 
 
