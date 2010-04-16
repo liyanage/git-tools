@@ -15,6 +15,7 @@ use IO::Dir;
 use File::Path;
 use File::Basename;
 
+$ENV{PATH} = "/opt/local/bin:$ENV{PATH}";
 
 my $processor = ExternalsProcessor->new(@ARGV);
 my $status = $processor->run();
@@ -31,23 +32,21 @@ sub new {
 	
 	my $class = ref($self) || $self;
 	$self = bless \%args, $class;
-	$self->init();
+# 	$self->init();
 	return $self;
 }
 
 
-sub init {
-	my $self = shift;
-	$self->{svn_info} = $self->svn_info_for_current_dir();
-	$ENV{PATH} = "/opt/local/bin:$ENV{PATH}";
-#	print $self->shell(qw(git --version)) . "\n";
-}
+# sub init {
+# 	my $self = shift;
+# #	print $self->shell(qw(git --version)) . "\n";
+# }
 
 
 sub known_url {
 	my $self = shift;
 	my ($url) = @_;
-	return $self->{svn_info}->{URL} eq $url || $self->{parent} && $self->{parent}->known_url($url);
+	return $self->svn_url_for_current_dir() eq $url || $self->{parent} && $self->{parent}->known_url($url);
 }
 
 
@@ -85,18 +84,18 @@ sub update_current_dir {
 	my $self = shift;
 
 	my $dir = Cwd::cwd();
-	my $url = $self->{svn_info}->{URL};
-	die "Unable to determine SVN URL for '$dir'" unless $url;
 	
 	my @contents = grep {!/^\.+$/} IO::Dir->new('.')->read();
 	if (@contents == 0) {
 		# first-time clone
-		$self->shell(qw(git svn clone), $url, '.');
+		die "Error: Missing externals URL for '$dir'\n" unless $self->{externals_url};
+		$self->shell(qw(git svn clone), $self->{externals_url}, '.');
 	} elsif (@contents == 1 && $contents[0] eq '.git') {
 		# interrupted clone, restart with fetch
 		$self->shell(qw(git svn fetch));
 	} else {
 		# regular update, rebase to SVN head
+		my $url = $self->svn_url_for_current_dir();
 
 		# Check that we're on the right branch
 		my ($branch) = $self->shell(qw(git status)) =~ /On branch (\S+)/;
@@ -180,6 +179,16 @@ sub svn_info_for_current_dir {
 }
 
 
+sub svn_url_for_current_dir {
+	my $self = shift;
+	my $url = $self->svn_info_for_current_dir()->{URL};
+	my $dir = Cwd::cwd();
+	die "Unable to determine SVN URL for '$dir'" unless $url;
+	return $url;
+}
+
+
+
 sub shell {
 	my $self = shift;
 	my $dir = Cwd::cwd();
@@ -188,7 +197,7 @@ sub shell {
  	my $output = qx(@cmd);
 # 	my $output = qx(@cmd | tee /dev/stderr);
  	my $result = $? >> 8;
-	die "Error: Nonzero exit status for command '@_'\n" if $result;
+	die "Error: Nonzero exit status for command '@_' executed in '$dir'\n" if $result;
 	my @lines = split(/\n/, $output);
 	return wantarray ? @lines : $lines[0];
 }
