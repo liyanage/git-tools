@@ -157,7 +157,7 @@ sub read_externals {
 		grep {!m%^\s*/?\s*#%}
 		$self->shell(qw(git svn show-externals));
 
-	my @versioned_externals = grep {/\b-r\d+\b/i} @externals;
+	my @versioned_externals = grep {/-r\d+\b/i} @externals;
 	if (@versioned_externals) {
 		die "Error: Found external(s) pegged to fixed revision: '@versioned_externals' in '$dir', don't know how to handle this.\n";
 	}
