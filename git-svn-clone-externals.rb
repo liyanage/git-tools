@@ -23,11 +23,10 @@ def run
 
 	read_externals.each do |dir, url|
 		raise "Error: svn:externals cycle detected: '#{url}'" if known_url?(url)
-		puts "[#{dir}] updating SVN external: #{dir}"
-		
 		raise "Error: Unable to find or mkdir '#{dir}'" unless File.exist?(dir) || FileUtils.mkpath(dir)
 		raise "Error: Expected '#{dir}' to be a directory" unless File.directory?(dir)
 		
+		puts "[#{Dir.getwd}] updating external: #{dir}"
 		Dir.chdir(dir) {self.class.new(:parent => self, :externals_url => url).run}
 		update_exclude_file_with_paths(dir)
 	end
@@ -40,11 +39,11 @@ def update_current_dir
 	wd = Dir.getwd
 	contents = Dir.entries('.').reject {|x| x =~ /^(?:\.+|\.DS_Store)$/}
 
-	if contents.count == 0
+	if contents.empty?
 		# first-time clone
 		raise "Error: Missing externals URL for '#{wd}'" unless @externals_url
 		shell("git svn clone #@externals_url .")
-	elsif contents.count == 1 && contents[0] == '.git'
+	elsif contents == ['.git']
 		# interrupted clone, restart with fetch
 		shell('git svn fetch')
 	else
@@ -76,7 +75,7 @@ end
 def read_externals
 	externals = shell('git svn show-externals').reject {|x| x =~ %r%^\s*/?\s*#%}
 	versioned_externals = externals.grep(/-r\d+\b/i)
-	if !versioned_externals.empty?
+	unless versioned_externals.empty?
 		raise "Error: Found external(s) pegged to fixed revision: '#{versioned_externals.join ', '}' in '#{Dir.getwd}', don't know how to handle this."
 	end
 	return externals.grep(%r%^/(\S+)\s+(\S+)%) {$~[1,2]}
