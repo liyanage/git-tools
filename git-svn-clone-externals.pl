@@ -85,7 +85,7 @@ sub update_current_dir {
 
 	my $dir = Cwd::cwd();
 	
-	my @contents = grep {!/^\.+$/} IO::Dir->new('.')->read();
+	my @contents = grep {!/^(?:\.+|\.DS_Store)$/} IO::Dir->new('.')->read();
 	if (@contents == 0) {
 		# first-time clone
 		die "Error: Missing externals URL for '$dir'\n" unless $self->{externals_url};
@@ -95,7 +95,6 @@ sub update_current_dir {
 		$self->shell(qw(git svn fetch));
 	} else {
 		# regular update, rebase to SVN head
-		my $url = $self->svn_url_for_current_dir();
 
 		# Check that we're on the right branch
 		my ($branch) = $self->shell(qw(git status)) =~ /On branch (\S+)/;
@@ -107,6 +106,7 @@ sub update_current_dir {
 		die "Error: Can't run svn rebase with dirty files in '$dir':\n" . join('', map {"$_\n"} @dirty) if @dirty;
 
 		# Check that the externals definition URL hasn't changed
+		my $url = $self->svn_url_for_current_dir();
 		if ($self->{externals_url} && $self->{externals_url} ne $url) {
 			die "Error: The svn:externals URL for '$dir' is defined as\n\n  $self->{externals_url}\n\nbut the existing Git working copy in that directory is configured as\n\n  $url\n\nThe externals definition might have changed since the working copy was created. Remove the '$dir' directory and re-run this script to check out a new version from the new URL.\n";
 		}
