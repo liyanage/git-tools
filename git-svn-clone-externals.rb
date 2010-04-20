@@ -14,12 +14,16 @@ class ExternalsProcessor
   def initialize(options = {})
     @parent = options[:parent]
     @externals_url = options[:externals_url]
+    @quick = options[:quick]
   end
 
 
   def run
-    update_current_dir
-    process_svn_ignore_for_current_dir
+    t1 = Time.now
+    self.update_current_dir()
+    process_svn_ignore_for_current_dir unless quick?
+
+    return 0 if @parent && quick?
 
     read_externals.each do |dir, url|
       raise "Error: svn:externals cycle detected: '#{url}'" if known_url?(url)
@@ -28,9 +32,11 @@ class ExternalsProcessor
 
       puts "[#{Dir.getwd}] updating external: #{dir}"
       Dir.chdir(dir) { self.class.new(:parent => self, :externals_url => url).run }
-      update_exclude_file_with_paths(dir)
+      update_exclude_file_with_paths(dir) unless quick?
     end
-
+    
+    puts "Total time: %.2fs" % (Time.now - t1)
+    
     0
   end
 
@@ -60,9 +66,11 @@ class ExternalsProcessor
       raise "Error: Can't run svn rebase with dirty files in '#{wd}':\n#{dirty.map {|x| x + "\n"}}" unless dirty.empty?
 
       # Check that the externals definition URL hasn't changed
-      url = svn_url_for_current_dir
-      if @externals_url && @externals_url != url
-        raise "Error: The svn:externals URL for '#{wd}' is defined as\n\n  #@externals_url\n\nbut the existing Git working copy in that directory is configured as\n\n  #{url}\n\nThe externals definition might have changed since the working copy was created. Remove the '#{wd}' directory and re-run this script to check out a new version from the new URL.\n"
+      if !quick?
+        url = svn_url_for_current_dir
+        if @externals_url && @externals_url != url
+          raise "Error: The svn:externals URL for '#{wd}' is defined as\n\n  #@externals_url\n\nbut the existing Git working copy in that directory is configured as\n\n  #{url}\n\nThe externals definition might have changed since the working copy was created. Remove the '#{wd}' directory and re-run this script to check out a new version from the new URL.\n"
+        end
       end
 
       # All sanity checks OK, perform the update
@@ -73,6 +81,7 @@ class ExternalsProcessor
 
 
   def read_externals
+    return read_externals_quick if quick?
     externals = shell('git svn show-externals').reject { |x| x =~ %r%^\s*/?\s*#% }
     versioned_externals = externals.grep(/-r\d+\b/i)
     unless versioned_externals.empty?
@@ -82,8 +91,14 @@ class ExternalsProcessor
   end
 
 
+  # In quick mode, fake it by using "find"
+  def read_externals_quick
+    externals = %x(find . -type d -name .git).split("\n").select {|x| File.exist?("#{x}/svn")}.grep(%r%^./(.+)/.git$%) {$~[1]}.map {|x| [x, nil]}
+    externals
+  end
+
   def process_svn_ignore_for_current_dir
-    svn_ignored = shell('git svn show-ignore').reject { |x| x =~ %r%^\s*/?\s*#%}.grep(%r%^/(\S+)%) { $~[1] }
+    svn_ignored = shell('git svn show-ignore').reject { |x| x =~ %r%^\s*/?\s*#% }.grep(%r%^/(\S+)%) { $~[1] }
     update_exclude_file_with_paths(svn_ignored) unless svn_ignored.empty?
   end
 
@@ -120,22 +135,32 @@ class ExternalsProcessor
 
 
   def known_url?(url)
+    return false if quick?
     url == svn_url_for_current_dir || (@parent && @parent.known_url?(url))
   end
-
+  
+  def quick?
+    return (@parent && @parent.quick?) || @quick
+  end
 
   def shell(cmd)
+    t1 = Time.now
     list = %x(#{cmd}).split("\n")
+    dt = (Time.now - t1).to_f
     status = $? >> 8
-    raise "Non-zero exit status #{status} for command #{cmd}" if status != 0
+    raise "[#{Dir.getwd}] Non-zero exit status #{status} for command #{cmd}" if status != 0
+#    puts "[shell %.2fs %s] %s" % [dt, Dir.getwd, cmd]
     list
   end
 
 
   def shell_echo(cmd)
+    t1 = Time.now
     list = %x(#{cmd} | tee /dev/stderr).split("\n")
+    dt = (Time.now - t1).to_f
     status = $? >> 8
-    raise "Non-zero exit status #{status} for command #{cmd}" if status != 0
+    raise "[#{Dir.getwd}] Non-zero exit status #{status} for command #{cmd}" if status != 0
+#    puts "[shell %.2fs %s] %s" % [dt, Dir.getwd, cmd]
     list
   end
 
@@ -145,4 +170,6 @@ end
 # ----------------------
 
 ENV['PATH'] = "/opt/local/bin:#{ENV['PATH']}"
-exit ExternalsProcessor.new.run
+quick = ARGV.delete('-q')
+puts "Quick mode" if quick
+exit ExternalsProcessor.new(:quick => quick).run
