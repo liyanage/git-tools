@@ -35,7 +35,7 @@ class ExternalsProcessor
       update_exclude_file_with_paths(dir) unless quick?
     end
     
-    puts "Total time: %.2fs" % (Time.now - t1)
+    puts "Total time: %.2fs" % (Time.now - t1) unless @parent
     
     0
   end
