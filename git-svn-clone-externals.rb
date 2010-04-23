@@ -13,6 +13,7 @@ class ExternalsProcessor
 
   def initialize(options = {})
     @parent = options[:parent]
+    @warnings = {} unless @parent
     @externals_url = options[:externals_url]
     @quick = options[:quick]
   end
@@ -26,6 +27,20 @@ class ExternalsProcessor
     return 0 if @parent && quick?
 
     externals = read_externals
+    process_externals(externals)
+
+    find_non_externals_sandboxes(externals) unless quick?
+
+    unless @parent
+      dump_warnings
+      puts "Total time: %ds" % (Time.now - t1)
+    end
+
+    0
+  end
+
+
+  def process_externals(externals)
     externals.each do |dir, url|
       raise "Error: svn:externals cycle detected: '#{url}'" if known_url?(url)
       raise "Error: Unable to find or mkdir '#{dir}'" unless File.exist?(dir) || FileUtils.mkpath(dir)
@@ -35,23 +50,34 @@ class ExternalsProcessor
       Dir.chdir(dir) { self.class.new(:parent => self, :externals_url => url).run }
       update_exclude_file_with_paths(dir) unless quick?
     end
+  end
 
-    warn_for_non_externals_sandboxes(externals) unless quick?
-    
-    puts "Total time: %.2fs" % (Time.now - t1) unless @parent
-    
-    0
+  
+  def dump_warnings
+    @warnings.each do |key, data|
+      puts "Warning: #{data[:message]}:"
+      data[:items].each { |x| puts "#{x}\n" }
+    end
   end
 
 
-  def warn_for_non_externals_sandboxes(externals)
+  def find_non_externals_sandboxes(externals)
     externals_dirs = externals.map { |x| x[0] }
     sandboxes = find_git_svn_sandboxes_in_current_dir
     non_externals_sandboxes = sandboxes.select { |sandbox| externals_dirs.select { |external| sandbox.index(external) == 0}.empty? }
     return if non_externals_sandboxes.empty?
-    
-    puts "Warning: Found git-svn sandboxes that do not correspond to SVN externals:"
-    non_externals_sandboxes.each {|x| puts x}
+    collect_warning('unknown_sandbox', 'Found git-svn sandboxes that do not correspond to SVN externals', non_externals_sandboxes.map {|x| "#{Dir.getwd}/#{x}"})
+#    puts "Warning: Found git-svn sandboxes that do not correspond to SVN externals:"
+  end
+
+
+  def collect_warning(category, message, items)
+    if @parent
+      @parent.collect_warning(category, message, items)
+      return
+    end
+    @warnings[category] ||= {:message => message, :items => []}
+    @warnings[category][:items].concat(items)
   end
 
 
