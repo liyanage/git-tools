@@ -51,7 +51,7 @@ class ExternalsProcessor
     return if non_externals_sandboxes.empty?
     
     puts "Warning: Found git-svn sandboxes that do not correspond to SVN externals:"
-    p non_externals_sandboxes
+    non_externals_sandboxes.each {|x| puts x}
   end
 
 
