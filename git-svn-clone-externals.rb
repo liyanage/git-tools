@@ -25,7 +25,8 @@ class ExternalsProcessor
 
     return 0 if @parent && quick?
 
-    read_externals.each do |dir, url|
+    externals = read_externals
+    externals.each do |dir, url|
       raise "Error: svn:externals cycle detected: '#{url}'" if known_url?(url)
       raise "Error: Unable to find or mkdir '#{dir}'" unless File.exist?(dir) || FileUtils.mkpath(dir)
       raise "Error: Expected '#{dir}' to be a directory" unless File.directory?(dir)
@@ -34,10 +35,23 @@ class ExternalsProcessor
       Dir.chdir(dir) { self.class.new(:parent => self, :externals_url => url).run }
       update_exclude_file_with_paths(dir) unless quick?
     end
+
+    warn_for_non_externals_sandboxes(externals) unless quick?
     
     puts "Total time: %.2fs" % (Time.now - t1) unless @parent
     
     0
+  end
+
+
+  def warn_for_non_externals_sandboxes(externals)
+    externals_dirs = externals.map { |x| x[0] }
+    sandboxes = find_git_svn_sandboxes_in_current_dir
+    non_externals_sandboxes = sandboxes.select { |sandbox| externals_dirs.select { |external| sandbox.index(external) == 0}.empty? }
+    return if non_externals_sandboxes.empty?
+    
+    puts "Warning: Found git-svn sandboxes that do not correspond to SVN externals:"
+    p non_externals_sandboxes
   end
 
 
@@ -93,9 +107,13 @@ class ExternalsProcessor
 
   # In quick mode, fake it by using "find"
   def read_externals_quick
-    externals = %x(find . -type d -name .git).split("\n").select {|x| File.exist?("#{x}/svn")}.grep(%r%^./(.+)/.git$%) {$~[1]}.map {|x| [x, nil]}
-    externals
+    find_git_svn_sandboxes_in_current_dir.map {|x| [x, nil]}
   end
+  
+  def find_git_svn_sandboxes_in_current_dir
+    %x(find . -type d -name .git).split("\n").select {|x| File.exist?("#{x}/svn")}.grep(%r%^./(.+)/.git$%) {$~[1]}
+  end
+  
 
   def process_svn_ignore_for_current_dir
     svn_ignored = shell('git svn show-ignore').reject { |x| x =~ %r%^\s*/?\s*#% }.grep(%r%^/(\S+)%) { $~[1] }
