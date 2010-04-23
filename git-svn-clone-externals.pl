@@ -6,6 +6,8 @@
 #
 # See http://github.com/liyanage/git-tools
 #
+# Note: This Perl version has less features than the Ruby version, you should use that one instead.
+#
 
 use strict;
 use warnings;
