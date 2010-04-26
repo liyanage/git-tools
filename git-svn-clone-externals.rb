@@ -151,9 +151,9 @@ class ExternalsProcessor
 
   def update_exclude_file_with_paths(excluded_paths)
     excludefile_path = '.git/info/exclude'
-    exclude_file = File.open(excludefile_path) if File.exist?(excludefile_path)
-    exclude_lines = exclude_file ? exclude_file.readlines.map { |x| x.chomp } : []
-
+    exclude_lines = []
+    File.open(excludefile_path) { |file| exclude_lines = file.readlines.map { |x| x.chomp } } if File.exist?(excludefile_path)
+    
     new_exclude_lines = []
     excluded_paths.each do |path|
       new_exclude_lines.push(path) unless (exclude_lines | new_exclude_lines).include?(path)
@@ -162,7 +162,7 @@ class ExternalsProcessor
     return if new_exclude_lines.empty?
 
     puts "Updating Git exclude list '#{Dir.getwd}/#{excludefile_path}' with new items: #{new_exclude_lines.join(" ")}\n"
-    File.open(excludefile_path, 'w') << (exclude_lines + new_exclude_lines).map { |x| x + "\n" }
+    File.open(excludefile_path, 'w') { |file| file << (exclude_lines + new_exclude_lines).map { |x| x + "\n" } }
   end
 
 
