@@ -16,12 +16,13 @@ class ExternalsProcessor
     @warnings = {} unless @parent
     @externals_url = options[:externals_url]
     @quick = options[:quick]
+    @no_history = options[:no_history]
   end
 
 
   def run
     t1 = Time.now
-    self.update_current_dir()
+    update_current_dir
     process_svn_ignore_for_current_dir unless quick?
 
     return 0 if @parent && quick?
@@ -88,7 +89,8 @@ class ExternalsProcessor
     if contents.empty?
       # first-time clone
       raise "Error: Missing externals URL for '#{wd}'" unless @externals_url
-      shell("git svn clone #@externals_url .")
+      no_history_option = no_history? ? '-r HEAD' : ''
+      shell("git svn clone #{no_history_option} #@externals_url .")
     elsif contents == ['.git']
       # interrupted clone, restart with fetch
       shell('git svn fetch')
@@ -187,6 +189,10 @@ class ExternalsProcessor
     return (@parent && @parent.quick?) || @quick
   end
 
+  def no_history?
+    return (@parent && @parent.no_history?) || @no_history
+  end
+
   def shell(cmd)
     t1 = Time.now
     list = %x(#{cmd}).split("\n")
@@ -215,5 +221,6 @@ end
 
 ENV['PATH'] = "/opt/local/bin:#{ENV['PATH']}"
 quick = ARGV.delete('-q')
+no_history = ARGV.delete('--no-history')
 puts "Quick mode" if quick
-exit ExternalsProcessor.new(:quick => quick).run
+exit ExternalsProcessor.new(:quick => quick, :no_history => no_history).run
