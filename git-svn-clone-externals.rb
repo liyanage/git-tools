@@ -1,10 +1,73 @@
 #!/usr/bin/ruby -w
 #
-# Recursively clone svn:externals in a git-svn sandbox.
+# This script reads the svn:externals directory definitions of a git-svn
+# working copy and performs a "git svn clone" for each directory.
+# It then enters each one and repeats the process recursively,
+# until there are no more svn:externals to resolve.
+#
+# After the initial run, the script can be used to keep all of the 
+# new working copies updated to SVN HEAD. You run it in the toplevel
+# directory and it will perform a "git svn rebase" operation on the current
+# directory, then descend into all externals directories and again repeat
+# the process recursively.
+#
+# Features
+# ========
+#
+# - Can restart aborted first-time clone operations. Just re-run the script.
+# - Adds the exclude directories it creates to the .git/info/exclude list
+#   so they don't show up in the status report.
+# - Also adds items in svn:ignore properties to the .git/info/exclude list.
+# - Discovers new svn:externals definitions during update runs and performes a clone operation.
+# - Detects changed SVN URLs for an existing working copy and aborts with a warning.
+# - Detects and lists git-svn working copies that don't correspond to svn:externals
+#   definitions, which happens if an externals definition is removed.
+# - Quick mode for updates (see below).
+# - Detects svn:externals reference cycles.
+# 
+# 
+# 
+#
+# First-time usage for the initial setup
+# ======================================
+#
+# 1.) First check out some SVN repository with git-svn:
+#
+#     git svn clone http://...
+#
+# 2.) Change directory to the new working copy and run the script:
+#
+#     git-svnclone-externals.rb
+#
+#     By default it checks out the complete history for each SVN
+#     project it clones. This can take a long time and you don't
+#     want that, you can use the --no-history command line option.
+#
+# Update usage after initial setup
+# ================================
+#
+# 1.) Change directory to the toplevel working copy
+#
+# 2.) Run the script as above
+#
+#     In this use case, the script has a "quick" mode that you can
+#     activate with the "-q" command line option. If you use it, it
+#     will not read the actual svn:externals definitions, but instead
+#     search for the existing sub-working copies and just update those.
+#     This mode will not pick up new or changed svn:externals definitions,
+#     so you should run it in normal mode from time to time.
+# 
+# Restrictions for update mode:
+#
+# - The script assumes that all integration with the SVN repository
+#   happens on the "master" git branch. If it encounters a working copy that
+#   is on a different branch during its traversal, it will abort with an
+#   error message.
+# - The script will abort when it encounters working copies
+#   with uncommitted changes.
 #
 # Written by Marc Liyanage <http://www.entropy.ch>
-#
-# See http://github.com/liyanage/git-tools
+# See http://github.com/liyanage/git-tools for the newest version
 #
 
 require 'fileutils'
@@ -223,4 +286,5 @@ ENV['PATH'] = "/opt/local/bin:#{ENV['PATH']}"
 quick = ARGV.delete('-q')
 no_history = ARGV.delete('--no-history')
 puts "Quick mode" if quick
+puts "Skip history" if no_history
 exit ExternalsProcessor.new(:quick => quick, :no_history => no_history).run
