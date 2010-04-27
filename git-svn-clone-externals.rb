@@ -3,7 +3,8 @@
 # This script reads the svn:externals directory definitions of a git-svn
 # working copy and performs a "git svn clone" for each directory.
 # It then enters each one and repeats the process recursively,
-# until there are no more svn:externals to resolve.
+# until there are no more svn:externals to resolve, thus creating the
+# equivalent of what "svn checkout" would do.
 #
 # After the initial run, the script can be used to keep all of the 
 # new working copies updated to SVN HEAD. You run it in the toplevel
@@ -18,7 +19,7 @@
 # - Adds the exclude directories it creates to the .git/info/exclude list
 #   so they don't show up in the status report.
 # - Also adds items in svn:ignore properties to the .git/info/exclude list.
-# - Discovers new svn:externals definitions during update runs and performes a clone operation.
+# - Discovers new svn:externals definitions during update runs and performs a clone operation.
 # - Detects changed SVN URLs for an existing working copy and aborts with a warning.
 # - Detects and lists git-svn working copies that don't correspond to svn:externals
 #   definitions, which happens if an externals definition is removed.
@@ -258,7 +259,7 @@ class ExternalsProcessor
     list = %x(#{cmd}).split("\n")
     dt = (Time.now - t1).to_f
     status = $? >> 8
-    raise "[#{Dir.getwd}] Non-zero exit status #{status} for command #{cmd}" if status != 0
+    raise "[#{Dir.getwd}] Non-zero exit status #{status} for command '#{cmd}'" if status != 0
 #    puts "[shell %.2fs %s] %s" % [dt, Dir.getwd, cmd]
     list
   end
@@ -269,7 +270,7 @@ class ExternalsProcessor
     list = %x(#{cmd} | tee /dev/stderr).split("\n")
     dt = (Time.now - t1).to_f
     status = $? >> 8
-    raise "[#{Dir.getwd}] Non-zero exit status #{status} for command #{cmd}" if status != 0
+    raise "[#{Dir.getwd}] Non-zero exit status #{status} for command '#{cmd}'" if status != 0
 #    puts "[shell %.2fs %s] %s" % [dt, Dir.getwd, cmd]
     list
   end
