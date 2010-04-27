@@ -24,9 +24,6 @@
 #   definitions, which happens if an externals definition is removed.
 # - Quick mode for updates (see below).
 # - Detects svn:externals reference cycles.
-# 
-# 
-# 
 #
 # First-time usage for the initial setup
 # ======================================
@@ -40,7 +37,7 @@
 #     git-svnclone-externals.rb
 #
 #     By default it checks out the complete history for each SVN
-#     project it clones. This can take a long time and you don't
+#     project it clones. This can take a long time and if you don't
 #     want that, you can use the --no-history command line option.
 #
 # Update usage after initial setup
