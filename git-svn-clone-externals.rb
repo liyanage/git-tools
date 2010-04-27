@@ -144,12 +144,11 @@ class ExternalsProcessor
 
 
   def update_current_dir
-    wd = Dir.getwd
     contents = Dir.entries('.').reject { |x| x =~ /^(?:\.+|\.DS_Store)$/ }
 
     if contents.empty?
       # first-time clone
-      raise "Error: Missing externals URL for '#{wd}'" unless @externals_url
+      raise "Error: Missing externals URL for '#{Dir.getwd}'" unless @externals_url
       no_history_option = no_history? ? '-r HEAD' : ''
       shell("git svn clone #{no_history_option} #@externals_url .")
     elsif contents == ['.git']
@@ -158,23 +157,9 @@ class ExternalsProcessor
     else
       # regular update, rebase to SVN head
 
-      # Check that we're on the right branch
-      shell('git status')[0] =~ /On branch (\S+)/
-      raise "Error: Unable to determine Git branch in '#{wd}' using 'git status'" unless $~
-      branch = $~[1]
-      raise "Error: Git branch is '#{branch}', should be 'master' in '#{wd}'\n" unless branch == 'master'
-
-      # Check that there are no uncommitted changes in the working copy that would trip up git's svn rebase
-      dirty = shell('git status --porcelain').reject { |x| x =~ /^\?\?/ }
-      raise "Error: Can't run svn rebase with dirty files in '#{wd}':\n#{dirty.map {|x| x + "\n"}}" unless dirty.empty?
-
-      # Check that the externals definition URL hasn't changed
-      if !quick?
-        url = svn_url_for_current_dir
-        if @externals_url && @externals_url != url
-          raise "Error: The svn:externals URL for '#{wd}' is defined as\n\n  #@externals_url\n\nbut the existing Git working copy in that directory is configured as\n\n  #{url}\n\nThe externals definition might have changed since the working copy was created. Remove the '#{wd}' directory and re-run this script to check out a new version from the new URL.\n"
-        end
-      end
+      check_working_copy_branch
+      check_working_copy_dirty
+      check_working_copy_url
 
       # All sanity checks OK, perform the update
       shell_echo('git svn rebase')
@@ -183,6 +168,42 @@ class ExternalsProcessor
   end
 
 
+  def check_working_copy_branch
+    shell('git status', git_version >= 1.7)[0] =~ /On branch (\S+)/
+    raise "Error: Unable to determine Git branch in '#{wd}' using 'git status'" unless $~
+    branch = $~[1]
+    raise "Error: Git branch is '#{branch}', should be 'master' in '#{wd}'\n" unless branch == 'master'
+  end
+
+
+  def check_working_copy_dirty
+      # Check that there are no uncommitted changes in the working copy that would trip up git's svn rebase
+      dirty = ''      
+      if git_version >= 1.7
+        dirty = shell('git status --porcelain').reject { |x| x =~ /^\?\?/ }
+      else
+        dirty = shell('git status', false).map { |x| x =~ /modified:\s*(.+)/; $~ ? $~[1] : nil }.compact
+      end
+
+      raise "Error: Can't run svn rebase with dirty files in '#{Dir.getwd}':\n#{dirty.map {|x| x + "\n"}}" unless dirty.empty?
+  end
+
+
+  def git_version
+      shell('git --version')[0] =~ /git version (\d+\.\d+)/;
+      return $~[1].to_f
+  end
+
+
+  def check_working_copy_url()
+    return if quick?
+    url = svn_url_for_current_dir
+    if @externals_url && @externals_url != url
+      raise "Error: The svn:externals URL for '#{Dir.getwd}' is defined as\n\n  #@externals_url\n\nbut the existing Git working copy in that directory is configured as\n\n  #{url}\n\nThe externals definition might have changed since the working copy was created. Remove the '#{Dir.getwd}' directory and re-run this script to check out a new version from the new URL.\n"
+    end
+  end
+  
+  
   def read_externals
     return read_externals_quick if quick?
     externals = shell('git svn show-externals').reject { |x| x =~ %r%^\s*/?\s*#% }
@@ -254,12 +275,12 @@ class ExternalsProcessor
     return (@parent && @parent.no_history?) || @no_history
   end
 
-  def shell(cmd)
+  def shell(cmd, abort_on_error = true)
     t1 = Time.now
     list = %x(#{cmd}).split("\n")
     dt = (Time.now - t1).to_f
     status = $? >> 8
-    raise "[#{Dir.getwd}] Non-zero exit status #{status} for command '#{cmd}'" if status != 0
+    raise "[#{Dir.getwd}] Non-zero exit status #{status} for command '#{cmd}'" if (abort_on_error && status != 0)
 #    puts "[shell %.2fs %s] %s" % [dt, Dir.getwd, cmd]
     list
   end
@@ -281,8 +302,10 @@ end
 # ----------------------
 
 ENV['PATH'] = "/opt/local/bin:#{ENV['PATH']}"
+
 quick = ARGV.delete('-q')
-no_history = ARGV.delete('--no-history')
 puts "Quick mode" if quick
+no_history = ARGV.delete('--no-history')
 puts "Skip history" if no_history
+
 exit ExternalsProcessor.new(:quick => quick, :no_history => no_history).run
