@@ -170,9 +170,9 @@ class ExternalsProcessor
 
   def check_working_copy_branch
     shell('git status', git_version >= 1.7)[0] =~ /On branch (\S+)/
-    raise "Error: Unable to determine Git branch in '#{wd}' using 'git status'" unless $~
+    raise "Error: Unable to determine Git branch in '#{Dir.getwd}' using 'git status'" unless $~
     branch = $~[1]
-    raise "Error: Git branch is '#{branch}', should be 'master' in '#{wd}'\n" unless branch == 'master'
+    raise "Error: Git branch is '#{branch}', should be 'master' in '#{Dir.getwd}'\n" unless branch == 'master'
   end
 
 
@@ -267,13 +267,16 @@ class ExternalsProcessor
     url == svn_url_for_current_dir || (@parent && @parent.known_url?(url))
   end
   
+  
   def quick?
     return (@parent && @parent.quick?) || @quick
   end
 
+
   def no_history?
     return (@parent && @parent.no_history?) || @no_history
   end
+
 
   def shell(cmd, abort_on_error = true)
     t1 = Time.now
