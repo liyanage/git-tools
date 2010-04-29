@@ -171,9 +171,8 @@ class ExternalsProcessor
       check_working_copy_url
 
       # All sanity checks OK, perform the update
-      shell('git svn rebase', true, [/is up to date/])
+      shell('git svn rebase', true, [/is up to date/, /First, rewinding/, /Fast-forwarded master/])
     end
-
   end
 
 
@@ -228,7 +227,8 @@ class ExternalsProcessor
   def read_externals_quick
     find_git_svn_sandboxes_in_current_dir.map {|x| [x, nil]}
   end
-  
+
+
   def find_git_svn_sandboxes_in_current_dir
     %x(find . -type d -name .git).split("\n").select {|x| File.exist?("#{x}/svn")}.grep(%r%^./(.+)/.git$%) {$~[1]}
   end
@@ -325,7 +325,6 @@ class ExternalsProcessor
   end
 
 end
-
 
 # ----------------------
 
