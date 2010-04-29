@@ -171,7 +171,7 @@ class ExternalsProcessor
       check_working_copy_url
 
       # All sanity checks OK, perform the update
-      shell('git svn rebase', true, [/is up to date/, /First, rewinding/, /Fast-forwarded master/])
+      shell('git svn rebase', true, [/is up to date/, /First, rewinding/, /Fast-forwarded master/, /W: -empty_dir:/])
     end
   end
 
