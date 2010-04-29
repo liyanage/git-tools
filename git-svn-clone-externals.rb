@@ -302,7 +302,7 @@ class ExternalsProcessor
       loop do
         ready = select([stdout, stderr])
         readable = ready[0]
-        break if stdout.eof    
+        break if stdout.eof?
         readable.each do |io|
           data = io.gets
           next unless data
