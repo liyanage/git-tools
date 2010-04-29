@@ -54,7 +54,7 @@
 #     search for the existing sub-working copies and just update those.
 #     This mode will not pick up new or changed svn:externals definitions,
 #     so you should run it in normal mode from time to time.
-# 
+#
 # Restrictions for update mode:
 #
 # - The script assumes that all integration with the SVN repository
@@ -64,11 +64,18 @@
 # - The script will abort when it encounters working copies
 #   with uncommitted changes.
 #
+# Other options
+# =============
+#
+# The "-v" command line option produces verbose output, allowing you
+# to see what's going on.
+#
 # Written by Marc Liyanage <http://www.entropy.ch>
 # See http://github.com/liyanage/git-tools for the newest version
 #
 
 require 'fileutils'
+require 'open3'
 
 class ExternalsProcessor
 
@@ -76,8 +83,10 @@ class ExternalsProcessor
     @parent = options[:parent]
     @warnings = {} unless @parent
     @externals_url = options[:externals_url]
+
     @quick = options[:quick]
     @no_history = options[:no_history]
+    @verbose = options[:verbose]
   end
 
 
@@ -162,14 +171,14 @@ class ExternalsProcessor
       check_working_copy_url
 
       # All sanity checks OK, perform the update
-      shell_echo('git svn rebase')
+      shell('git svn rebase', true, [/is up to date/])
     end
 
   end
 
 
   def check_working_copy_branch
-    shell('git status', git_version >= 1.7)[0] =~ /On branch (\S+)/
+    shell('git status')[0] =~ /On branch (\S+)/
     raise "Error: Unable to determine Git branch in '#{Dir.getwd}' using 'git status'" unless $~
     branch = $~[1]
     raise "Error: Git branch is '#{branch}', should be 'master' in '#{Dir.getwd}'\n" unless branch == 'master'
@@ -182,7 +191,7 @@ class ExternalsProcessor
       if git_version >= 1.7
         dirty = shell('git status --porcelain').reject { |x| x =~ /^\?\?/ }
       else
-        dirty = shell('git status', false).map { |x| x =~ /modified:\s*(.+)/; $~ ? $~[1] : nil }.compact
+        dirty = shell('git status').map { |x| x =~ /modified:\s*(.+)/; $~ ? $~[1] : nil }.compact
       end
 
       raise "Error: Can't run svn rebase with dirty files in '#{Dir.getwd}':\n#{dirty.map {|x| x + "\n"}}" unless dirty.empty?
@@ -190,8 +199,8 @@ class ExternalsProcessor
 
 
   def git_version
-      shell('git --version')[0] =~ /git version (\d+\.\d+)/;
-      return $~[1].to_f
+    %x%git --version% =~ /git version (\d+\.\d+)/;
+    return $~[1].to_f
   end
 
 
@@ -273,30 +282,46 @@ class ExternalsProcessor
   end
 
 
+  def verbose?
+    return (@parent && @parent.verbose?) || @verbose
+  end
+
+
   def no_history?
     return (@parent && @parent.no_history?) || @no_history
   end
 
 
-  def shell(cmd, abort_on_error = true)
+  def shell(cmd, echo_stdout = false, echo_filter = [])
     t1 = Time.now
-    list = %x(#{cmd}).split("\n")
-    dt = (Time.now - t1).to_f
-    status = $? >> 8
-    raise "[#{Dir.getwd}] Non-zero exit status #{status} for command '#{cmd}'" if (abort_on_error && status != 0)
-#    puts "[shell %.2fs %s] %s" % [dt, Dir.getwd, cmd]
-    list
-  end
 
+    output = []
+    Open3.popen3(cmd) do |stdin, stdout, stderr|
+      stdin.close
+  
+      loop do
+        ready = select([stdout, stderr])
+        readable = ready[0]
+        break if stdout.eof    
+        readable.each do |io|
+          data = io.gets
+          next unless data
+          if io == stderr
+            print data if (verbose? || !echo_filter.find { |x| data =~ x })
+          else
+            print data if (verbose? || (echo_stdout && ! echo_filter.find { |x| data =~ x }))
+            output << data
+          end
+        end
+      end
+    end
 
-  def shell_echo(cmd)
-    t1 = Time.now
-    list = %x(#{cmd} | tee /dev/stderr).split("\n")
+    output.each { |x| x.chomp! }
+
     dt = (Time.now - t1).to_f
-    status = $? >> 8
-    raise "[#{Dir.getwd}] Non-zero exit status #{status} for command '#{cmd}'" if status != 0
-#    puts "[shell %.2fs %s] %s" % [dt, Dir.getwd, cmd]
-    list
+    puts "[shell %.2fs %s] %s" % [dt, Dir.getwd, cmd] if verbose?
+
+    output
   end
 
 end
@@ -305,10 +330,4 @@ end
 # ----------------------
 
 ENV['PATH'] = "/opt/local/bin:#{ENV['PATH']}"
-
-quick = ARGV.delete('-q')
-puts "Quick mode" if quick
-no_history = ARGV.delete('--no-history')
-puts "Skip history" if no_history
-
-exit ExternalsProcessor.new(:quick => quick, :no_history => no_history).run
+exit ExternalsProcessor.new(:quick => ARGV.delete('-q'), :no_history => ARGV.delete('--no-history'), :verbose => ARGV.delete('-v')).run
