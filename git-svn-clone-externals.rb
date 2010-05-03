@@ -1,14 +1,14 @@
 #!/usr/bin/ruby -w
 #
 # This script reads the svn:externals directory definitions of a git-svn
-# working copy and performs a "git svn clone" for each directory.
-# It then enters each one and repeats the process recursively,
-# until there are no more svn:externals to resolve, thus creating the
-# equivalent of what "svn checkout" would do.
+# working copy and performs a "git svn clone" for each directory. It then
+# enters each one and repeats the process recursively, until there are no
+# more svn:externals to resolve. The end result should be equivalent to
+# what a regular "svn checkout" would produce.
 #
-# After the initial run, the script can be used to keep all of the 
-# new working copies updated to SVN HEAD. You run it in the toplevel
-# directory and it will perform a "git svn rebase" operation on the current
+# After the initial run, this script can be used to keep all of the new
+# working copies updated to SVN HEAD. You run it in the toplevel directory
+# and it will perform a "git svn rebase" operation on the current
 # directory, then descend into all externals directories and again repeat
 # the process recursively.
 #
@@ -19,10 +19,13 @@
 # - Adds the exclude directories it creates to the .git/info/exclude list
 #   so they don't show up in the status report.
 # - Also adds items in svn:ignore properties to the .git/info/exclude list.
-# - Discovers new svn:externals definitions during update runs and performs a clone operation.
-# - Detects changed SVN URLs for an existing working copy and aborts with a warning.
-# - Detects and lists git-svn working copies that don't correspond to svn:externals
-#   definitions, which happens if an externals definition is removed.
+# - Discovers new svn:externals definitions during update runs and performs
+#   a clone operation.
+# - Detects changed SVN URLs for an existing working copy and aborts with
+#   a warning.
+# - Detects and lists git-svn working copies that don't correspond to
+#   svn:externals definitions, which happens if an externals definition is
+#   removed.
 # - Quick mode for updates (see below).
 # - Detects svn:externals reference cycles.
 #
@@ -67,8 +70,8 @@
 # Other options
 # =============
 #
-# The "-v" command line option produces verbose output, allowing you
-# to see what's going on.
+# The "-v" command line option produces verbose output, useful for
+# troubleshooting problems.
 #
 # Written by Marc Liyanage <http://www.entropy.ch>
 # See http://github.com/liyanage/git-tools for the newest version
@@ -80,13 +83,13 @@ require 'open3'
 class ExternalsProcessor
 
   def initialize(options = {})
-    @parent = options[:parent]
-    @warnings = {} unless @parent
-    @externals_url = options[:externals_url]
+    @parent, @externals_url = options.values_at(:parent, :externals_url)
+    unless @parent
+      @warnings = {}
+      @topdir = Dir.getwd
+    end
 
-    @quick = options[:quick]
-    @no_history = options[:no_history]
-    @verbose = options[:verbose]
+    @quick, @no_history, @verbose = options.values_at(:quick, :no_history, :verbose)
   end
 
 
@@ -117,7 +120,6 @@ class ExternalsProcessor
       raise "Error: Unable to find or mkdir '#{dir}'" unless File.exist?(dir) || FileUtils.mkpath(dir)
       raise "Error: Expected '#{dir}' to be a directory" unless File.directory?(dir)
 
-      puts "[#{Dir.getwd}] updating external: #{dir}"
       Dir.chdir(dir) { self.class.new(:parent => self, :externals_url => url).run }
       update_exclude_file_with_paths(dir) unless quick?
     end
@@ -138,7 +140,6 @@ class ExternalsProcessor
     non_externals_sandboxes = sandboxes.select { |sandbox| externals_dirs.select { |external| sandbox.index(external) == 0}.empty? }
     return if non_externals_sandboxes.empty?
     collect_warning('unknown_sandbox', 'Found git-svn sandboxes that do not correspond to SVN externals', non_externals_sandboxes.map {|x| "#{Dir.getwd}/#{x}"})
-#    puts "Warning: Found git-svn sandboxes that do not correspond to SVN externals:"
   end
 
 
@@ -154,6 +155,9 @@ class ExternalsProcessor
 
   def update_current_dir
     contents = Dir.entries('.').reject { |x| x =~ /^(?:\.+|\.DS_Store)$/ }
+    relative_dir = Dir.getwd.sub(self.topdir, '').sub(/^\//, '')
+    relative_dir = '.' if relative_dir.empty?
+    puts "updating #{relative_dir}"
 
     if contents.empty?
       # first-time clone
@@ -165,7 +169,6 @@ class ExternalsProcessor
       shell('git svn fetch')
     else
       # regular update, rebase to SVN head
-
       check_working_copy_branch
       check_working_copy_dirty
       check_working_copy_url
@@ -289,6 +292,11 @@ class ExternalsProcessor
 
   def no_history?
     return (@parent && @parent.no_history?) || @no_history
+  end
+
+
+  def topdir
+    return (@parent && @parent.topdir) || @topdir
   end
 
 
