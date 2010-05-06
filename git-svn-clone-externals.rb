@@ -169,6 +169,7 @@ class ExternalsProcessor
       shell('git svn fetch')
     else
       # regular update, rebase to SVN head
+      check_working_copy_git
       check_working_copy_branch
       check_working_copy_dirty
       check_working_copy_url
@@ -176,6 +177,11 @@ class ExternalsProcessor
       # All sanity checks OK, perform the update
       shell('git svn rebase', true, [/is up to date/, /First, rewinding/, /Fast-forwarded master/, /W: -empty_dir:/])
     end
+  end
+
+
+  def check_working_copy_git
+    raise "Error: Expected '#{Dir.getwd}' to be a Git working copy, but it isn't. Maybe a directory was replaced with an SVN externals definition. Please remove this directory and run this script again." unless File.exist?('.git')
   end
 
 
