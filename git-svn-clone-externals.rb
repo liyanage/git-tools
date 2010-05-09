@@ -107,7 +107,9 @@ class ExternalsProcessor
 
     unless @parent
       dump_warnings
-      puts "Total time: %ds" % (Time.now - t1)
+      dt = Time.now - t1
+      display_time = dt < 60 ? "%ds" % dt : "%d:%02d" % [dt / 60, dt % 60]
+      puts "Total time: #{display_time}"
     end
 
     0
