@@ -16,8 +16,8 @@
 # ========
 #
 # - Can restart aborted first-time clone operations. Just re-run the script.
-# - Adds the exclude directories it creates to the .git/info/exclude list
-#   so they don't show up in the status report.
+# - Adds the externals directories it creates to the .git/info/exclude list
+#   so they don't show up in the git status report.
 # - Also adds items in svn:ignore properties to the .git/info/exclude list.
 # - Discovers new svn:externals definitions during update runs and performs
 #   a clone operation.
@@ -26,6 +26,8 @@
 # - Detects and lists git-svn working copies that don't correspond to
 #   svn:externals definitions, which happens if an externals definition is
 #   removed.
+# - Detects and aborts if a non-sandbox directory already exists in a location
+#   where it would need to create an externals sandbox.
 # - Quick mode for updates (see below).
 # - Detects svn:externals reference cycles.
 #
@@ -38,7 +40,7 @@
 #
 # 2.) Change directory to the new working copy and run the script:
 #
-#     git-svnclone-externals.rb
+#     git-svn-clone-externals.rb
 #
 #     By default it checks out the complete history for each SVN
 #     project it clones. This can take a long time and if you don't
@@ -52,7 +54,7 @@
 # 2.) Run the script as above
 #
 #     In this use case, the script has a "quick" mode that you can
-#     activate with the "-q" command line option. If you use it, it
+#     activate with the "-q" command line option. In this mode, the script
 #     will not read the actual svn:externals definitions, but instead
 #     search for the existing sub-working copies and just update those.
 #     This mode will not pick up new or changed svn:externals definitions,
