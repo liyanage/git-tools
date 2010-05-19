@@ -158,10 +158,16 @@ class ExternalsProcessor
   end
 
 
+  def topdir_relative_path(path)
+    relative_dir = path.sub(self.topdir, '').sub(/^\//, '')
+    relative_dir = '.' if relative_dir.empty?
+    return relative_dir
+  end
+
+
   def update_current_dir
     contents = Dir.entries('.').reject { |x| x =~ /^(?:\.+|\.DS_Store)$/ }
-    relative_dir = Dir.getwd.sub(self.topdir, '').sub(/^\//, '')
-    relative_dir = '.' if relative_dir.empty?
+    relative_dir = topdir_relative_path(Dir.getwd)
     puts "updating #{relative_dir}"
 
     if contents.empty?
@@ -280,7 +286,8 @@ class ExternalsProcessor
 
     return if new_exclude_lines.empty?
 
-    puts "Updating Git exclude list '#{Dir.getwd}/#{excludefile_path}' with new items: #{new_exclude_lines.join(" ")}\n"
+    relative_path = topdir_relative_path("#{Dir.getwd}/#{excludefile_path}")
+    puts "Updating Git exclude list '#{relative_path}' with new item(s): #{new_exclude_lines.join(" ")}\n"
     File.open(excludefile_path, 'w') { |file| file << (exclude_lines + new_exclude_lines).map { |x| x + "\n" } }
   end
 
