@@ -92,6 +92,7 @@ class ExternalsProcessor
     end
 
     @quick, @no_history, @verbose = options.values_at(:quick, :no_history, :verbose)
+    @previous_branch = nil
   end
 
 
@@ -174,12 +175,15 @@ class ExternalsProcessor
     else
       # regular update, rebase to SVN head
       check_working_copy_git
-      check_working_copy_branch
       check_working_copy_dirty
       check_working_copy_url
+      check_working_copy_branch
 
       # All sanity checks OK, perform the update
-      shell('git svn rebase', true, [/is up to date/, /First, rewinding/, /Fast-forwarded master/, /W: -empty_dir:/])
+      output = shell('git svn rebase', true, [/is up to date/, /First, rewinding/, /Fast-forwarded master/, /W: -empty_dir:/])
+      if output.include?('Current branch master is up to date.')
+        restore_working_copy_branch
+      end
     end
   end
 
@@ -193,7 +197,18 @@ class ExternalsProcessor
     shell('git status')[0] =~ /On branch (\S+)/
     raise "Error: Unable to determine Git branch in '#{Dir.getwd}' using 'git status'" unless $~
     branch = $~[1]
-    raise "Error: Git branch is '#{branch}', should be 'master' in '#{Dir.getwd}'\n" unless branch == 'master'
+    return if branch == 'master'
+    @previous_branch = branch
+    puts "Switching from branch '#{@previous_branch}' to 'master'"
+    shell("git checkout master")
+#    raise "Error: Git branch is '#{branch}', should be 'master' in '#{Dir.getwd}'\n" unless branch == 'master'
+  end
+  
+
+  def restore_working_copy_branch
+    return if @previous_branch == nil
+    puts "Switching back to branch '#{@previous_branch}'"
+    shell("git checkout #{@previous_branch}")
   end
 
 
@@ -310,6 +325,8 @@ class ExternalsProcessor
   end
 
 
+  # this should really be using $? to check the exit status,
+  # but it seems that's not available when using open3()
   def shell(cmd, echo_stdout = false, echo_filter = [])
     t1 = Time.now
 
