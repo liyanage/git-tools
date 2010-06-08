@@ -26,3 +26,5 @@ output_line_number = 1
 	end
 	output_line_number += 1
 end
+
+system %Q([ -e /opt/local/bin/detach ] && /opt/local/bin/detach osascript -e "delay 1.0\ntell application "'"Xcode"'"\nset selected paragraph range of source document 1 to {#{selection_line_number}, #{selection_line_number}}\nend tell")
