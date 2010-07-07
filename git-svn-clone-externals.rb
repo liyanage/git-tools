@@ -126,7 +126,7 @@ class ExternalsProcessor
       raise "Error: Expected '#{dir}' to be a directory" unless File.directory?(dir)
 
       Dir.chdir(dir) { self.class.new(:parent => self, :externals_url => url).run }
-      update_exclude_file_with_paths(dir) unless quick?
+      update_exclude_file_with_paths([dir]) unless quick?
     end
   end
 
