@@ -338,25 +338,42 @@ class ExternalsProcessor
     t1 = Time.now
 
     output = []
-    Open3.popen3(cmd) do |stdin, stdout, stderr|
-      stdin.close
-  
-      loop do
-        ready = select([stdout, stderr])
-        readable = ready[0]
-        break if stdout.eof?
-        readable.each do |io|
-          data = io.gets
-          next unless data
-          if io == stderr
-            print data if (verbose? || !echo_filter.find { |x| data =~ x })
-          else
-            print data if (verbose? || (echo_stdout && ! echo_filter.find { |x| data =~ x }))
-            output << data
+    done = false
+    while !done do
+      done = true
+      Open3.popen3(cmd) do |stdin, stdout, stderr|
+        stdin.close
+
+        loop do
+          ready = select([stdout, stderr])
+          readable = ready[0]
+          if stdout.eof?
+            error = stderr.readlines
+            if error.join('') =~ /SSL negotiation failed/
+              done = false
+              puts "shell command #{cmd} failed, retrying..."
+              if cmd =~ /git svn clone/
+                cmd_new = 'git svn fetch'
+                puts "replacing shell command with '#{cmd_new}'"
+                cmd = cmd_new
+              end
+            end
+            break
+          end
+          readable.each do |io|
+            data = io.gets
+            next unless data
+            if io == stderr
+              print data if (verbose? || !echo_filter.find { |x| data =~ x })
+            else
+              print data if (verbose? || (echo_stdout && ! echo_filter.find { |x| data =~ x }))
+              output << data
+            end
           end
         end
       end
     end
+
 
     output.each { |x| x.chomp! }
 
