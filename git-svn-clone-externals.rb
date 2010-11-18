@@ -240,7 +240,7 @@ class ExternalsProcessor
   def check_working_copy_url()
     return if quick?
     url = svn_url_for_current_dir
-    if @externals_url && @externals_url != url
+    if @externals_url && @externals_url.sub(/\/*$/, '') != url.sub(/\/*$/, '')
       raise "Error: The svn:externals URL for '#{Dir.getwd}' is defined as\n\n  #@externals_url\n\nbut the existing Git working copy in that directory is configured as\n\n  #{url}\n\nThe externals definition might have changed since the working copy was created. Remove the '#{Dir.getwd}' directory and re-run this script to check out a new version from the new URL.\n"
     end
   end
