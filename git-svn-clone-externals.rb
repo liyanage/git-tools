@@ -104,6 +104,7 @@ class ExternalsProcessor
     return 0 if @parent && quick?
 
     externals = read_externals
+    preflight_externals(externals)
     process_externals(externals)
 
     find_non_externals_sandboxes(externals) unless quick?
@@ -116,6 +117,19 @@ class ExternalsProcessor
     end
 
     0
+  end
+
+
+  def preflight_externals(externals)
+    have_dirty_files = false
+    externals.each do |dir, url|
+      Dir.chdir(dir) do
+      	have_dirty_files = check_working_copy_dirty || have_dirty_files
+      end
+    end
+    if have_dirty_files
+	  exit 1
+    end
   end
 
 
@@ -181,7 +195,6 @@ class ExternalsProcessor
     else
       # regular update, rebase to SVN head
       check_working_copy_git
-      check_working_copy_dirty
       check_working_copy_url
       check_working_copy_branch
 
@@ -227,7 +240,13 @@ class ExternalsProcessor
         dirty = shell('git status').map { |x| x =~ /modified:\s*(.+)/; $~ ? $~[1] : nil }.compact
       end
 
-      raise "Error: Can't run svn rebase with dirty files in '#{Dir.getwd}':\n#{dirty.map {|x| x + "\n"}}" unless dirty.empty?
+      if dirty.empty?
+	    return false
+      end
+
+      puts "Error: Can't run svn rebase with dirty files in '#{Dir.getwd}':\n#{dirty.map {|x| x + "\n"}}"
+
+      true
   end
 
 
