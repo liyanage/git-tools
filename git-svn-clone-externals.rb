@@ -121,6 +121,7 @@ class ExternalsProcessor
 
 
   def preflight_externals(externals)
+  	externals = externals.select { |dir, url| File.exists?(dir) }
     have_dirty_files = false
     externals.each do |dir, url|
       Dir.chdir(dir) do
