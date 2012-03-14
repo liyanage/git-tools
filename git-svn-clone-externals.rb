@@ -81,6 +81,7 @@
 
 require 'fileutils'
 require 'open3'
+require 'io/wait'
 
 class ExternalsProcessor
 
@@ -367,6 +368,11 @@ class ExternalsProcessor
         loop do
           ready = select([stdout, stderr])
           readable = ready[0]
+          if !stdout.ready? && stderr.ready?
+              data = stderr.gets
+              print data if (verbose? || !echo_filter.find { |x| data =~ x })
+              next
+          end
           if stdout.eof?
             error = stderr.readlines
             if error.join('') =~ /SSL negotiation failed/
