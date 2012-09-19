@@ -6,10 +6,10 @@
 # Written by Marc Liyanage <http://www.github.com/liyanage>
 #
 # Usage help:
-#     git-helper.py -h
+#     githelper.py -h
 #
 #
-# autopep8 -i --ignore E501 git-helper.py
+# autopep8 -i --ignore E501 githelper.py
 
 
 import argparse
@@ -220,6 +220,7 @@ class GitWorkingCopy(object):
         if different_branch:
             print >> sys.stderr, 'Temporarily switching {0} to branch {1}'.format(wc, branch_name)
             self.switch_to_branch(branch_name)
+
         yield
 
         if different_branch:
@@ -371,7 +372,7 @@ class SubcommandEach(AbstractSubcommand):
 
 
 class GitHelperCommandLineDriver(object):
-    
+
     @classmethod
     def run(cls):
         subcommand_map = {}
@@ -379,19 +380,19 @@ class GitHelperCommandLineDriver(object):
             if not k.startswith('Subcommand'):
                 continue
             subcommand_map[k[10:].lower()] = v
-        
+
         parser = argparse.ArgumentParser(description='Git-SVN helper')
         parser.add_argument('--root_path', help='Path to root working copy', default=os.getcwd())
         subparsers = parser.add_subparsers(title='Subcommands', dest='subcommand_name')
         for subcommand_name, subcommand_class in subcommand_map.items():
             subparser = subparsers.add_parser(subcommand_name, help=subcommand_class.argument_parser_help())
             subcommand_class.configure_argument_parser(subparser)
-        
+
         args = parser.parse_args()
-        
+
         subcommand_class = subcommand_map[args.subcommand_name]
         subcommand = subcommand_class(args)
-        
+
         wc = GitWorkingCopy(args.root_path)
         wc.traverse(subcommand)
 
