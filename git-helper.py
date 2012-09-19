@@ -370,23 +370,31 @@ class SubcommandEach(AbstractSubcommand):
         parser.add_argument('shell_command', nargs='+', help='A shell command to execute in the context of each working copy. If you need options starting with -, add " -- " before the first one.')
 
 
-subcommand_map = {}
-for k, v in globals().items():
-    if not k.startswith('Subcommand'):
-        continue
-    subcommand_map[k[10:].lower()] = v
+class GitHelperCommandLineDriver(object):
+    
+    @classmethod
+    def run(cls):
+        subcommand_map = {}
+        for k, v in globals().items():
+            if not k.startswith('Subcommand'):
+                continue
+            subcommand_map[k[10:].lower()] = v
+        
+        parser = argparse.ArgumentParser(description='Git-SVN helper')
+        parser.add_argument('--root_path', help='Path to root working copy', default=os.getcwd())
+        subparsers = parser.add_subparsers(title='Subcommands', dest='subcommand_name')
+        for subcommand_name, subcommand_class in subcommand_map.items():
+            subparser = subparsers.add_parser(subcommand_name, help=subcommand_class.argument_parser_help())
+            subcommand_class.configure_argument_parser(subparser)
+        
+        args = parser.parse_args()
+        
+        subcommand_class = subcommand_map[args.subcommand_name]
+        subcommand = subcommand_class(args)
+        
+        wc = GitWorkingCopy(args.root_path)
+        wc.traverse(subcommand)
 
-parser = argparse.ArgumentParser(description='Git-SVN helper')
-parser.add_argument('--root_path', help='Path to root working copy', default=os.getcwd())
-subparsers = parser.add_subparsers(title='Subcommands', dest='subcommand_name')
-for subcommand_name, subcommand_class in subcommand_map.items():
-    subparser = subparsers.add_parser(subcommand_name, help=subcommand_class.argument_parser_help())
-    subcommand_class.configure_argument_parser(subparser)
 
-args = parser.parse_args()
-
-subcommand_class = subcommand_map[args.subcommand_name]
-subcommand = subcommand_class(args)
-
-wc = GitWorkingCopy(args.root_path)
-wc.traverse(subcommand)
+if __name__ == "__main__":
+    GitHelperCommandLineDriver.run()
