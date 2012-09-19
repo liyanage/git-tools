@@ -201,7 +201,7 @@ class ExternalsProcessor
       check_working_copy_branch
 
       # All sanity checks OK, perform the update
-      output = shell('git svn rebase', true, [/is up to date/, /First, rewinding/, /Fast-forwarded master/, /W: -empty_dir:/])
+      output = shell('git svn rebase', true, [/is up to date/, /First, rewinding/, /Fast-forwarded master/, /W: -empty_dir:/, /revmap/])
       if output.include?('Current branch master is up to date.')
         restore_working_copy_branch
       end
