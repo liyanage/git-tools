@@ -4,7 +4,8 @@ import githelper
 import os
 import sys
 
-Class Foo:
+
+class Foo:
 
 	def __init__(self, some_state):
 		self.some_state = some_state

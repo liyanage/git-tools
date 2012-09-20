@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
-#
-# Extensible git and git-svn toolkit
-#
-# Written by Marc Liyanage <http://www.github.com/liyanage>
-#
-# Usage help:
-#     githelper.py -h
-#
-#
-# autopep8 -i --ignore E501 githelper.py
+"""
+Extensible git and git-svn toolkit.
 
+Written by Marc Liyanage <http://www.github.com/liyanage>
+
+Usage help:
+    githelper.py -h
+
+"""
+
+# autopep8 -i --ignore E501 githelper.py
 
 import argparse
 import os
@@ -24,6 +24,10 @@ import itertools
 
 
 class ANSIColor(object):
+    """
+    A helper class for printing ANSI color sequences to the terminal.
+    
+    """
 
     red = '1'
     green = '2'
@@ -33,6 +37,13 @@ class ANSIColor(object):
     @classmethod
     @contextlib.contextmanager
     def terminal_color(cls, stdout_color=None, stderr_color=red):
+        """
+        Provide a context manager for the "with" statement. Exmaple:
+        
+        with ANSIColor.terminal_color(ANSIColor.red):
+            
+        
+        """
 
         if stdout_color:
             sys.stdout.write("\x1b[3{0}m".format(stdout_color))
