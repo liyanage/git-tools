@@ -229,13 +229,13 @@ class GitWorkingCopy(object):
         old_branch = self.current_branch()
         different_branch = old_branch != branch_name
         if different_branch:
-            print >> sys.stderr, 'Temporarily switching {0} to branch {1}'.format(wc, branch_name)
+            print >> sys.stderr, 'Temporarily switching {0} from branch {1} to {2}'.format(self, old_branch, branch_name)
             self.switch_to_branch(branch_name)
 
         yield
 
         if different_branch:
-            print >> sys.stderr, 'Switching {0} back to branch {1}'.format(wc, old_branch)
+            print >> sys.stderr, 'Switching {0} back to branch {1}'.format(self, old_branch)
             self.switch_to_branch(old_branch)
 
 
