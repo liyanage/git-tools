@@ -381,7 +381,7 @@ class SubcommandEach(AbstractSubcommand):
 
     @classmethod
     def configure_argument_parser(cls, parser):
-        parser.add_argument('shell_command', nargs='+', help='A shell command to execute in the context of each working copy. If you need options starting with -, add " -- " before the first one.')
+        parser.add_argument('shell_command', nargs='+', help='A shell command to execute in the context of each working copy. If you need to use options starting with -, add " -- " before the first one.')
 
 
 class GitHelperCommandLineDriver(object):
