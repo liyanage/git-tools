@@ -64,6 +64,8 @@ class ANSIColor(object):
             stream.write("\x1b[m")
 
 
+STOP_TRAVERSAL = False
+
 class GitWorkingCopy(object):
 
     def __init__(self, path, parent=None):
@@ -214,7 +216,7 @@ class GitWorkingCopy(object):
 
         for item in self.self_and_descendants():
             with item.chdir_to_path():
-                if iterator(item) == False:
+                if iterator(item) is STOP_TRAVERSAL:
                     break
 
     @contextlib.contextmanager
@@ -270,7 +272,7 @@ class SubcommandResetMasterToSvnBranch(AbstractSubcommand):
 
     def __call__(self, wc):
         if not self.check_preconditions(wc):
-            return False
+            return STOP_TRAVERSAL
 
         if not wc.is_git_svn():
             print >> sys.stderr, '{0} is not git-svn, skipping'.format(wc)
@@ -305,7 +307,7 @@ class SubcommandSvnRebase(AbstractSubcommand):
 
     def __call__(self, wc):
         if not self.check_preconditions(wc):
-            return False
+            return STOP_TRAVERSAL
 
         if not wc.is_git_svn():
             print >> sys.stderr, '{0} is not git-svn, skipping'.format(wc)
