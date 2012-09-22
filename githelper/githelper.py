@@ -259,6 +259,12 @@ class AbstractSubcommand(object):
     def prepare_for_root(self, root_wc):
         pass
 
+    def check_for_git_svn_and_warn(self, wc):
+        if not wc.is_git_svn():
+            print >> sys.stderr, '{0} is not git-svn, skipping'.format(wc)
+            return False
+        return True
+
     @classmethod
     def argument_parser_help(cls):
         return '(No help available)'
@@ -274,8 +280,7 @@ class SubcommandResetMasterToSvnBranch(AbstractSubcommand):
         if not self.check_preconditions(wc):
             return STOP_TRAVERSAL
 
-        if not wc.is_git_svn():
-            print >> sys.stderr, '{0} is not git-svn, skipping'.format(wc)
+        if not self.check_for_git_svn_and_warn(wc):
             return
 
         if not wc.has_branch('master'):
@@ -309,8 +314,7 @@ class SubcommandSvnRebase(AbstractSubcommand):
         if not self.check_preconditions(wc):
             return STOP_TRAVERSAL
 
-        if not wc.is_git_svn():
-            print >> sys.stderr, '{0} is not git-svn, skipping'.format(wc)
+        if not self.check_for_git_svn_and_warn(wc):
             return
 
         if not wc.has_branch('master'):
