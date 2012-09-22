@@ -6,10 +6,8 @@
 Welcome to githelper's documentation!
 =====================================
 
-Contents:
-
-.. toctree::
-   :maxdepth: 2
+.. automodule:: githelper
+   :members:
 
 Indices and tables
 ==================
@@ -18,6 +16,4 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
-.. automodule:: githelper
-   :members:
 

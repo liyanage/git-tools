@@ -1,12 +1,82 @@
 #!/usr/bin/env python
 
 """
-Extensible git and git-svn toolkit.
+Introduction
+------------
 
-Written by Marc Liyanage <http://www.github.com/liyanage>
+githelper is both a module and a command line utility for working
+with git_ working copies, especially git-svn ones where
+``svn:externals`` references are mapped to nested git-svn working copies.
 
-Usage help:
+.. _git: http://git-scm.com
+
+Command Line Utility
+--------------------
+
+This documentation does not cover the command line utility usage
+in detail because you can already get that with the help option::
+
     githelper.py -h
+
+The utility is subcommand-based, and each subcommand has its own options.
+You can get a list of subcommands with the -h option shown above, and each
+subcommand in turn supports the -h flag::
+
+    githelper.py some_subcommand -h
+
+Usage as Toolkit Module
+-----------------------
+
+If the utility does not provide a tool you need, you can write
+your own script based on githelper as a module. The rest of this document
+explais the API.
+
+The main entry point is the ``GitWorkingCopy`` class. You will usually
+instantiate it with the path to a (possibly nested with sub-working copies)
+git or git-svn working copy. You can then traverse the tree of nested
+working copies::
+
+    #!/usr/bin/env python
+    
+    import githelper
+    import os
+    import sys
+    
+    root_wc = githelper.GitWorkingCopy(sys.argv[1])
+
+    for wc in root_wc.self_and_descendants():
+        ... do something interesting with wc using its API
+
+You can also provide a callable to the ``traverse()`` method, in this case a function::
+
+    def process_working_copy(wc):
+        print wc.current_branch()
+
+    root_wc = githelper.GitWorkingCopy(sys.argv[1])
+    root_wc.traverse(process_working_copy)
+
+Or a callable object::
+
+    class Foo:
+    
+        def __init__(self, some_state):
+            self.some_state = some_state
+    
+        def __call__(self, wc):
+            # possibly use self.some_state
+            print wc.current_branch()	
+    
+    root_wc = githelper.GitWorkingCopy(sys.argv[1])
+    iterator = Foo('bar')
+    root_wc.traverse(iterator)
+
+You can take a look at the various ``SubcommandXXX`` classes in the module's
+source code to see examples of the API usage.
+
+API Documentation
+-----------------
+
+
 
 """
 
@@ -24,10 +94,6 @@ import itertools
 
 
 class ANSIColor(object):
-    """
-    A helper class for printing ANSI color sequences to the terminal.
-    
-    """
 
     red = '1'
     green = '2'
@@ -37,13 +103,6 @@ class ANSIColor(object):
     @classmethod
     @contextlib.contextmanager
     def terminal_color(cls, stdout_color=None, stderr_color=red):
-        """
-        Provide a context manager for the "with" statement. Exmaple:
-        
-        with ANSIColor.terminal_color(ANSIColor.red):
-            
-        
-        """
 
         if stdout_color:
             sys.stdout.write("\x1b[3{0}m".format(stdout_color))
@@ -64,9 +123,10 @@ class ANSIColor(object):
             stream.write("\x1b[m")
 
 
-STOP_TRAVERSAL = False
-
 class GitWorkingCopy(object):
+    """A class to represent a git or git-svn working copy."""
+
+    STOP_TRAVERSAL = False
 
     def __init__(self, path, parent=None):
         self.path = path
@@ -98,21 +158,51 @@ class GitWorkingCopy(object):
         return '<Working copy {0}{1}>'.format(self.path, is_dirty)
 
     def current_branch(self):
+        """Returns the name of the current git branch."""
         output = self.output_for_git_command('git branch -a'.split())
         [branch] = [i[2:] for i in output if i.startswith('* ')]
         return branch
 
     def has_branch(self, branch_name):
+        """Returns True if the working copy has a git branch with the given name"""
         return branch_name in self.branch_names()
 
     def branch_names(self):
+        """Returns a list of git branch names."""
         output = self.output_for_git_command('git branch -a'.split())
         return [i[2:] for i in output]
 
     def remote_branch_names(self):
+        """
+        Returns a list of git branch names starting with ``remote/``.
+        
+        The leading ``remote/`` part will be removed.
+        """
         return [i[8:] for i in self.branch_names() if i.startswith('remotes/')]
 
     def remote_branch_name_for_name_list(self, name_list):
+        """
+        Returns a remote branch name matching a list of candidate strings.
+        
+        Tries to find a remote branch names using all possible combinations
+        of the names in the list. For example, given::
+        
+            ['foo', 'bar']
+        
+        as name_list, it would find any of these::
+        
+            remotes/foo
+            remotes/Foo
+            remotes/bar
+            remotes/Bar
+            remotes/Foo-Bar
+            remotes/foo-bar
+            remotes/Bar-Foo
+            remotes/bar-foo
+        
+        etc. and return the part after ``remotes/`` of the first match.
+        
+        """
         name_list = [i.lower() for i in name_list]
         candidates = set(name_list)
         candidates.update(['-'.join(i) for i in itertools.permutations(name_list)])
@@ -124,15 +214,18 @@ class GitWorkingCopy(object):
         return None
 
     def switch_to_branch(self, branch_name):
+        """Checks out the given git branch"""
         if not self.has_branch(branch_name):
             raise Exception('{0} does not have a branch named {1}, cannot switch'.format(self, branch_name))
 
         self.run_shell_command(['git', 'checkout', branch_name])
 
     def hard_reset_current_branch(self, target):
+        """Hard-resets the current branch to the given ref"""
         self.run_shell_command(['git', 'reset', '--hard', target])
 
     def run_shell_command(self, command, shell=None):
+        """Runs the given shell command (array or string) in the receiver's working directory."""
         if shell is None:
             if isinstance(command, types.StringTypes):
                 shell = True
@@ -143,12 +236,15 @@ class GitWorkingCopy(object):
             subprocess.check_call(command, cwd=self.path, shell=shell)
 
     def output_for_git_command(self, command, shell=False):
+        """Runs the given shell command (array or string) in the receiver's working directory and returns the output."""
         return subprocess.check_output(command, cwd=self.path, shell=shell).splitlines()
 
     def is_root(self):
+        """Returns True if the receiver does not have a parent working copy."""
         return self.parent is None
 
     def ancestors(self):
+        """Returns a list of parent working copies."""
         ancestors = []
         if not self.is_root():
             ancestors.append(self.parent)
@@ -156,11 +252,18 @@ class GitWorkingCopy(object):
         return ancestors
 
     def root_working_copy(self):
+        """Returns the root working copy, which could be self."""
         if self.is_root():
             return self
-        return self.parent
+        return self.parent.root_working_copy()
 
     def svn_info(self, key=None):
+        """
+        Returns a dictionary with the output of ``git svn info``.
+        
+        With a key, returns the value associated with that key
+        in the output of ``git svn info``.
+        """
         if not self._svn_info:
             output = subprocess.check_output('git svn info'.split(), cwd=self.path)
             self._svn_info = {}
@@ -173,11 +276,18 @@ class GitWorkingCopy(object):
             return self._svn_info
 
     def is_dirty(self):
+        """
+        Returns True if the receiver's working copy has uncommitted modifications.
+        
+        Many operations depend on a clean state.
+        
+        """
         output = subprocess.check_output('git status --porcelain'.split(), cwd=self.path).splitlines()
         dirty_files = [line for line in output if not line.startswith('?')]
         return bool(dirty_files)
 
     def is_git_svn(self):
+        """Returns True if the receiver's git working copy is a git-svn working copy."""
         status = subprocess.call('git svn info 1>/dev/null 2>/dev/null', shell=True, cwd=self.path)
         return not status
 
@@ -192,12 +302,19 @@ class GitWorkingCopy(object):
         return os.path.basename(self.path)
 
     def self_and_descendants(self):
+        """
+        Returns a generator for self and all nested git working copies.
+        
+        See the example above.
+        
+        """
         yield self
         for child in self.children:
             for item in child.self_and_descendants():
                 yield item
 
     def self_or_descendants_are_dirty(self, list_dirty=False):
+        """Returns True if the receiver's or one of its nested working copies are dirty"""
         dirty_working_copies = []
         for item in self.self_and_descendants():
             if item.is_dirty():
@@ -211,6 +328,11 @@ class GitWorkingCopy(object):
         return bool(dirty_working_copies)
 
     def traverse(self, iterator):
+        """
+        Runs the given callable ``iterator`` on each item returned by self_and_descendants().
+        
+        See example above.
+        """
         if callable(getattr(iterator, "prepare_for_root", None)):
             iterator.prepare_for_root(self)
 
@@ -221,6 +343,15 @@ class GitWorkingCopy(object):
 
     @contextlib.contextmanager
     def chdir_to_path(self):
+        """
+        A context manager for the ``with`` statement that temporarily switches the current working directory to the receiver's working copy directory.
+        
+        Example::
+            
+            with wc.chdir_to_path():
+                ... do something useful here inside the working copy directory.
+
+        """
         oldwd = os.getcwd()
         os.chdir(self.path)
         yield
@@ -228,6 +359,15 @@ class GitWorkingCopy(object):
 
     @contextlib.contextmanager
     def switched_to_branch(self, branch_name):
+        """
+        A context manager for the ``with`` statement that temporarily switches the current git branch to another one and afterwards restores the original one.
+        
+        Example::
+            
+            with wc.switched_to_branch('master'):
+                ... do something useful here on the 'master' branch.
+
+        """
         old_branch = self.current_branch()
         different_branch = old_branch != branch_name
         if different_branch:
