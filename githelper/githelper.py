@@ -9,6 +9,7 @@ with git_ working copies, especially git-svn ones where
 ``svn:externals`` references are mapped to nested git-svn working copies.
 
 Maintained at https://github.com/liyanage/git-tools/tree/master/githelper
+
 HTML version of this documentation at http://liyanage.github.com/git-tools/
 
 .. _git: http://git-scm.com
