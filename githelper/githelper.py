@@ -76,10 +76,12 @@ Or a callable object::
     iterator = Foo('bar')
     root_wc.traverse(iterator)
 
-You can take a look at the various ``Subcommand...`` classes in the module's
-source code to see examples of the API usage. These classes implement the various
+You can take a look at the various ``Subcommand...`` classes in the `module's
+source code`_ to see examples of the API usage. These classes implement the various
 subcommands provided by the command line utility front end and they use most of
 the ``GitWorkingCopy`` API.
+
+.. _`module's source code`: https://github.com/liyanage/git-tools/blob/master/githelper/githelper.py
 
 API Documentation
 -----------------
