@@ -8,6 +8,8 @@ githelper is both a module and a command line utility for working
 with git_ working copies, especially git-svn ones where
 ``svn:externals`` references are mapped to nested git-svn working copies.
 
+Maintained at https://github.com/liyanage/git-tools/tree/master/githelper
+
 .. _git: http://git-scm.com
 
 Command Line Utility
