@@ -152,5 +152,8 @@ doctest:
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
 
-gh-pages:
-	echo foo	
+gh-pages: html
+	git checkout gh-pages
+	rsync -avP _build/html/ ../	
+	git commit -a -m 'Doc update'
+	git checkout master
