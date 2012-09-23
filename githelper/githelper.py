@@ -293,6 +293,7 @@ class GitWorkingCopy(object):
         return bool(self.dirty_file_lines())
 
     def dirty_file_lines(self):
+        """Returns the output of git status for the files marked as modified, renamed etc."""
         output = subprocess.check_output('git status --porcelain'.split(), cwd=self.path).splitlines()
         dirty_file_lines = [line[3:].strip('"') for line in output if not line.startswith('?')]
         return dirty_file_lines
