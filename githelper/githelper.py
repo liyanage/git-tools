@@ -290,9 +290,12 @@ class GitWorkingCopy(object):
         Many operations depend on a clean state.
         
         """
+        return bool(self.dirty_file_lines())
+
+    def dirty_file_lines(self):
         output = subprocess.check_output('git status --porcelain'.split(), cwd=self.path).splitlines()
-        dirty_files = [line for line in output if not line.startswith('?')]
-        return bool(dirty_files)
+        dirty_file_lines = [line[3:].strip('"') for line in output if not line.startswith('?')]
+        return dirty_file_lines
 
     def is_git_svn(self):
         """Returns True if the receiver's git working copy is a git-svn working copy."""
@@ -332,6 +335,8 @@ class GitWorkingCopy(object):
             print >> sys.stderr, 'Dirty working copies found, please commit or stash first:'
             for wc in dirty_working_copies:
                 print >> sys.stderr, wc
+                with ANSIColor.terminal_color(ANSIColor.red, ANSIColor.red):
+                    print >> sys.stderr, ''.join([i + '\n' for i in wc.dirty_file_lines()])
 
         return bool(dirty_working_copies)
 
