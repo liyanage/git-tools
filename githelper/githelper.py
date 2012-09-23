@@ -14,7 +14,7 @@ Command Line Utility
 --------------------
 
 This documentation does not cover the command line utility usage
-in detail because you can already get that with the help option::
+in detail because you can get that with the help option::
 
     githelper.py -h
 
@@ -27,14 +27,16 @@ subcommand in turn supports the -h flag::
 Usage as Toolkit Module
 -----------------------
 
-If the utility does not provide a tool you need, you can write
+If the utility does not provide what need, you can write
 your own script based on githelper as a module. The rest of this document
 explais the API.
 
-The main entry point is the ``GitWorkingCopy`` class. You will usually
-instantiate it with the path to a (possibly nested with sub-working copies)
-git or git-svn working copy. You can then traverse the tree of nested
-working copies::
+The main entry point is the ``GitWorkingCopy`` class. You instantiate it
+with the path to a git or git-svn working copy (which possibly
+has nested sub-working copies).
+
+You can then traverse the tree of nested working copies with the
+``self_and_descendants()`` method::
 
     #!/usr/bin/env python
     
@@ -45,9 +47,10 @@ working copies::
     root_wc = githelper.GitWorkingCopy(sys.argv[1])
 
     for wc in root_wc.self_and_descendants():
-        ... do something interesting with wc using its API
+        # do something interesting with wc using its API
 
-You can also provide a callable to the ``traverse()`` method, in this case a function::
+The ``traverse()`` method provides another way to do this,
+it takes a callable, in the following example a function::
 
     def process_working_copy(wc):
         print wc.current_branch()
@@ -70,13 +73,13 @@ Or a callable object::
     iterator = Foo('bar')
     root_wc.traverse(iterator)
 
-You can take a look at the various ``SubcommandXXX`` classes in the module's
-source code to see examples of the API usage.
+You can take a look at the various ``Subcommand...`` classes in the module's
+source code to see examples of the API usage. These classes implement the various
+subcommands provided by the command line utility front end and they use most of
+the ``GitWorkingCopy`` API.
 
 API Documentation
 -----------------
-
-
 
 """
 
@@ -330,6 +333,9 @@ class GitWorkingCopy(object):
     def traverse(self, iterator):
         """
         Runs the given callable ``iterator`` on each item returned by self_and_descendants().
+
+        Before each call to iterator for a given working copy, the current directory is first
+        set to that working copy's path.
         
         See example above.
         """
@@ -349,7 +355,7 @@ class GitWorkingCopy(object):
         Example::
             
             with wc.chdir_to_path():
-                ... do something useful here inside the working copy directory.
+                # do something useful here inside the working copy directory.
 
         """
         oldwd = os.getcwd()
@@ -365,7 +371,7 @@ class GitWorkingCopy(object):
         Example::
             
             with wc.switched_to_branch('master'):
-                ... do something useful here on the 'master' branch.
+                # do something useful here on the 'master' branch.
 
         """
         old_branch = self.current_branch()
