@@ -349,7 +349,7 @@ class GitWorkingCopy(object):
 
         for item in self.self_and_descendants():
             with item.chdir_to_path():
-                if iterator(item) is STOP_TRAVERSAL:
+                if iterator(item) is GitWorkingCopy.STOP_TRAVERSAL:
                     break
 
     @contextlib.contextmanager
@@ -429,7 +429,7 @@ class SubcommandResetMasterToSvnBranch(AbstractSubcommand):
 
     def __call__(self, wc):
         if not self.check_preconditions(wc):
-            return STOP_TRAVERSAL
+            return GitWorkingCopy.STOP_TRAVERSAL
 
         if not self.check_for_git_svn_and_warn(wc):
             return
@@ -463,7 +463,7 @@ class SubcommandSvnRebase(AbstractSubcommand):
 
     def __call__(self, wc):
         if not self.check_preconditions(wc):
-            return STOP_TRAVERSAL
+            return GitWorkingCopy.STOP_TRAVERSAL
 
         if not self.check_for_git_svn_and_warn(wc):
             return
@@ -543,7 +543,7 @@ class SubcommandSvnDiff(AbstractSubcommand):
 
     def __call__(self, wc):
         if not self.check_for_git_svn_and_warn(wc):
-            return STOP_TRAVERSAL
+            return GitWorkingCopy.STOP_TRAVERSAL
 
         svn_rev = wc.svn_info('Last Changed Rev')
         git_diff_command = 'git diff --no-prefix'.split() + self.args.git_diff_args
@@ -573,7 +573,7 @@ class SubcommandSvnDiff(AbstractSubcommand):
         else:
             print output_string
 
-        return STOP_TRAVERSAL
+        return GitWorkingCopy.STOP_TRAVERSAL
 
     @classmethod
     def argument_parser_help(cls):
