@@ -29,9 +29,8 @@ subcommand in turn supports the -h flag::
 Usage as Toolkit Module
 -----------------------
 
-If the utility does not provide what need, you can write
-your own script based on githelper as a module. The rest of this document
-explais the API.
+If the utility does not provide what need, you can write your own script
+based on githelper as a module. The rest of this document explains the API.
 
 The main entry point is the ``GitWorkingCopy`` class. You instantiate it
 with the path to a git or git-svn working copy (which possibly
