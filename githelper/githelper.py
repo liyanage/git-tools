@@ -353,6 +353,9 @@ class GitWorkingCopy(object):
         if callable(getattr(iterator, "prepare_for_root", None)):
             iterator.prepare_for_root(self)
 
+        if not callable(iterator):
+            raise Exception('{0} is not callable'.format(iterator))
+
         for item in self.self_and_descendants():
             with item.chdir_to_path():
                 if iterator(item) is GitWorkingCopy.STOP_TRAVERSAL:
