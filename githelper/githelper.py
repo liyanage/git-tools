@@ -78,7 +78,7 @@ Or a callable object::
 
 You can take a look at the various ``Subcommand...`` classes in the `module's
 source code`_ to see examples of the API usage. These classes implement the various
-subcommands provided by the command line utility front end and they use most of
+subcommands provided by the command line utility front end and they exercise most of
 the ``GitWorkingCopy`` API.
 
 .. _`module's source code`: https://github.com/liyanage/git-tools/blob/master/githelper/githelper.py
@@ -244,7 +244,14 @@ class GitWorkingCopy(object):
             subprocess.check_call(command, cwd=self.path, shell=shell)
 
     def output_for_git_command(self, command, shell=False):
-        """Runs the given shell command (array or string) in the receiver's working directory and returns the output."""
+        """
+        Runs the given shell command (array or string) in the receiver's working directory and returns the output.
+
+        :param shell: If ``True``, runs the command through the shell. See the subprocess_ library module documentation for details.
+        
+        .. _subprocess: http://docs.python.org/library/subprocess.html#frequently-used-arguments
+
+        """
         return subprocess.check_output(command, cwd=self.path, shell=shell).splitlines()
 
     def is_root(self):
@@ -252,7 +259,12 @@ class GitWorkingCopy(object):
         return self.parent is None
 
     def ancestors(self):
-        """Returns a list of parent working copies."""
+        """
+        Returns a list of parent working copies.
+        
+        If the receiver is the root working copy, this returns an empty list.
+
+        """
         ancestors = []
         if not self.is_root():
             ancestors.append(self.parent)
@@ -267,10 +279,10 @@ class GitWorkingCopy(object):
 
     def svn_info(self, key=None):
         """
-        Returns a dictionary with the output of ``git svn info``.
+        Returns a dictionary containing the key/value pairs in the output of ``git svn info``.
         
-        With a key, returns the value associated with that key
-        in the output of ``git svn info``.
+        :param key: When present, returns just the one value associated with the given key.
+        
         """
         if not self._svn_info:
             output = subprocess.check_output('git svn info'.split(), cwd=self.path)
@@ -326,7 +338,12 @@ class GitWorkingCopy(object):
                 yield item
 
     def self_or_descendants_are_dirty(self, list_dirty=False):
-        """Returns True if the receiver's or one of its nested working copies are dirty"""
+        """
+        Returns True if the receiver's or one of its nested working copies are dirty.
+
+        :param list_dirty: If ``True``, prints the working copy path and the list of dirty files.
+
+        """
         dirty_working_copies = []
         for item in self.self_and_descendants():
             if item.is_dirty():
@@ -343,7 +360,7 @@ class GitWorkingCopy(object):
 
     def traverse(self, iterator):
         """
-        Runs the given callable ``iterator`` on each item returned by self_and_descendants().
+        Runs the given callable ``iterator`` on each item returned by ``self_and_descendants()``.
 
         Before each call to iterator for a given working copy, the current directory is first
         set to that working copy's path.
