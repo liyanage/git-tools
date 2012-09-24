@@ -528,10 +528,32 @@ class SubcommandStatus(AbstractSubcommand):
         return 'Run git status in each working copy'
 
 
-class SubcommandBranch(AbstractSubcommand):
+class SubcommandCheckout(AbstractSubcommand):
 
-    def __init__(self, args):
-        super(SubcommandBranch, self).__init__(args)
+    def __call__(self, wc):
+        if not self.check_preconditions(wc):
+            return GitWorkingCopy.STOP_TRAVERSAL
+
+        current_branch = wc.current_branch()
+        if current_branch == self.args.branch:
+            return
+
+        if not self.args.branch in wc.branch_names():
+            print >> sys.stderr, 'No branch "{0}" in {1}, staying on "{2}"'.format(self.args.branch, wc, current_branch)
+            return
+
+        print wc
+        wc.run_shell_command('git checkout {0}'.format(self.args.branch))            
+
+    @classmethod
+    def argument_parser_help(cls):
+        return 'Check out a given branch if it exists'
+
+    @classmethod
+    def configure_argument_parser(cls, parser):
+        parser.add_argument('branch', help='The name of the branch that should be checked out')
+
+class SubcommandBranch(AbstractSubcommand):
 
     def prepare_for_root(self, root_wc):
         maxlen = 0
