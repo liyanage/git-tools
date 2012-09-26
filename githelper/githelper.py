@@ -28,6 +28,9 @@ subcommand in turn supports the -h flag::
 
     githelper.py some_subcommand -h
 
+You can extend the set of subcommands by writing plug-in classes. See
+`Extending with Plug-In Classes`_ for details.
+
 Usage as Toolkit Module
 -----------------------
 
@@ -82,6 +85,34 @@ subcommands provided by the command line utility front end and they exercise mos
 the ``GitWorkingCopy`` API.
 
 .. _`module's source code`: https://github.com/liyanage/git-tools/blob/master/githelper/githelper.py
+
+Extending with Plug-In Classes
+------------------------------
+
+To extend the command line utility with additional custom subcommands, create a
+file called ``githelper_local.py`` and store it somewhere in your ``$PATH``.
+The file must contain one class per subcommand, the class name must start with
+``Subcommand``, anything after that part is used as the actual subcommand name
+that you pass on the command line to invoke it.
+
+Here is an example ``githelper_local.py`` with one subcommand named ``foo``::
+
+    from githelper import AbstractSubcommand, GitWorkingCopy
+    
+    class SubcommandFoo(AbstractSubcommand):
+    
+        def __call__(self, wc):
+            print wc
+            return GitWorkingCopy.STOP_TRAVERSAL
+        
+        @classmethod
+        def argument_parser_help(cls):
+            return 'Provide a useful description of this subcommand here'
+        
+        @classmethod
+        def configure_argument_parser(cls, parser):
+            # Add any command line options here. If you don't need any, just add a "pass" statement instead.
+            parser.add_argument('-b', '--bar', help='Provide a useful description of this option here')
 
 API Documentation
 -----------------
@@ -419,14 +450,41 @@ class GitWorkingCopy(object):
 
 
 class AbstractSubcommand(object):
+    """
+    A base class for custom subcommand plug-in classes.
+    
+    You can, but don't have to, derive from this class for
+    your custom subcommand extension classes. It also documents
+    the interface you are expected to implement in your class
+    and it provides some convenience methods.
+    """
 
     def __init__(self, argument_parser):
+        """
+        The constructor gets called with the command line arguments
+        as returned by argparse's `parse_args()`_ method.
+        
+        .. _`parse_args()`: http://docs.python.org/library/argparse.html?highlight=argparse#the-parse-args-method
+        """
         self.args = argument_parser
 
     def __call__(self, wc):
+        """
+        This gets called once per working copy to perform the subcommand's task.
+        
+        If you are only interested in the root-level working copy, you can stop
+        the traversal by returning ``githelper.GitWorkingCopy.STOP_TRAVERSAL``.
+        """
         pass
 
     def check_preconditions(self, wc):
+        """
+        This method returns False if any of the working copies are dirty.
+        
+        You can call this as a first step in your ``__call__()`` implementation
+        and abort if your custom subcommand performs operations that require
+        clean working copies.
+        """
         # perform this check only once at the root
         if not wc.is_root():
             return True
@@ -434,9 +492,17 @@ class AbstractSubcommand(object):
         return not wc.self_or_descendants_are_dirty(list_dirty=True)
 
     def prepare_for_root(self, root_wc):
+        """
+        This method gets called on the root working copy only and lets you
+        perform preparation steps that you want to do only once for the entire
+        tree.
+        """
         pass
         
     def check_for_git_svn_and_warn(self, wc):
+        """
+        This returns False and warns if the given working copy is not a git-svn working copy.
+        """
         if not wc.is_git_svn():
             print >> sys.stderr, '{0} is not git-svn, skipping'.format(wc)
             return False
@@ -444,10 +510,19 @@ class AbstractSubcommand(object):
 
     @classmethod
     def argument_parser_help(cls):
+        """Returns the command line help description of the subcommand."""
         return '(No help available)'
 
     @classmethod
     def configure_argument_parser(cls, parser):
+        """
+        Adds command line options for your subcommand to the arguments parser.
+        
+        :param parser: An argparse_ instance.
+        
+        .. _argparse: http://docs.python.org/library/argparse.html
+        
+        """
         pass
 
 
@@ -636,13 +711,33 @@ class SubcommandSvnDiff(AbstractSubcommand):
 class GitHelperCommandLineDriver(object):
 
     @classmethod
-    def run(cls):
+    def subcommand_map(cls):
+        sys.path.extend(os.environ['PATH'].split(':'))
+        githelper_local = None
+        try:
+            import githelper_local
+        except ImportError:
+            pass
+        except Exception as e:
+            print >> sys.stderr, 'Unable to import githelper_local extension module:'
+            raise
+        
+        namespaces = globals()
         subcommand_map = {}
-        for k, v in globals().items():
+        if githelper_local:
+            namespaces.update({k : getattr(githelper_local, k) for k in dir(githelper_local)})
+
+        for k, v in namespaces.items():
             if not k.startswith('Subcommand'):
                 continue
             subcommand_map[k[10:].lower()] = v
+        
+        return subcommand_map
 
+    @classmethod
+    def run(cls):
+        subcommand_map = cls.subcommand_map()
+    
         parser = argparse.ArgumentParser(description='Git-SVN helper')
         parser.add_argument('--root_path', help='Path to root working copy', default=os.getcwd())
         subparsers = parser.add_subparsers(title='Subcommands', dest='subcommand_name')

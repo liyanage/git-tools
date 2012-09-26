@@ -8,6 +8,7 @@ Welcome to githelper's documentation!
 
 .. automodule:: githelper
    :members:
+   :special-members:
 
 Indices and tables
 ==================
