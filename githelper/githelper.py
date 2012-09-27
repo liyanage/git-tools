@@ -630,17 +630,20 @@ class SubcommandCheckout(AbstractSubcommand):
 
 class SubcommandBranch(AbstractSubcommand):
 
+    column_accessors = (
+        lambda x: str(x),
+        lambda x: os.path.basename(x.svn_info('URL')),
+        lambda x: x.current_branch(),
+    )
+
     def prepare_for_root(self, root_wc):
-        maxlen = 0
-        for i in root_wc.self_and_descendants():
-            maxlen = max((maxlen, len(str(i))))
-        self.maxlen = maxlen
+        self.maxlen = [0, 0, 0]
+        for wc in root_wc.self_and_descendants():
+            for index, accessor in enumerate(SubcommandBranch.column_accessors):
+                self.maxlen[index] = max((self.maxlen[index], len(accessor(wc))))
 
     def __call__(self, wc):
-        url = wc.svn_info('URL')
-        svn_basename = os.path.basename(url)
-        branch = wc.current_branch()
-        print '{0} {1} {2}'.format(string.ljust(str(wc), self.maxlen), string.ljust(branch, 10), string.ljust(svn_basename, 10))
+        print '{0} {1} {2}'.format(*[string.ljust(SubcommandBranch.column_accessors[i](wc), self.maxlen[i]) for i in xrange(3)])
 
     @classmethod
     def argument_parser_help(cls):
