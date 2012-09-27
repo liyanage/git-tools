@@ -171,23 +171,11 @@ class GitWorkingCopy(object):
         self.path = path
         self._svn_info = None
         self.parent = parent
-        self.children = []
+        self.child_list = None
 
         status = subprocess.call('git status 1>/dev/null 2>/dev/null', shell=True, cwd=self.path)
         if status:
             raise Exception('{0} is not a git working copy'.format(self.path))
-
-        for (dirpath, dirnames, filenames) in os.walk(path):
-            if dirpath == path:
-                continue
-
-            if not '.git' in dirnames:
-                continue
-
-            del dirnames[:]
-
-            wc = GitWorkingCopy(dirpath, parent=self)
-            self.children.append(wc)
 
     def __str__(self):
         is_dirty = ''
@@ -360,6 +348,23 @@ class GitWorkingCopy(object):
     def basename(self):
         return os.path.basename(self.path)
 
+    def children(self):
+        if self.child_list is None:
+            self.child_list = []
+            for (dirpath, dirnames, filenames) in os.walk(self.path):
+                if dirpath == self.path:
+                    continue
+    
+                if not '.git' in dirnames:
+                    continue
+    
+                del dirnames[:]
+    
+                wc = GitWorkingCopy(dirpath, parent=self)
+                self.child_list.append(wc)
+        
+        return self.child_list
+        
     def self_and_descendants(self):
         """
         Returns a generator for self and all nested git working copies.
@@ -368,7 +373,7 @@ class GitWorkingCopy(object):
         
         """
         yield self
-        for child in self.children:
+        for child in self.children():
             for item in child.self_and_descendants():
                 yield item
 
