@@ -219,6 +219,10 @@ class GitWorkingCopy(object):
         """
         return [i[8:] for i in self.branch_names() if i.startswith('remotes/')]
 
+    def local_branch_names(self):
+        """Returns a list of git branch names not starting with ``remote/``."""
+        return [i for i in self.branch_names() if not i.startswith('remotes/')]
+
     def remote_branch_name_for_name_list(self, name_list):
         """
         Returns a remote branch name matching a list of candidate strings.
@@ -609,16 +613,28 @@ class SubcommandCheckout(AbstractSubcommand):
         if not self.check_preconditions(wc):
             return GitWorkingCopy.STOP_TRAVERSAL
 
+        target_branch = self.args.branch
         current_branch = wc.current_branch()
-        if current_branch == self.args.branch:
+
+        branch_candidates = [i for i in wc.local_branch_names() if target_branch in i]
+        
+        if not branch_candidates:
+            print >> sys.stderr, 'No branch "{0}" in {1}, staying on "{2}"'.format(target_branch, wc, current_branch)
             return
 
-        if not self.args.branch in wc.branch_names():
-            print >> sys.stderr, 'No branch "{0}" in {1}, staying on "{2}"'.format(self.args.branch, wc, current_branch)
+        if len(branch_candidates) > 1:
+            print >> sys.stderr, 'Branch name "{0}" is ambiguous in {1}, staying on "{2}":'.format(target_branch, wc, current_branch)
+            print >> sys.stderr, [i + '\n' for i in branch_candidates]
+            return
+        
+        target_branch = branch_candidates[0]
+
+        if current_branch == target_branch:
+            print >> sys.stderr, '{0} is already on branch "{1}"'.format(wc, target_branch)
             return
 
         print wc
-        wc.run_shell_command('git checkout {0}'.format(self.args.branch))            
+        wc.run_shell_command('git checkout {0}'.format(target_branch))            
 
     @classmethod
     def argument_parser_help(cls):
