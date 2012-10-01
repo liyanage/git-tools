@@ -7,7 +7,7 @@ Welcome to githelper's documentation!
 =====================================
 
 .. automodule:: githelper
-   :members:
+   :members: GitWorkingCopy
    :special-members:
 
 Indices and tables

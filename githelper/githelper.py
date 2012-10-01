@@ -101,14 +101,12 @@ Here is an example ``githelper_local.py`` with one subcommand named ``foo``::
     from githelper import AbstractSubcommand, GitWorkingCopy
     
     class SubcommandFoo(AbstractSubcommand):
+        # The class-level doc comment is reused for the command-line usage help string.
+        \"""Provide a useful description of this subcommand here\"""
     
         def __call__(self, wc):
             print wc
             return GitWorkingCopy.STOP_TRAVERSAL
-        
-        @classmethod
-        def argument_parser_help(cls):
-            return 'Provide a useful description of this subcommand here'
         
         @classmethod
         def configure_argument_parser(cls, parser):
@@ -520,11 +518,6 @@ class AbstractSubcommand(object):
         return True
 
     @classmethod
-    def argument_parser_help(cls):
-        """Returns the command line help description of the subcommand."""
-        return '(No help available)'
-
-    @classmethod
     def configure_argument_parser(cls, parser):
         """
         Adds command line options for your subcommand to the arguments parser.
@@ -538,6 +531,7 @@ class AbstractSubcommand(object):
 
 
 class SubcommandResetMasterToSvnBranch(AbstractSubcommand):
+    """Hard-reset the master branch of a working copy to a specific remote branch. Aborts if the working copy is dirty."""
 
     def __call__(self, wc):
         if not self.check_preconditions(wc):
@@ -563,15 +557,12 @@ class SubcommandResetMasterToSvnBranch(AbstractSubcommand):
             wc.hard_reset_current_branch(full_target_remote_branch)
 
     @classmethod
-    def argument_parser_help(cls):
-        return 'Hard-reset the master branch of a working copy to a specific remote branch. Aborts if the working copy is dirty.'
-
-    @classmethod
     def configure_argument_parser(cls, parser):
         parser.add_argument('remote_branch_names', nargs='+', help='A list of one or more remote branch names. The tool will try to find a remote name using all combinations of the given items, ignoring case.')
 
 
 class SubcommandSvnRebase(AbstractSubcommand):
+    """Perform git svn rebase in each working copy. Temporarily switches to branch "master" if not already there. Aborts if the working copy is dirty."""
 
     def __call__(self, wc):
         if not self.check_preconditions(wc):
@@ -588,33 +579,24 @@ class SubcommandSvnRebase(AbstractSubcommand):
             print wc
             wc.run_shell_command('git svn rebase')
 
-    @classmethod
-    def argument_parser_help(cls):
-        return 'Perform git svn rebase in each working copy. Temporarily switches to branch "master" if not already there. Aborts if the working copy is dirty.'
-
 
 class SubcommandTree(AbstractSubcommand):
+    """List the tree of nested working copies"""
 
     def __call__(self, wc):
         print '|{0}{1}'.format(len(wc.ancestors()) * '--', wc)
 
-    @classmethod
-    def argument_parser_help(cls):
-        return 'List the tree of nested working copies'
-
 
 class SubcommandStatus(AbstractSubcommand):
+    """Run git status in each working copy"""
 
     def __call__(self, wc):
         print wc
         wc.run_shell_command('git status')
 
-    @classmethod
-    def argument_parser_help(cls):
-        return 'Run git status in each working copy'
-
 
 class SubcommandCheckout(AbstractSubcommand):
+    """Check out a given branch if it exists"""
 
     def __call__(self, wc):
         if not self.check_preconditions(wc):
@@ -644,14 +626,11 @@ class SubcommandCheckout(AbstractSubcommand):
         wc.run_shell_command('git checkout {0}'.format(target_branch))            
 
     @classmethod
-    def argument_parser_help(cls):
-        return 'Check out a given branch if it exists'
-
-    @classmethod
     def configure_argument_parser(cls, parser):
         parser.add_argument('branch', help='The name of the branch that should be checked out')
 
 class SubcommandBranch(AbstractSubcommand):
+    """Show local and SVN branch of each working copy"""
 
     column_accessors = (
         lambda x: str(x),
@@ -668,20 +647,13 @@ class SubcommandBranch(AbstractSubcommand):
     def __call__(self, wc):
         print '{0} {1} {2}'.format(*[string.ljust(SubcommandBranch.column_accessors[i](wc), self.maxlen[i]) for i in xrange(3)])
 
-    @classmethod
-    def argument_parser_help(cls):
-        return 'Show local and SVN branch of each working copy'
-
 
 class SubcommandEach(AbstractSubcommand):
+    """Run a shell command in each working copy"""
 
     def __call__(self, wc):
         print wc
         wc.run_shell_command(self.args.shell_command)
-
-    @classmethod
-    def argument_parser_help(cls):
-        return 'Run a shell command in each working copy'
 
     @classmethod
     def configure_argument_parser(cls, parser):
@@ -689,6 +661,7 @@ class SubcommandEach(AbstractSubcommand):
 
 
 class SubcommandSvnDiff(AbstractSubcommand):
+    """Get a diff for a git-svn working copy that matches the corresponding svn diff"""
 
     def __call__(self, wc):
         if not self.check_for_git_svn_and_warn(wc):
@@ -723,10 +696,6 @@ class SubcommandSvnDiff(AbstractSubcommand):
             print output_string
 
         return GitWorkingCopy.STOP_TRAVERSAL
-
-    @classmethod
-    def argument_parser_help(cls):
-        return 'Get a diff for a git-svn working copy that matches the corresponding svn diff'
 
     @classmethod
     def configure_argument_parser(cls, parser):
@@ -768,7 +737,7 @@ class GitHelperCommandLineDriver(object):
         parser.add_argument('--root_path', help='Path to root working copy', default=os.getcwd())
         subparsers = parser.add_subparsers(title='Subcommands', dest='subcommand_name')
         for subcommand_name, subcommand_class in subcommand_map.items():
-            subparser = subparsers.add_parser(subcommand_name, help=subcommand_class.argument_parser_help())
+            subparser = subparsers.add_parser(subcommand_name, help=subcommand_class.__doc__)
             subcommand_class.configure_argument_parser(subparser)
 
         args = parser.parse_args()
