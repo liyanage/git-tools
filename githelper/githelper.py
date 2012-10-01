@@ -131,6 +131,58 @@ import contextlib
 import itertools
 
 
+class PopenOutputFilter:
+    
+    def __init__(self, stdout_rules, stderr_rules=None):
+        self.stdout_rules = self.compile_rules(stdout_rules)
+        if stderr_rules is None:
+            self.stderr_rules = self.stdout_rules
+        else:
+            self.stderr_rules = self.compile_rules(stderr_rules)
+    
+    def compile_rules(self, ruleset):
+        if not ruleset:
+            return None
+        return [(action, re.compile(regex_string)) for action, regex_string in ruleset]
+    
+    def filtered_stdoutdata(self, data):
+        if not data:
+            return data
+        ruleset = self.stdout_rules
+        return ''.join([line + '\n' for line in data.splitlines() if self.keep_line(line, ruleset)])
+
+    def filtered_stderrdata(self, data):
+        if not data:
+            return data
+        ruleset = self.stderr_rules
+        return ''.join([line + '\n' for line in data.splitlines() if self.keep_line(line, ruleset)])
+
+    def keep_line(self, line, ruleset):
+        for rule in ruleset:
+#            print '{0} {1} {2} {3}'.format(action, regex, regex.search(line), line)
+            action, regex = rule
+            if regex.search(line):
+                if action == '+':
+                    return True
+                if action == '-':
+                    return False
+        return True
+
+
+class FilteringPopen(subprocess.Popen):
+
+    def communicate(self, filter=None):
+        self.filter = filter
+        return self.filtered_result(super(FilteringPopen, self).communicate())
+
+    def filtered_result(self, output):
+        if not self.filter:
+            return output
+            
+        stdoutdata, stderrdata = output
+        return self.filter.filtered_stdoutdata(stdoutdata), self.filter.filtered_stderrdata(stderrdata)
+
+
 class ANSIColor(object):
 
     red = '1'
@@ -254,7 +306,7 @@ class GitWorkingCopy(object):
         """Hard-resets the current branch to the given ref"""
         self.run_shell_command(['git', 'reset', '--hard', target])
 
-    def run_shell_command(self, command, shell=None):
+    def run_shell_command(self, command, filter_rules=None, shell=None):
         """Runs the given shell command (array or string) in the receiver's working directory."""
         if shell is None:
             if isinstance(command, types.StringTypes):
@@ -263,9 +315,19 @@ class GitWorkingCopy(object):
                 shell = False
 
         with ANSIColor.terminal_color(ANSIColor.blue, ANSIColor.blue):
-            subprocess.check_call(command, cwd=self.path, shell=shell)
+            popen = FilteringPopen(command, cwd=self.path, shell=shell, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
-    def output_for_git_command(self, command, shell=False):
+            if popen.returncode:
+                raise Exception("shell command '{0}' returned nonzero status".format(command))
+
+            stdoutdata, stderrdata = popen.communicate(filter=PopenOutputFilter(filter_rules))
+            if stderrdata:
+                sys.stderr.write(stderrdata)
+             
+            if stdoutdata:
+                sys.stdout.write(stdoutdata)
+            
+    def output_for_git_command(self, command, shell=False, filter_rules=None):
         """
         Runs the given shell command (array or string) in the receiver's working directory and returns the output.
 
@@ -275,6 +337,15 @@ class GitWorkingCopy(object):
 
         """
         return subprocess.check_output(command, cwd=self.path, shell=shell).splitlines()
+        with ANSIColor.terminal_color(ANSIColor.blue, ANSIColor.blue):
+            popen = FilteringPopen(command, cwd=self.path, shell=shell, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+
+            if popen.returncode:
+                raise Exception("shell command '{0}' returned nonzero status".format(command))
+
+            stdoutdata, stderrdata = popen.communicate(filter=PopenOutputFilter(filter_rules))
+            print >> sys.stderr, stderrdata
+            return stdoutdata
 
     def is_root(self):
         """Returns True if the receiver does not have a parent working copy."""
@@ -375,7 +446,7 @@ class GitWorkingCopy(object):
         for child in self.children():
             for item in child:
                 yield item
-
+    
     def self_or_descendants_are_dirty(self, list_dirty=False):
         """
         Returns True if the receiver's or one of its nested working copies are dirty.
@@ -578,11 +649,11 @@ class SubcommandSvnRebase(AbstractSubcommand):
         with wc.switched_to_branch('master'):
             print wc
             wc.run_shell_command('git svn rebase')
-
+            
 
 class SubcommandTree(AbstractSubcommand):
     """List the tree of nested working copies"""
-
+    
     def __call__(self, wc):
         print '|{0}{1}'.format(len(wc.ancestors()) * '--', wc)
 
@@ -591,13 +662,18 @@ class SubcommandStatus(AbstractSubcommand):
     """Run git status in each working copy"""
 
     def __call__(self, wc):
+        rules = (
+            ('-', r' On branch '),
+            ('-', r'working directory clean'),
+        )
+        
         print wc
-        wc.run_shell_command('git status')
+        wc.run_shell_command('git status -s', filter_rules=rules)
 
 
 class SubcommandCheckout(AbstractSubcommand):
     """Check out a given branch if it exists"""
-
+    
     def __call__(self, wc):
         if not self.check_preconditions(wc):
             return GitWorkingCopy.STOP_TRAVERSAL
@@ -631,7 +707,7 @@ class SubcommandCheckout(AbstractSubcommand):
 
 class SubcommandBranch(AbstractSubcommand):
     """Show local and SVN branch of each working copy"""
-
+    
     column_accessors = (
         lambda x: str(x),
         lambda x: os.path.basename(x.svn_info('URL')),
@@ -650,7 +726,7 @@ class SubcommandBranch(AbstractSubcommand):
 
 class SubcommandEach(AbstractSubcommand):
     """Run a shell command in each working copy"""
-
+    
     def __call__(self, wc):
         print wc
         wc.run_shell_command(self.args.shell_command)
