@@ -41,8 +41,8 @@ The main entry point is the ``GitWorkingCopy`` class. You instantiate it
 with the path to a git or git-svn working copy (which possibly
 has nested sub-working copies).
 
-You can then traverse the tree of nested working copies with the
-``self_and_descendants()`` method::
+You can then traverse the tree of nested working copies by iterating over the
+GitWorkingCopy instance::
 
     #!/usr/bin/env python
     
@@ -52,8 +52,9 @@ You can then traverse the tree of nested working copies with the
     
     root_wc = githelper.GitWorkingCopy(sys.argv[1])
 
-    for wc in root_wc.self_and_descendants():
-        # do something interesting with wc using its API
+    for wc in root_wc:
+        # Gets called once for root_wc and all sub-working copies.
+        # Do something interesting with wc using its API here...
 
 The ``traverse()`` method provides another way to do this,
 it takes a callable, in the following example a function::
@@ -365,7 +366,7 @@ class GitWorkingCopy(object):
         
         return self.child_list
         
-    def self_and_descendants(self):
+    def __iter__(self):
         """
         Returns a generator for self and all nested git working copies.
         
@@ -374,7 +375,7 @@ class GitWorkingCopy(object):
         """
         yield self
         for child in self.children():
-            for item in child.self_and_descendants():
+            for item in child:
                 yield item
 
     def self_or_descendants_are_dirty(self, list_dirty=False):
@@ -385,7 +386,7 @@ class GitWorkingCopy(object):
 
         """
         dirty_working_copies = []
-        for item in self.self_and_descendants():
+        for item in self:
             if item.is_dirty():
                 dirty_working_copies.append(item)
 
@@ -400,7 +401,8 @@ class GitWorkingCopy(object):
 
     def traverse(self, iterator):
         """
-        Runs the given callable ``iterator`` on each item returned by ``self_and_descendants()``.
+        Runs the given callable ``iterator`` on the receiver and all of its
+        nested sub-working copies.
 
         Before each call to iterator for a given working copy, the current directory is first
         set to that working copy's path.
@@ -413,7 +415,7 @@ class GitWorkingCopy(object):
         if not callable(iterator):
             raise Exception('{0} is not callable'.format(iterator))
 
-        for item in self.self_and_descendants():
+        for item in self:
             with item.chdir_to_path():
                 if iterator(item) is GitWorkingCopy.STOP_TRAVERSAL:
                     break
@@ -659,7 +661,7 @@ class SubcommandBranch(AbstractSubcommand):
 
     def prepare_for_root(self, root_wc):
         self.maxlen = [0, 0, 0]
-        for wc in root_wc.self_and_descendants():
+        for wc in root_wc:
             for index, accessor in enumerate(SubcommandBranch.column_accessors):
                 self.maxlen[index] = max((self.maxlen[index], len(accessor(wc))))
 

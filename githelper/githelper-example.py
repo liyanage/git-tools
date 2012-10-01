@@ -22,8 +22,8 @@ root_wc = githelper.GitWorkingCopy(sys.argv[1])
 
 # Now process this working copy and all sub working copies recursively.
 
-# Variant 1: Iterate over self_and_descendants()
-for wc in root_wc.self_and_descendants():
+# Variant 1: Iterate over instance and all its children
+for wc in root_wc:
 	print wc.current_branch()
 
 # Variant 2: Pass a function to traverse(), the function gets called for and with each working copy
