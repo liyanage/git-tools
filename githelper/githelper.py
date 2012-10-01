@@ -376,6 +376,9 @@ class GitWorkingCopy(object):
             for item in child:
                 yield item
 
+    def __iter__(self):
+        return self.self_and_descendants()
+
     def self_or_descendants_are_dirty(self, list_dirty=False):
         """
         Returns True if the receiver's or one of its nested working copies are dirty.
