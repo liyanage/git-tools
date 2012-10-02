@@ -37,9 +37,11 @@ Usage as Toolkit Module
 If the utility does not provide what you need, you can write your own script
 based on githelper as a module. The rest of this document explains the module's API.
 
-The main entry point is the ``GitWorkingCopy`` class. You instantiate it
+The main entry point is the :py:class:`GitWorkingCopy` class. You instantiate it
 with the path to a git or git-svn working copy (which possibly
 has nested sub-working copies).
+
+.. _iteration-example:
 
 You can then traverse the tree of nested working copies by iterating over the
 GitWorkingCopy instance::
@@ -56,7 +58,7 @@ GitWorkingCopy instance::
         # Gets called once for root_wc and all sub-working copies.
         # Do something interesting with wc using its API here...
 
-The ``traverse()`` method provides another way to do this,
+The :py:meth:`~GitWorkingCopy.traverse` method provides another way to do this,
 it takes a callable, in the following example a function::
 
     def process_working_copy(wc):
@@ -65,7 +67,7 @@ it takes a callable, in the following example a function::
     root_wc = githelper.GitWorkingCopy(sys.argv[1])
     root_wc.traverse(process_working_copy)
 
-Or a callable object::
+Any callable object works, in the following example an instance of a class that implements :py:meth:`~object.__call__`::
 
     class Foo:
     
@@ -83,7 +85,7 @@ Or a callable object::
 You can take a look at the various ``Subcommand...`` classes in the `module's
 source code`_ to see examples of the API usage. These classes implement the various
 subcommands provided by the command line utility front end and they exercise most of
-the ``GitWorkingCopy`` API.
+the :py:class:`GitWorkingCopy` API.
 
 .. _`module's source code`: https://github.com/liyanage/git-tools/blob/master/githelper/githelper.py
 
@@ -91,12 +93,12 @@ Extending with Plug-In Classes
 ------------------------------
 
 To extend the command line utility with additional custom subcommands, create a
-file called ``githelper_local.py`` and store it somewhere in your ``$PATH``.
-The file must contain one class per subcommand, the class name must start with
+file called :file:`githelper_local.py` and store it somewhere in your :envvar:`PATH`.
+The file must contain one class per subcommand. Each class name must start with
 ``Subcommand``, anything after that part is used as the actual subcommand name
 that you pass on the command line to invoke it.
 
-Here is an example ``githelper_local.py`` with one subcommand named ``foo``::
+Here is an example :file:`githelper_local.py` with one subcommand named ``foo``::
 
     from githelper import AbstractSubcommand, GitWorkingCopy
     
@@ -133,6 +135,48 @@ import select
 
 
 class PopenOutputFilter:
+    """
+    Represents a set of inclusion/exclusion rules to filter the output of :py:class:`FilteringPopen`.
+    You create instance of this class to pass to :py:meth:`FilteringPopen.run` (but see ``run()``'s
+    ``filter_rules`` parameter for a convenience shortcut).
+    
+    There are two independent rule sets to filter stdout and stderr individually. If you don't
+    supply the (optional) rule set for stderr, the (mandatory) one for stdout is reused.
+    
+    Rule sets are lists of lists of this form::
+    
+        rules = [
+            ('-', r'^foo'),
+            ('-', r'bar$'),
+            ...
+        ]
+
+    Each rule is a two-element list where the first element is either the string "-" or "+"
+    representing the actions for exclusion and inclusion, and the second element is a
+    regular expression.
+    
+    Each line of stdout or stderr output is matched against each regular expression. If one
+    of them matches, the line is filtered out if the action element is "-" or included if
+    the action is "+". After the first rule matches, no further rules are evaluated.
+    
+    If no rule matches a given line, the line is included (not filtered out), i.e. there is
+    an implicit last rule like this::
+    
+        ('+', '.*')
+    
+    In the example given above, all lines beginning with ``foo`` or ending with ``bar``
+    are filtered out.
+    
+    In the following example, only lines containing foo or bar are included, everything else
+    is filtered out::
+    
+        rules = [
+            ('+', r'foo'),
+            ('+', r'bar'),
+            ('-', '.*')
+        ]
+    
+    """
     
     def __init__(self, stdout_rules, stderr_rules=None):
         self.stdout_rules = self.compile_rules(stdout_rules)
@@ -177,6 +221,16 @@ class PopenOutputFilter:
 
 
 class FilteringPopen(object):
+    """
+    A wrapper around :py:class:`subprocess.Popen` that filters the subprocess's output.
+
+    The constructor's parameters are forwarded mostly unchanged to :py:class:`Popen's constructor <subprocess.Popen>`.
+    Exceptions are ``bufsize``, which is set to ``1`` for line-buffered output, and ``stdout``, and ``stderr``,
+    which are both set to :py:data:`subprocess.PIPE`.
+    
+    This method sets up the Popen instance but does not run it. See :py:meth:`run` for that.
+
+    """
 
     def __init__(self, *args, **kwargs):
         self.stdoutbuffer = []
@@ -190,6 +244,20 @@ class FilteringPopen(object):
         self.popen = subprocess.Popen(*args, **kwargs)
 
     def run(self, filter=None, filter_rules=None, store_stdout=True, store_stderr=True, echo_stdout=True, echo_stderr=True, check_returncode=True, header=None):
+        """
+        Run the command and capture its (potentially filtered) output, similar to :py:meth:`subprocess.Popen.communicate`.
+
+        :param githelper.PopenOutputFilter filter: An optional filter for stderr and stdout.
+        :param array filter_rules: Instead of a :py:class:`PopenOutputFilter` instance, you can also pass a rule set directly.
+        :param bool store_stdout: If ``False``, the command's output will not be stored for later retrieval. If set to ``True``, the output can be retrieved through the :py:meth:`stdoutlines` method after it has finished executing.
+        :param bool store_stderr: If ``False``, the command's output will not be stored for later retrieval. If set to ``True``, the output can be retrieved through the :py:meth:`stderrlines` method after it has finished executing.
+        :param bool echo_stdout: If ``False``, the command's output will not be printed to stdout.
+        :param bool echo_stderr: If ``False``, the command's output will not be printed to stderr.
+        :param bool check_returncode: If ``True``, the method raises an exception if the command terminates with a non-zero exit code.
+        :param object header: This value will be printed to the console exactly once if the subcommand produces any output that does not get filtered out.
+                              This is useful if you want to print something, but not if the command would not produce any output anyway.
+        
+        """
         self.filter = filter
         if filter and filter_rules:
             raise Exception("'filter' and 'filter_rules' can't be used together")
@@ -254,12 +322,20 @@ class FilteringPopen(object):
         print self.header
 
     def stdoutlines(self):
+        """Returns an array of the stdout lines that were not filtered, with trailing newlines removed."""
         return self.stdoutbuffer
 
     def stderrlines(self):
+        """Returns an array of the stderr lines that were not filtered, with trailing newlines removed."""
         return self.stderrbuffer
 
     def returncode(self):
+        """
+        Returns the command's exit code.
+        
+        :rtype: int
+        
+        """
         return self.popen.returncode
 
 
@@ -294,9 +370,15 @@ class ANSIColor(object):
 
 
 class GitWorkingCopy(object):
-    """A class to represent a git or git-svn working copy."""
+    """
+    A class to represent a git or git-svn working copy.
+    
+    :param str path: The file system path to the working copy.
+    :param githelper.GitWorkingCopy parent: A parent instance, you don't usually use this yourself.
+    """
 
     STOP_TRAVERSAL = False
+    """returned from a :py:meth:`~AbstractSubcommand.__call__` implementation to stop further recursion by :py:meth:`traverse`."""
 
     def __init__(self, path, parent=None):
         self.path = path
@@ -351,7 +433,7 @@ class GitWorkingCopy(object):
         
             ['foo', 'bar']
         
-        as name_list, it would find any of these::
+        as ``name_list``, it would find any of these::
         
             remotes/foo
             remotes/Foo
@@ -387,7 +469,15 @@ class GitWorkingCopy(object):
         self.run_shell_command(['git', 'reset', '--hard', target])
 
     def run_shell_command(self, command, filter_rules=None, shell=None, header=None):
-        """Runs the given shell command (array or string) in the receiver's working directory."""
+        """
+        Runs the given shell command (array or string) in the receiver's working directory using :py:class:`FilteringPopen`.
+        
+        :param str command: Passed to :py:class:`FilteringPopen`'s constructor. Can also be an array.
+        :param array filter_rules: Passed to :py:class:`FilteringPopen`'s constructor.
+        :param bool shell: Passed to :py:class:`FilteringPopen`'s constructor.
+        :param object header: Passed to :py:class:`FilteringPopen.run`.
+        
+        """
         if shell is None:
             if isinstance(command, types.StringTypes):
                 shell = True
@@ -401,10 +491,8 @@ class GitWorkingCopy(object):
         """
         Runs the given shell command (array or string) in the receiver's working directory and returns the output.
 
-        :param shell: If ``True``, runs the command through the shell. See the subprocess_ library module documentation for details.
+        :param bool shell: If ``True``, runs the command through the shell. See the :py:mod:`subprocess` library module documentation for details.
         
-        .. _subprocess: http://docs.python.org/library/subprocess.html#frequently-used-arguments
-
         """
         popen = FilteringPopen(command, cwd=self.path, shell=shell)
         popen.run(filter_rules=filter_rules, echo_stdout=False, header=header)
@@ -437,7 +525,7 @@ class GitWorkingCopy(object):
         """
         Returns a dictionary containing the key/value pairs in the output of ``git svn info``.
         
-        :param key: When present, returns just the one value associated with the given key.
+        :param str key: When present, returns just the one value associated with the given key.
         
         """
         if not self._svn_info:
@@ -500,9 +588,9 @@ class GitWorkingCopy(object):
         
     def __iter__(self):
         """
-        Returns a generator for self and all nested git working copies.
+        Returns an iterator over ``self`` and all of its nested git working copies.
         
-        See the example above.
+        See the :ref:`example above <iteration-example>`.
         
         """
         yield self
@@ -514,7 +602,7 @@ class GitWorkingCopy(object):
         """
         Returns True if the receiver's or one of its nested working copies are dirty.
 
-        :param list_dirty: If ``True``, prints the working copy path and the list of dirty files.
+        :param bool list_dirty: If ``True``, prints the working copy path and the list of dirty files.
 
         """
         dirty_working_copies = []
@@ -539,7 +627,7 @@ class GitWorkingCopy(object):
         Before each call to iterator for a given working copy, the current directory is first
         set to that working copy's path.
         
-        See example above.
+        See the :ref:`example above <iteration-example>`.
         """
         if callable(getattr(iterator, "prepare_for_root", None)):
             iterator.prepare_for_root(self)
@@ -555,10 +643,8 @@ class GitWorkingCopy(object):
     @contextlib.contextmanager
     def chdir_to_path(self):
         """
-        A context manager for the ``with`` statement that temporarily switches the current working directory to the receiver's working copy directory.
+        A :ref:`context manager <context-managers>` for the :py:keyword:`with` statement that temporarily switches the current working directory to the receiver's working copy directory::
         
-        Example::
-            
             with wc.chdir_to_path():
                 # do something useful here inside the working copy directory.
 
@@ -571,7 +657,7 @@ class GitWorkingCopy(object):
     @contextlib.contextmanager
     def switched_to_branch(self, branch_name):
         """
-        A context manager for the ``with`` statement that temporarily switches the current git branch to another one and afterwards restores the original one.
+        A :ref:`context manager <context-managers>` for the :py:keyword:`with` statement that temporarily switches the current git branch to another one and afterwards restores the original one.
         
         Example::
             
@@ -600,23 +686,25 @@ class AbstractSubcommand(object):
     your custom subcommand extension classes. It also documents
     the interface you are expected to implement in your class
     and it provides some convenience methods.
+
+    :param argparse.Namespace arguments: The command-line options passed to your subcommand
+                                         in the form of a namespace instance as returned by
+                                         :py:meth:`argparse.ArgumentParser.parse_args`.
+        
     """
 
-    def __init__(self, argument_parser):
-        """
-        The constructor gets called with the command line arguments
-        as returned by argparse's `parse_args()`_ method.
-        
-        .. _`parse_args()`: http://docs.python.org/library/argparse.html?highlight=argparse#the-parse-args-method
-        """
-        self.args = argument_parser
+    def __init__(self, arguments):
+        self.args = arguments
 
     def __call__(self, wc):
         """
         This gets called once per working copy to perform the subcommand's task.
         
         If you are only interested in the root-level working copy, you can stop
-        the traversal by returning ``githelper.GitWorkingCopy.STOP_TRAVERSAL``.
+        the traversal by returning :py:data:`githelper.GitWorkingCopy.STOP_TRAVERSAL`.
+
+        :param githelper.GitWorkingCopy wc: The working copy to process.
+
         """
         pass
 
@@ -624,9 +712,12 @@ class AbstractSubcommand(object):
         """
         This method returns False if any of the working copies are dirty.
         
-        You can call this as a first step in your ``__call__()`` implementation
+        You can call this as a first step in your :py:meth:`__call__` implementation
         and abort if your custom subcommand performs operations that require
         clean working copies.
+        
+        :param githelper.GitWorkingCopy wc: The working copy to check.
+
         """
         # perform this check only once at the root
         if not wc.is_root():
@@ -639,12 +730,18 @@ class AbstractSubcommand(object):
         This method gets called on the root working copy only and lets you
         perform preparation steps that you want to do only once for the entire
         tree.
+
+        :param githelper.GitWorkingCopy wc: The working copy to check.
+
         """
         pass
         
     def check_for_git_svn_and_warn(self, wc):
         """
         This returns False and warns if the given working copy is not a git-svn working copy.
+
+        :param githelper.GitWorkingCopy wc: The working copy to check.
+
         """
         if not wc.is_git_svn():
             print >> sys.stderr, '{0} is not git-svn, skipping'.format(wc)
@@ -654,11 +751,10 @@ class AbstractSubcommand(object):
     @classmethod
     def configure_argument_parser(cls, parser):
         """
-        Adds command line options for your subcommand to the arguments parser.
+        If you override this in your subclass, you can configure additional command line arguments
+        for your subcommand's arguments parser.
         
-        :param parser: An argparse_ instance.
-        
-        .. _argparse: http://docs.python.org/library/argparse.html
+        :param argparse.ArgumentParser parser: The argument parser that you can configure.
         
         """
         pass

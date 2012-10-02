@@ -7,7 +7,8 @@ Welcome to githelper's documentation!
 =====================================
 
 .. automodule:: githelper
-   :members: GitWorkingCopy
+   :members: GitWorkingCopy, FilteringPopen, PopenOutputFilter, AbstractSubcommand
+   :exclude-members: __weakref__
    :special-members:
 
 Indices and tables
