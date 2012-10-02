@@ -867,21 +867,25 @@ class SubcommandCheckout(AbstractSubcommand):
 
 class SubcommandBranch(AbstractSubcommand):
     """Show local and SVN branch of each working copy"""
-    
+
     column_accessors = (
         lambda x: str(x),
         lambda x: os.path.basename(x.svn_info('URL')),
         lambda x: x.current_branch(),
     )
+    
+    def column_count(self):
+        return len(SubcommandBranch.column_accessors)
 
     def prepare_for_root(self, root_wc):
-        self.maxlen = [0, 0, 0]
+        self.maxlen = [0] * self.column_count()
         for wc in root_wc:
             for index, accessor in enumerate(SubcommandBranch.column_accessors):
                 self.maxlen[index] = max((self.maxlen[index], len(accessor(wc))))
 
     def __call__(self, wc):
-        print '{0} {1} {2}'.format(*[string.ljust(SubcommandBranch.column_accessors[i](wc), self.maxlen[i]) for i in xrange(3)])
+        format = ' '.join(['{' + str(i) + '}' for i in range(self.column_count())])
+        print format.format(*[string.ljust(SubcommandBranch.column_accessors[i](wc), self.maxlen[i]) for i in xrange(self.column_count())])
 
 
 class SubcommandEach(AbstractSubcommand):
