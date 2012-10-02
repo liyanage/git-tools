@@ -129,6 +129,7 @@ import string
 import subprocess
 import contextlib
 import itertools
+import select
 
 
 class PopenOutputFilter:
@@ -145,17 +146,23 @@ class PopenOutputFilter:
             return None
         return [(action, re.compile(regex_string)) for action, regex_string in ruleset]
     
-    def filtered_stdoutdata(self, data):
-        if not data:
-            return data
+    def filtered_stdoutlines(self, lines):
+        if not lines:
+            return lines
         ruleset = self.stdout_rules
-        return ''.join([line + '\n' for line in data.splitlines() if self.keep_line(line, ruleset)])
+        return [line for line in lines if self.keep_line(line, ruleset)]
 
-    def filtered_stderrdata(self, data):
-        if not data:
-            return data
+    def keep_stdoutline(self, line):
+        return self.keep_line(line, self.stdout_rules)
+
+    def keep_stderrline(self, line):
+        return self.keep_line(line, self.stderr_rules)
+
+    def filtered_stderrlines(self, lines):
+        if not lines:
+            return lines
         ruleset = self.stderr_rules
-        return ''.join([line + '\n' for line in data.splitlines() if self.keep_line(line, ruleset)])
+        return [line for line in lines if self.keep_line(line, ruleset)]
 
     def keep_line(self, line, ruleset):
         for rule in ruleset:
@@ -169,18 +176,91 @@ class PopenOutputFilter:
         return True
 
 
-class FilteringPopen(subprocess.Popen):
+class FilteringPopen(object):
 
-    def communicate(self, filter=None):
+    def __init__(self, *args, **kwargs):
+        self.stdoutbuffer = []
+        self.stderrbuffer = []
+        self.cmd = args[0]
+
+        kwargs['bufsize'] = 1;
+        kwargs['stdout'] = subprocess.PIPE
+        kwargs['stderr'] = subprocess.PIPE
+
+        self.popen = subprocess.Popen(*args, **kwargs)
+
+    def run(self, filter=None, filter_rules=None, store_stdout=True, store_stderr=True, echo_stdout=True, echo_stderr=True, check_returncode=True, header=None):
         self.filter = filter
-        return self.filtered_result(super(FilteringPopen, self).communicate())
+        if filter and filter_rules:
+            raise Exception("'filter' and 'filter_rules' can't be used together")
+        if filter_rules:
+            self.filter = PopenOutputFilter(filter_rules)
+        
+        self.header = header
+        self.did_print_header = False
 
-    def filtered_result(self, output):
-        if not self.filter:
-            return output
-            
-        stdoutdata, stderrdata = output
-        return self.filter.filtered_stdoutdata(stdoutdata), self.filter.filtered_stderrdata(stderrdata)
+        self.store_stdout = store_stdout
+        self.store_stderr = store_stderr
+        self.echo_stdout = echo_stdout
+        self.echo_stderr = echo_stderr
+        
+        returncode = None
+        while returncode is None:
+            self.check_pipes()
+            returncode = self.popen.poll()
+        self.check_pipes(0)
+
+        if check_returncode and returncode:
+            raise Exception('Non-zero exit status for shell command "{0}"'.format(self.cmd))
+        
+
+    def check_pipes(self, timeout=1):
+        ready_read_handles = select.select([self.popen.stdout, self.popen.stderr], (), (), timeout)[0]
+        for handle in ready_read_handles:
+            is_stdout = False
+            is_stderr = False
+            if handle == self.popen.stdout:
+                is_stdout = True
+            if handle == self.popen.stderr:
+                is_stderr = True
+            while True:
+                line = handle.readline().rstrip('\n')
+                if not line:
+                    break
+                if handle == self.popen.stdout:
+                    if self.filter and not self.filter.keep_stdoutline(line):
+                        continue
+                    if self.store_stdout:
+                        self.stdoutbuffer.append(line)
+                    if self.echo_stdout:
+                        self.print_header_once()
+                        with ANSIColor.terminal_color(ANSIColor.blue, ANSIColor.blue):
+                            print >> sys.stderr, line
+                elif handle == self.popen.stderr:
+                    if self.filter and not self.filter.keep_stderrline(line):
+                        continue
+                    if self.store_stderr:
+                        self.stderrbuffer.append(line)
+                    if self.echo_stderr:
+                        self.print_header_once()
+                        with ANSIColor.terminal_color(ANSIColor.blue, ANSIColor.blue):
+                            print >> sys.stdout, line
+    
+    def print_header_once(self):
+        if self.did_print_header or not self.header:
+            return
+        
+        self.did_print_header = True
+        print self.header
+
+    def stdoutlines(self):
+        return self.stdoutbuffer
+
+    def stderrlines(self):
+        return self.stderrbuffer
+
+    def returncode(self):
+        return self.popen.returncode
 
 
 class ANSIColor(object):
@@ -306,7 +386,7 @@ class GitWorkingCopy(object):
         """Hard-resets the current branch to the given ref"""
         self.run_shell_command(['git', 'reset', '--hard', target])
 
-    def run_shell_command(self, command, filter_rules=None, shell=None):
+    def run_shell_command(self, command, filter_rules=None, shell=None, header=None):
         """Runs the given shell command (array or string) in the receiver's working directory."""
         if shell is None:
             if isinstance(command, types.StringTypes):
@@ -314,20 +394,10 @@ class GitWorkingCopy(object):
             else:
                 shell = False
 
-        with ANSIColor.terminal_color(ANSIColor.blue, ANSIColor.blue):
-            popen = FilteringPopen(command, cwd=self.path, shell=shell, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-
-            if popen.returncode:
-                raise Exception("shell command '{0}' returned nonzero status".format(command))
-
-            stdoutdata, stderrdata = popen.communicate(filter=PopenOutputFilter(filter_rules))
-            if stderrdata:
-                sys.stderr.write(stderrdata)
-             
-            if stdoutdata:
-                sys.stdout.write(stdoutdata)
+        popen = FilteringPopen(command, cwd=self.path, shell=shell)
+        popen.run(filter_rules=filter_rules, store_stdout=False, store_stderr=False, header=header)
             
-    def output_for_git_command(self, command, shell=False, filter_rules=None):
+    def output_for_git_command(self, command, shell=False, filter_rules=None, header=None):
         """
         Runs the given shell command (array or string) in the receiver's working directory and returns the output.
 
@@ -336,16 +406,9 @@ class GitWorkingCopy(object):
         .. _subprocess: http://docs.python.org/library/subprocess.html#frequently-used-arguments
 
         """
-        return subprocess.check_output(command, cwd=self.path, shell=shell).splitlines()
-        with ANSIColor.terminal_color(ANSIColor.blue, ANSIColor.blue):
-            popen = FilteringPopen(command, cwd=self.path, shell=shell, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-
-            if popen.returncode:
-                raise Exception("shell command '{0}' returned nonzero status".format(command))
-
-            stdoutdata, stderrdata = popen.communicate(filter=PopenOutputFilter(filter_rules))
-            print >> sys.stderr, stderrdata
-            return stdoutdata
+        popen = FilteringPopen(command, cwd=self.path, shell=shell)
+        popen.run(filter_rules=filter_rules, echo_stdout=False, header=header)
+        return popen.stdoutlines()
 
     def is_root(self):
         """Returns True if the receiver does not have a parent working copy."""
@@ -646,9 +709,12 @@ class SubcommandSvnRebase(AbstractSubcommand):
             print >> sys.stderr, '{0} does not have a master branch, skipping'.format(wc)
             return
 
+        rules = (
+            ('-', r'Current branch master is up to date'),
+        )
+
         with wc.switched_to_branch('master'):
-            print wc
-            wc.run_shell_command('git svn rebase')
+            wc.run_shell_command('git svn rebase', header=wc, filter_rules=rules)
             
 
 class SubcommandTree(AbstractSubcommand):
@@ -667,8 +733,7 @@ class SubcommandStatus(AbstractSubcommand):
             ('-', r'working directory clean'),
         )
         
-        print wc
-        wc.run_shell_command('git status -s', filter_rules=rules)
+        wc.run_shell_command('git status -s', filter_rules=rules, header=wc)
 
 
 class SubcommandCheckout(AbstractSubcommand):
@@ -698,8 +763,7 @@ class SubcommandCheckout(AbstractSubcommand):
             print >> sys.stderr, '{0} is already on branch "{1}"'.format(wc, target_branch)
             return
 
-        print wc
-        wc.run_shell_command('git checkout {0}'.format(target_branch))            
+        wc.run_shell_command('git checkout {0}'.format(target_branch), header=wc)
 
     @classmethod
     def configure_argument_parser(cls, parser):
@@ -728,8 +792,7 @@ class SubcommandEach(AbstractSubcommand):
     """Run a shell command in each working copy"""
     
     def __call__(self, wc):
-        print wc
-        wc.run_shell_command(self.args.shell_command)
+        wc.run_shell_command(self.args.shell_command, header=wc)
 
     @classmethod
     def configure_argument_parser(cls, parser):

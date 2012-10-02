@@ -7,33 +7,55 @@ import subprocess
 
 class TestFilteringPopen(unittest.TestCase):
 
-    def setUp(self):
-        self.instance = githelper.FilteringPopen('echo $\'foo1\\nfoo2\'; echo $\'bar1\\nbar2\' 1>&2', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    def test_nofilter(self):
+        popen = githelper.FilteringPopen('echo $\'foo1\\nfoo2\'; echo $\'bar1\\nbar2\' 1>&2', shell=True)
+        popen.run()
+        self.assertEquals(popen.returncode(), 0)
+        self.assertEquals(popen.stdoutlines(), ['foo1', 'foo2'])
+        self.assertEquals(popen.stderrlines(), ['bar1', 'bar2'])
 
-    def test_popen(self):
+    def test_filter(self):
+        popen = githelper.FilteringPopen('echo $\'foo1\\nfoo2\'; echo $\'bar1\\nbar2\' 1>&2', shell=True)
         rules = [
             ('-', r'^#'),
             ('-', r'1$'),
         ]
-        result = self.instance.communicate(filter=githelper.PopenOutputFilter(rules))
-        self.assertEquals(list(result), ['foo2\n', 'bar2\n'])
+        popen.run(filter_rules=rules)
+        self.assertEquals(popen.returncode(), 0)
+        self.assertEquals(popen.stdoutlines(), ['foo2'])
+        self.assertEquals(popen.stderrlines(), ['bar2'])
 
-    def test_popen2(self):
-        rules = [
-            ('+', r'1$'),
-            ('-', r'.*'),
-        ]
-        result = self.instance.communicate(filter=githelper.PopenOutputFilter(rules))
-        self.assertEquals(list(result), ['foo1\n', 'bar1\n'])
+    def test_check_returncode(self):
+        popen = githelper.FilteringPopen('false', shell=True)
+        with self.assertRaises(Exception):
+            popen.run()
 
-    def test_popen2(self):
+        popen = githelper.FilteringPopen('false', shell=True)
+        popen.run(check_returncode=False)
+        self.assertEquals(popen.returncode(), 1)
+
+    def test_progressive_output(self):
+        popen = githelper.FilteringPopen('for i in $(seq 1 5); do /bin/echo $i xxxxxxxx; for j in $(seq 1 5); do echo $i $j; done; sleep 1; done', shell=True)
         rules = [
-            ('-', r'.*'),
-            ('+', r'1$'),
+            ('-', r'^2'),
         ]
-        result = self.instance.communicate(filter=githelper.PopenOutputFilter(rules))
-        self.assertEquals(list(result), ['', ''])
-    
+        popen.run(filter_rules=rules)
+        self.assertEquals(popen.returncode(), 0)
+
+    def test_header(self):
+        popen = githelper.FilteringPopen('echo $\'foo1\\nfoo2\'; echo $\'bar1\\nbar2\' 1>&2', shell=True)
+        rules = [
+            ('-', r'^foo'),
+            ('-', r'^bar'),
+        ]
+        popen.run(filter_rules=rules, header='Should not show up')
+
+    def test_header(self):
+        popen = githelper.FilteringPopen('echo $\'foo1\\nfoo2\'; echo $\'bar1\\nbar2\' 1>&2', shell=True)
+        rules = [
+            ('-', r'^foo'),
+        ]
+        popen.run(filter_rules=rules, header='Should show up')
 
 if __name__ == '__main__':
     unittest.main()
