@@ -674,8 +674,10 @@ class GitWorkingCopy(object):
     @contextlib.contextmanager
     def chdir_to_path(self):
         """
-        A :ref:`context manager <context-managers>` for the :py:keyword:`with` statement that temporarily switches the current working directory to the receiver's working copy directory::
-        
+        A :ref:`context manager <context-managers>` for the :py:keyword:`with` statement
+        that temporarily switches the current working directory to the receiver's working
+        copy directory::
+
             with wc.chdir_to_path():
                 # do something useful here inside the working copy directory.
 
@@ -688,7 +690,9 @@ class GitWorkingCopy(object):
     @contextlib.contextmanager
     def switched_to_branch(self, branch_name):
         """
-        A :ref:`context manager <context-managers>` for the :py:keyword:`with` statement that temporarily switches the current git branch to another one and afterwards restores the original one.
+        A :ref:`context manager <context-managers>` for the :py:keyword:`with` statement
+        that temporarily switches the current git branch to another one and afterwards
+        restores the original one.
         
         Example::
             

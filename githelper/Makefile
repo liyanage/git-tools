@@ -154,6 +154,6 @@ doctest:
 
 gh-pages: html
 	git checkout gh-pages
-	rsync -avP _build/html/ ../	
+	rsync -avP --exclude=.* _build/html/ ../	
 	git commit -a -m 'Doc update'
 	git checkout master
