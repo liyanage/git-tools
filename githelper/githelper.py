@@ -14,6 +14,14 @@ HTML version of this documentation at http://liyanage.github.com/git-tools/
 
 .. _git: http://git-scm.com
 
+Installation
+------------
+
+You can install githelper directly from github like this::
+
+    sudo curl -o /usr/local/bin/githelper.py -L https://github.com/liyanage/git-tools/raw/master/githelper/githelper.py
+    sudo chmod 755 /usr/local/bin/githelper.py
+
 Command Line Utility
 --------------------
 
