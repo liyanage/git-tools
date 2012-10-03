@@ -381,8 +381,9 @@ class GitWorkingCopy(object):
     """returned from a :py:meth:`~AbstractSubcommand.__call__` implementation to stop further recursion by :py:meth:`traverse`."""
 
     def __init__(self, path, parent=None):
-        self.path = path
+        self.path = os.path.abspath(path)
         self._svn_info = None
+        self._svn_externals = None
         self.parent = parent
         self.child_list = None
 
@@ -538,6 +539,28 @@ class GitWorkingCopy(object):
             return self._svn_info[key]
         else:
             return self._svn_info
+
+    def svn_externals(self):
+        """
+        Returns a dictionary with the externals in the output of ``git svn show-externals``.
+        """
+        if not self._svn_externals:
+            output = subprocess.check_output('git svn show-externals'.split(), cwd=self.path)
+            self._svn_externals = {}
+            for match in re.finditer('^/(\S+)\s+(\S+)[\t ]*$', output, re.MULTILINE):
+                self._svn_externals[match.group(1)] = match.group(2)
+
+        return self._svn_externals
+
+    def svn_ignore_paths(self):
+        """
+        Returns a dictionary with the items in the output of ``git svn show-ignore``.
+        """
+        output = subprocess.check_output('git svn show-ignore'.split(), cwd=self.path)
+        ignore_paths = []
+        for match in re.finditer('^/(\S+)', output, re.MULTILINE):
+            ignore_paths.append(match.group(1))
+        return ignore_paths
 
     def is_dirty(self):
         """
@@ -696,7 +719,7 @@ class AbstractSubcommand(object):
     def __init__(self, arguments):
         self.args = arguments
 
-    def __call__(self, wc):
+    def __call__(self, wc=None):
         """
         This gets called once per working copy to perform the subcommand's task.
         
@@ -758,6 +781,14 @@ class AbstractSubcommand(object):
         
         """
         pass
+
+
+    @classmethod
+    def wants_working_copy(cls):
+        """
+        Return ``False`` to allow usage of your subcommand without a git working copy. The default is ``True``.
+        """
+        return True
 
 
 class SubcommandResetMasterToSvnBranch(AbstractSubcommand):
@@ -888,6 +919,57 @@ class SubcommandBranch(AbstractSubcommand):
         print format.format(*[string.ljust(SubcommandBranch.column_accessors[i](wc), self.maxlen[i]) for i in xrange(self.column_count())])
 
 
+class SubcommandCloneExternals(AbstractSubcommand):
+    """Clone an SVN repository and its ``svn:externals`` recursively."""
+
+    def __call__(self):
+        path = self.args.checkout_directory
+        self.checkout_svn_url(self.args.checkout_directory, self.args.svn_url)
+                
+    def checkout_svn_url(self, path, svn_url):
+        print 'Checking out "{0}" into "{1}"'.format(svn_url, path)
+ 
+        if not os.path.exists(path):
+            cmd = 'git svn clone -r HEAD'.split() + [svn_url, path]
+            popen = FilteringPopen(cmd)
+            popen.run()
+        else:
+            print '"{0}" already exists'.format(path)
+ 
+        wc = GitWorkingCopy(path)
+        print wc
+        with wc.chdir_to_path():
+            externals = wc.svn_externals()
+ #           print externals
+            self.update_exclude_file_with_paths(externals.keys() + wc.svn_ignore_paths())
+            for directory, svn_url in externals.viewitems():
+                self.checkout_svn_url(directory, svn_url)
+
+    def update_exclude_file_with_paths(self, paths):
+        lines_to_add = [path + '\n' for path in paths]
+        excludefile_path = '.git/info/exclude'
+        with open(excludefile_path, 'r+') as f:
+            lines = f.readlines()
+            lines_to_add = [line for line in lines_to_add if not line in lines]
+            if not lines_to_add:
+                return
+
+#            print 'Adding "{0}" to "{1}"'.format(lines_to_add, os.path.abspath(excludefile_path))
+            lines.extend(lines_to_add)
+            f.seek(0)
+            f.truncate()
+            f.writelines(lines)
+
+    @classmethod
+    def configure_argument_parser(cls, parser):
+        parser.add_argument('svn_url', help='The toplevel SVN repository to clone')
+        parser.add_argument('checkout_directory', help='The path to the sandbox directory to create')
+
+    @classmethod
+    def wants_working_copy(cls):
+        return False
+
+
 class SubcommandEach(AbstractSubcommand):
     """Run a shell command in each working copy"""
     
@@ -984,9 +1066,11 @@ class GitHelperCommandLineDriver(object):
         subcommand_class = subcommand_map[args.subcommand_name]
         subcommand = subcommand_class(args)
 
-        wc = GitWorkingCopy(args.root_path)
-        wc.traverse(subcommand)
-
+        if subcommand_class.wants_working_copy():
+            wc = GitWorkingCopy(args.root_path)
+            wc.traverse(subcommand)
+        else:
+            subcommand()
 
 if __name__ == "__main__":
     GitHelperCommandLineDriver.run()
