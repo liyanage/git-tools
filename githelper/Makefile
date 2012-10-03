@@ -157,3 +157,6 @@ gh-pages: html
 	rsync -avP --exclude=.* _build/html/ ../	
 	git commit -a -m 'Doc update'
 	git checkout master
+
+preview: html
+	open _build/html/index.html

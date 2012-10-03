@@ -2,7 +2,7 @@
 
 """
 Introduction
-------------
+============
 
 githelper is both a module and a command line utility for working
 with git_ working copies, especially git-svn ones where
@@ -15,7 +15,7 @@ HTML version of this documentation at http://liyanage.github.com/git-tools/
 .. _git: http://git-scm.com
 
 Installation
-------------
+============
 
 You can install githelper directly from github like this::
 
@@ -23,7 +23,7 @@ You can install githelper directly from github like this::
     sudo chmod 755 /usr/local/bin/githelper.py
 
 Command Line Utility
---------------------
+====================
 
 This documentation does not cover the command line utility usage
 in detail because you can get that with the help option::
@@ -39,8 +39,60 @@ subcommand in turn supports the -h flag::
 You can extend the set of subcommands by writing plug-in classes. See
 `Extending with Plug-In Classes`_ for details.
 
+Command Line Utility Examples
+-----------------------------
+
+Below are some command line usage examples. The examples assume a
+``gh`` shell alias for githelper::
+
+    alias gh githelper.py
+
+Start out by cloning an SVN repository with svn:externals as nested git working copies::
+
+    $ gh cloneexternals https://svn.example.com/repo/project my-great-project
+    ...
+    $ cd my-great-project
+
+To get an overview of the nested working copies, use the ``tree`` subcommand::
+
+    $ gh tree
+    |<Working copy /path/to/my-great-project>
+    |--<Working copy /path/to/my-great-project/Foo *>
+    |----<Working copy /path/to/my-great-project/Foo/subexternal>
+    |--<Working copy /path/to/my-great-project/Bar>
+    |--<Working copy /path/to/my-great-project/Baz>
+    |--<Working copy /path/to/my-great-project/Subproject *>
+    |----<Working copy /path/to/my-great-project/Subproject/ABC/Demo>
+    |--<Working copy /path/to/my-great-project/Xyz>
+
+(The * indicates a working copy with uncommited changes)
+
+To get a combined git status view, use ``status``::
+
+    $ gh status
+    <Working copy /path/to/my-great-project/Foo *>
+     M data.txt
+    <Working copy /path/to/my-great-project/Subproject *>
+     A xyz.dat
+
+Only working copies that have any interesting status are listed.
+
+To recursively update all git-svn sandboxes to the latest SVN state (i.e. perform a
+``git svn rebase`` in all sub-working copies), use ``svnrebase``::
+
+    $ gh svnrebase
+    <Working copy /path/to/my-great-project/Foo>
+        M	Widget/Foo/Foo.m
+    r1234 = a7fca99445fa4518cdc47b008656359c1d8ce188 (refs/remotes/svn)
+        M	Engine/Bar/Bar.m
+    r1235 = d8faece12674ac8c670a15e10992c13876577834 (refs/remotes/svn)
+    First, rewinding head to replay your work on top of it...
+    Fast-forwarded master to refs/remotes/svn.
+
+These are just a few examples, see the command line help for the remaining subcommands.
+
 Usage as Toolkit Module
------------------------
+=======================
 
 If the utility does not provide what you need, you can write your own script
 based on githelper as a module. The rest of this document explains the module's API.
@@ -98,7 +150,7 @@ the :py:class:`GitWorkingCopy` API.
 .. _`module's source code`: https://github.com/liyanage/git-tools/blob/master/githelper/githelper.py
 
 Extending with Plug-In Classes
-------------------------------
+==============================
 
 To extend the command line utility with additional custom subcommands, create a
 file called :file:`githelper_local.py` and store it somewhere in your :envvar:`PATH`.
@@ -124,7 +176,7 @@ Here is an example :file:`githelper_local.py` with one subcommand named ``foo``:
             parser.add_argument('-b', '--bar', help='Provide a useful description of this option here')
 
 API Documentation
------------------
+=================
 
 """
 
