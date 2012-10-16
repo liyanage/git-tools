@@ -587,6 +587,13 @@ class GitWorkingCopy(object):
             return self
         return self.parent.root_working_copy()
 
+    def _check_output_in_path(self, command):
+        try:
+            return subprocess.check_output(command, cwd=self.path)
+        except:
+            print >> sys.stderr, 'Error running shell command in "{}":'.format(self.path)
+            raise
+        
     def svn_info(self, key=None):
         """
         Returns a dictionary containing the key/value pairs in the output of ``git svn info``.
@@ -595,7 +602,7 @@ class GitWorkingCopy(object):
         
         """
         if not self._svn_info:
-            output = subprocess.check_output('git svn info'.split(), cwd=self.path)
+            output = self._check_output_in_path('git svn info'.split())
             self._svn_info = {}
             for match in re.finditer('^([^:]+): (.*)$', output, re.MULTILINE):
                 self._svn_info[match.group(1)] = match.group(2)
@@ -610,7 +617,7 @@ class GitWorkingCopy(object):
         Returns a dictionary with the externals in the output of ``git svn show-externals``.
         """
         if not self._svn_externals:
-            output = subprocess.check_output('git svn show-externals'.split(), cwd=self.path)
+            output = self._check_output_in_path('git svn show-externals'.split())
             self._svn_externals = {}
             for match in re.finditer('^/(\S+)\s+(\S+)[\t ]*$', output, re.MULTILINE):
                 self._svn_externals[match.group(1)] = match.group(2)
@@ -621,7 +628,7 @@ class GitWorkingCopy(object):
         """
         Returns a dictionary with the items in the output of ``git svn show-ignore``.
         """
-        output = subprocess.check_output('git svn show-ignore'.split(), cwd=self.path)
+        output = self._check_output_in_path('git svn show-ignore'.split())
         ignore_paths = []
         for match in re.finditer('^/(\S+)', output, re.MULTILINE):
             ignore_paths.append(match.group(1))
@@ -638,7 +645,7 @@ class GitWorkingCopy(object):
 
     def dirty_file_lines(self):
         """Returns the output of git status for the files marked as modified, renamed etc."""
-        output = subprocess.check_output('git status --porcelain'.split(), cwd=self.path).splitlines()
+        output = self._check_output_in_path('git status --porcelain'.split()).splitlines()
         dirty_file_lines = [line[3:].strip('"') for line in output if not line.startswith('?')]
         return dirty_file_lines
 
