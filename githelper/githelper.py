@@ -89,6 +89,11 @@ To recursively update all git-svn sandboxes to the latest SVN state (i.e. perfor
     First, rewinding head to replay your work on top of it...
     Fast-forwarded master to refs/remotes/svn.
 
+To check out a certain point in time in the past in all nested sandboxes, you could
+use the ``each`` subcommand, which runs a shell command in each working copy:
+
+    $ gh each "git checkout \$(git rev-list -n 1 --before='2012-01-01 00:00' master)"
+
 These are just a few examples, see the command line help for the remaining subcommands.
 
 Usage as Toolkit Module
@@ -1038,7 +1043,8 @@ class SubcommandEach(AbstractSubcommand):
     """Run a shell command in each working copy"""
     
     def __call__(self, wc):
-        wc.run_shell_command(self.args.shell_command, header=wc)
+        command = ' '.join(self.args.shell_command)
+        wc.run_shell_command(command, header=wc)
 
     @classmethod
     def configure_argument_parser(cls, parser):
