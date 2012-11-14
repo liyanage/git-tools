@@ -1124,7 +1124,9 @@ class GitHelperCommandLineDriver(object):
         for k, v in namespaces.items():
             if not k.startswith('Subcommand'):
                 continue
-            subcommand_map[k[10:].lower()] = v
+            name_components = [i.lower() for i in re.findall(r'([A-Z][a-z]+)', k)[1:]]
+            subcommand_name = '-'.join(name_components)
+            subcommand_map[subcommand_name] = v
 
         return subcommand_map
 
