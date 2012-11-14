@@ -535,7 +535,7 @@ class GitWorkingCopy(object):
         """Hard-resets the current branch to the given ref"""
         self.run_shell_command(['git', 'reset', '--hard', target])
 
-    def run_shell_command(self, command, filter_rules=None, shell=None, header=None):
+    def run_shell_command(self, command, filter_rules=None, shell=None, header=None, check_returncode=True):
         """
         Runs the given shell command (array or string) in the receiver's working directory using :py:class:`FilteringPopen`.
 
@@ -552,7 +552,7 @@ class GitWorkingCopy(object):
                 shell = False
 
         popen = FilteringPopen(command, cwd=self.path, shell=shell)
-        popen.run(filter_rules=filter_rules, store_stdout=False, store_stderr=False, header=header)
+        popen.run(filter_rules=filter_rules, store_stdout=False, store_stderr=False, header=header, check_returncode=check_returncode)
 
     def output_for_git_command(self, command, shell=False, filter_rules=None, header=None):
         """
@@ -1052,7 +1052,7 @@ class SubcommandEach(AbstractSubcommand):
 
     def __call__(self, wc):
         command = ' '.join(self.args.shell_command)
-        wc.run_shell_command(command, header=wc)
+        wc.run_shell_command(command, header=wc, check_returncode=False)
 
     @classmethod
     def configure_argument_parser(cls, parser):
