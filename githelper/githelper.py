@@ -112,11 +112,11 @@ You can then traverse the tree of nested working copies by iterating over the
 GitWorkingCopy instance::
 
     #!/usr/bin/env python
-    
+
     import githelper
     import os
     import sys
-    
+
     root_wc = githelper.GitWorkingCopy(sys.argv[1])
 
     for wc in root_wc:
@@ -135,14 +135,14 @@ it takes a callable, in the following example a function::
 Any callable object works, in the following example an instance of a class that implements :py:meth:`~object.__call__`::
 
     class Foo:
-    
+
         def __init__(self, some_state):
             self.some_state = some_state
-    
+
         def __call__(self, wc):
             # possibly use self.some_state
-            print wc.current_branch()	
-    
+            print wc.current_branch()
+
     root_wc = githelper.GitWorkingCopy(sys.argv[1])
     iterator = Foo('bar')
     root_wc.traverse(iterator)
@@ -166,15 +166,15 @@ that you pass on the command line to invoke it.
 Here is an example :file:`githelper_local.py` with one subcommand named ``foo``::
 
     from githelper import AbstractSubcommand, GitWorkingCopy
-    
+
     class SubcommandFoo(AbstractSubcommand):
         # The class-level doc comment is reused for the command-line usage help string.
         \"""Provide a useful description of this subcommand here\"""
-    
+
         def __call__(self, wc):
             print wc
             return GitWorkingCopy.STOP_TRAVERSAL
-        
+
         @classmethod
         def configure_argument_parser(cls, parser):
             # Add any command line options here. If you don't need any, just add a "pass" statement instead.
@@ -204,12 +204,12 @@ class PopenOutputFilter:
     Represents a set of inclusion/exclusion rules to filter the output of :py:class:`FilteringPopen`.
     You create instance of this class to pass to :py:meth:`FilteringPopen.run` (but see ``run()``'s
     ``filter_rules`` parameter for a convenience shortcut).
-    
+
     There are two independent rule sets to filter stdout and stderr individually. If you don't
     supply the (optional) rule set for stderr, the (mandatory) one for stdout is reused.
-    
+
     Rule sets are lists of lists of this form::
-    
+
         rules = [
             ('-', r'^foo'),
             ('-', r'bar$'),
@@ -219,42 +219,42 @@ class PopenOutputFilter:
     Each rule is a two-element list where the first element is either the string "-" or "+"
     representing the actions for exclusion and inclusion, and the second element is a
     regular expression.
-    
+
     Each line of stdout or stderr output is matched against each regular expression. If one
     of them matches, the line is filtered out if the action element is "-" or included if
     the action is "+". After the first rule matches, no further rules are evaluated.
-    
+
     If no rule matches a given line, the line is included (not filtered out), i.e. there is
     an implicit last rule like this::
-    
+
         ('+', '.*')
-    
+
     In the example given above, all lines beginning with ``foo`` or ending with ``bar``
     are filtered out.
-    
+
     In the following example, only lines containing foo or bar are included, everything else
     is filtered out::
-    
+
         rules = [
             ('+', r'foo'),
             ('+', r'bar'),
             ('-', '.*')
         ]
-    
+
     """
-    
+
     def __init__(self, stdout_rules, stderr_rules=None):
         self.stdout_rules = self.compile_rules(stdout_rules)
         if stderr_rules is None:
             self.stderr_rules = self.stdout_rules
         else:
             self.stderr_rules = self.compile_rules(stderr_rules)
-    
+
     def compile_rules(self, ruleset):
         if not ruleset:
             return None
         return [(action, re.compile(regex_string)) for action, regex_string in ruleset]
-    
+
     def filtered_stdoutlines(self, lines):
         if not lines:
             return lines
@@ -292,7 +292,7 @@ class FilteringPopen(object):
     The constructor's parameters are forwarded mostly unchanged to :py:class:`Popen's constructor <subprocess.Popen>`.
     Exceptions are ``bufsize``, which is set to ``1`` for line-buffered output, and ``stdout``, and ``stderr``,
     which are both set to :py:data:`subprocess.PIPE`.
-    
+
     This method sets up the Popen instance but does not run it. See :py:meth:`run` for that.
 
     """
@@ -301,6 +301,7 @@ class FilteringPopen(object):
         self.stdoutbuffer = []
         self.stderrbuffer = []
         self.cmd = args[0]
+        self.wd = kwargs.get('cwd', None)
 
         kwargs['bufsize'] = 1;
         kwargs['stdout'] = subprocess.PIPE
@@ -321,14 +322,14 @@ class FilteringPopen(object):
         :param bool check_returncode: If ``True``, the method raises an exception if the command terminates with a non-zero exit code.
         :param object header: This value will be printed to the console exactly once if the subcommand produces any output that does not get filtered out.
                               This is useful if you want to print something, but not if the command would not produce any output anyway.
-        
+
         """
         self.filter = filter
         if filter and filter_rules:
             raise Exception("'filter' and 'filter_rules' can't be used together")
         if filter_rules:
             self.filter = PopenOutputFilter(filter_rules)
-        
+
         self.header = header
         self.did_print_header = False
 
@@ -336,7 +337,7 @@ class FilteringPopen(object):
         self.store_stderr = store_stderr
         self.echo_stdout = echo_stdout
         self.echo_stderr = echo_stderr
-        
+
         returncode = None
         while returncode is None:
             self.check_pipes()
@@ -344,8 +345,8 @@ class FilteringPopen(object):
         self.check_pipes(0)
 
         if check_returncode and returncode:
-            raise Exception('Non-zero exit status for shell command "{0}"'.format(self.cmd))
-        
+            wd = self.wd if self.wd else os.getcwd()
+            raise Exception('Non-zero exit status for shell command "{}" in {}'.format(self.cmd, self.wd))
 
     def check_pipes(self, timeout=1):
         ready_read_handles = select.select([self.popen.stdout, self.popen.stderr], (), (), timeout)[0]
@@ -378,11 +379,11 @@ class FilteringPopen(object):
                         self.print_header_once()
                         with ANSIColor.terminal_color(ANSIColor.blue, ANSIColor.blue):
                             print >> sys.stdout, line
-    
+
     def print_header_once(self):
         if self.did_print_header or not self.header:
             return
-        
+
         self.did_print_header = True
         print self.header
 
@@ -397,9 +398,9 @@ class FilteringPopen(object):
     def returncode(self):
         """
         Returns the command's exit code.
-        
+
         :rtype: int
-        
+
         """
         return self.popen.returncode
 
@@ -437,7 +438,7 @@ class ANSIColor(object):
 class GitWorkingCopy(object):
     """
     A class to represent a git or git-svn working copy.
-    
+
     :param str path: The file system path to the working copy.
     :param githelper.GitWorkingCopy parent: A parent instance, you don't usually use this yourself.
     """
@@ -481,7 +482,7 @@ class GitWorkingCopy(object):
     def remote_branch_names(self):
         """
         Returns a list of git branch names starting with ``remote/``.
-        
+
         The leading ``remote/`` part will be removed.
         """
         return [i[8:] for i in self.branch_names() if i.startswith('remotes/')]
@@ -493,14 +494,14 @@ class GitWorkingCopy(object):
     def remote_branch_name_for_name_list(self, name_list):
         """
         Returns a remote branch name matching a list of candidate strings.
-        
+
         Tries to find a remote branch names using all possible combinations
         of the names in the list. For example, given::
-        
+
             ['foo', 'bar']
-        
+
         as ``name_list``, it would find any of these::
-        
+
             remotes/foo
             remotes/Foo
             remotes/bar
@@ -509,9 +510,9 @@ class GitWorkingCopy(object):
             remotes/foo-bar
             remotes/Bar-Foo
             remotes/bar-foo
-        
+
         etc. and return the part after ``remotes/`` of the first match.
-        
+
         """
         name_list = [i.lower() for i in name_list]
         candidates = set(name_list)
@@ -537,12 +538,12 @@ class GitWorkingCopy(object):
     def run_shell_command(self, command, filter_rules=None, shell=None, header=None):
         """
         Runs the given shell command (array or string) in the receiver's working directory using :py:class:`FilteringPopen`.
-        
+
         :param str command: Passed to :py:class:`FilteringPopen`'s constructor. Can also be an array.
         :param array filter_rules: Passed to :py:class:`FilteringPopen`'s constructor.
         :param bool shell: Passed to :py:class:`FilteringPopen`'s constructor.
         :param object header: Passed to :py:class:`FilteringPopen.run`.
-        
+
         """
         if shell is None:
             if isinstance(command, types.StringTypes):
@@ -552,13 +553,13 @@ class GitWorkingCopy(object):
 
         popen = FilteringPopen(command, cwd=self.path, shell=shell)
         popen.run(filter_rules=filter_rules, store_stdout=False, store_stderr=False, header=header)
-            
+
     def output_for_git_command(self, command, shell=False, filter_rules=None, header=None):
         """
         Runs the given shell command (array or string) in the receiver's working directory and returns the output.
 
         :param bool shell: If ``True``, runs the command through the shell. See the :py:mod:`subprocess` library module documentation for details.
-        
+
         """
         popen = FilteringPopen(command, cwd=self.path, shell=shell)
         popen.run(filter_rules=filter_rules, echo_stdout=False, header=header)
@@ -571,7 +572,7 @@ class GitWorkingCopy(object):
     def ancestors(self):
         """
         Returns a list of parent working copies.
-        
+
         If the receiver is the root working copy, this returns an empty list.
 
         """
@@ -593,13 +594,13 @@ class GitWorkingCopy(object):
         except:
             print >> sys.stderr, 'Error running shell command in "{}":'.format(self.path)
             raise
-        
+
     def svn_info(self, key=None):
         """
         Returns a dictionary containing the key/value pairs in the output of ``git svn info``.
-        
+
         :param str key: When present, returns just the one value associated with the given key.
-        
+
         """
         if not self._svn_info:
             output = self._check_output_in_path('git svn info'.split())
@@ -637,9 +638,9 @@ class GitWorkingCopy(object):
     def is_dirty(self):
         """
         Returns True if the receiver's working copy has uncommitted modifications.
-        
+
         Many operations depend on a clean state.
-        
+
         """
         return bool(self.dirty_file_lines())
 
@@ -670,29 +671,29 @@ class GitWorkingCopy(object):
             for (dirpath, dirnames, filenames) in os.walk(self.path):
                 if dirpath == self.path:
                     continue
-    
+
                 if not '.git' in dirnames:
                     continue
-    
+
                 del dirnames[:]
-    
+
                 wc = GitWorkingCopy(dirpath, parent=self)
                 self.child_list.append(wc)
-        
+
         return self.child_list
-        
+
     def __iter__(self):
         """
         Returns an iterator over ``self`` and all of its nested git working copies.
-        
+
         See the :ref:`example above <iteration-example>`.
-        
+
         """
         yield self
         for child in self.children():
             for item in child:
                 yield item
-    
+
     def self_or_descendants_are_dirty(self, list_dirty=False):
         """
         Returns True if the receiver's or one of its nested working copies are dirty.
@@ -721,7 +722,7 @@ class GitWorkingCopy(object):
 
         Before each call to iterator for a given working copy, the current directory is first
         set to that working copy's path.
-        
+
         See the :ref:`example above <iteration-example>`.
         """
         if callable(getattr(iterator, "prepare_for_root", None)):
@@ -757,9 +758,9 @@ class GitWorkingCopy(object):
         A :ref:`context manager <context-managers>` for the :py:keyword:`with` statement
         that temporarily switches the current git branch to another one and afterwards
         restores the original one.
-        
+
         Example::
-            
+
             with wc.switched_to_branch('master'):
                 # do something useful here on the 'master' branch.
 
@@ -780,7 +781,7 @@ class GitWorkingCopy(object):
 class AbstractSubcommand(object):
     """
     A base class for custom subcommand plug-in classes.
-    
+
     You can, but don't have to, derive from this class for
     your custom subcommand extension classes. It also documents
     the interface you are expected to implement in your class
@@ -789,7 +790,7 @@ class AbstractSubcommand(object):
     :param argparse.Namespace arguments: The command-line options passed to your subcommand
                                          in the form of a namespace instance as returned by
                                          :py:meth:`argparse.ArgumentParser.parse_args`.
-        
+
     """
 
     def __init__(self, arguments):
@@ -798,7 +799,7 @@ class AbstractSubcommand(object):
     def __call__(self, wc=None):
         """
         This gets called once per working copy to perform the subcommand's task.
-        
+
         If you are only interested in the root-level working copy, you can stop
         the traversal by returning :py:data:`githelper.GitWorkingCopy.STOP_TRAVERSAL`.
 
@@ -810,11 +811,11 @@ class AbstractSubcommand(object):
     def check_preconditions(self, wc):
         """
         This method returns False if any of the working copies are dirty.
-        
+
         You can call this as a first step in your :py:meth:`__call__` implementation
         and abort if your custom subcommand performs operations that require
         clean working copies.
-        
+
         :param githelper.GitWorkingCopy wc: The working copy to check.
 
         """
@@ -834,7 +835,7 @@ class AbstractSubcommand(object):
 
         """
         pass
-        
+
     def check_for_git_svn_and_warn(self, wc):
         """
         This returns False and warns if the given working copy is not a git-svn working copy.
@@ -852,9 +853,9 @@ class AbstractSubcommand(object):
         """
         If you override this in your subclass, you can configure additional command line arguments
         for your subcommand's arguments parser.
-        
+
         :param argparse.ArgumentParser parser: The argument parser that you can configure.
-        
+
         """
         pass
 
@@ -918,11 +919,11 @@ class SubcommandSvnRebase(AbstractSubcommand):
 
         with wc.switched_to_branch('master'):
             wc.run_shell_command('git svn rebase', header=wc, filter_rules=rules)
-            
+
 
 class SubcommandTree(AbstractSubcommand):
     """List the tree of nested working copies"""
-    
+
     def __call__(self, wc):
         print '|{0}{1}'.format(len(wc.ancestors()) * '--', wc)
 
@@ -935,13 +936,13 @@ class SubcommandStatus(AbstractSubcommand):
             ('-', r' On branch '),
             ('-', r'working directory clean'),
         )
-        
+
         wc.run_shell_command('git status -s', filter_rules=rules, header=wc)
 
 
 class SubcommandCheckout(AbstractSubcommand):
     """Check out a given branch if it exists"""
-    
+
     def __call__(self, wc):
         if not self.check_preconditions(wc):
             return GitWorkingCopy.STOP_TRAVERSAL
@@ -950,7 +951,7 @@ class SubcommandCheckout(AbstractSubcommand):
         current_branch = wc.current_branch()
 
         branch_candidates = [i for i in wc.local_branch_names() if target_branch in i]
-        
+
         if not branch_candidates:
             print >> sys.stderr, 'No branch "{0}" in {1}, staying on "{2}"'.format(target_branch, wc, current_branch)
             return
@@ -959,7 +960,7 @@ class SubcommandCheckout(AbstractSubcommand):
             print >> sys.stderr, 'Branch name "{0}" is ambiguous in {1}, staying on "{2}":'.format(target_branch, wc, current_branch)
             print >> sys.stderr, [i + '\n' for i in branch_candidates]
             return
-        
+
         target_branch = branch_candidates[0]
 
         if current_branch == target_branch:
@@ -980,7 +981,7 @@ class SubcommandBranch(AbstractSubcommand):
         lambda x: os.path.basename(x.svn_info('URL')),
         lambda x: x.current_branch(),
     )
-    
+
     def column_count(self):
         return len(SubcommandBranch.column_accessors)
 
@@ -1001,17 +1002,17 @@ class SubcommandCloneExternals(AbstractSubcommand):
     def __call__(self):
         path = self.args.checkout_directory
         self.checkout_svn_url(self.args.checkout_directory, self.args.svn_url)
-                
+
     def checkout_svn_url(self, path, svn_url):
         print 'Checking out "{0}" into "{1}"'.format(svn_url, path)
- 
+
         if not os.path.exists(path):
             cmd = 'git svn clone -r HEAD'.split() + [svn_url, path]
             popen = FilteringPopen(cmd)
             popen.run()
         else:
             print '"{0}" already exists'.format(path)
- 
+
         wc = GitWorkingCopy(path)
         print wc
         with wc.chdir_to_path():
@@ -1048,7 +1049,7 @@ class SubcommandCloneExternals(AbstractSubcommand):
 
 class SubcommandEach(AbstractSubcommand):
     """Run a shell command in each working copy"""
-    
+
     def __call__(self, wc):
         command = ' '.join(self.args.shell_command)
         wc.run_shell_command(command, header=wc)
@@ -1114,7 +1115,7 @@ class GitHelperCommandLineDriver(object):
         except Exception as e:
             print >> sys.stderr, 'Unable to import githelper_local extension module:'
             raise
-        
+
         namespaces = globals()
         subcommand_map = {}
         if githelper_local:
@@ -1124,13 +1125,13 @@ class GitHelperCommandLineDriver(object):
             if not k.startswith('Subcommand'):
                 continue
             subcommand_map[k[10:].lower()] = v
-        
+
         return subcommand_map
 
     @classmethod
     def run(cls):
         subcommand_map = cls.subcommand_map()
-    
+
         parser = argparse.ArgumentParser(description='Git-SVN helper')
         parser.add_argument('--root_path', help='Path to root working copy', default=os.getcwd())
         subparsers = parser.add_subparsers(title='Subcommands', dest='subcommand_name')
