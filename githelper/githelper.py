@@ -1084,6 +1084,12 @@ class SvnLogEntry(object):
     def revision(self):
         return self.xml_element.get('revision')
     
+    def timestamp(self):
+        return self.xml_element.findtext('date')
+    
+    def date(self):
+        return self.timestamp()[:10]
+    
     def copyfrom_location(self):
         path_element = self.xml_element.find('paths/path')
         if path_element.get('action') != 'A':
@@ -1125,20 +1131,21 @@ class SubcommandSvnLineage(AbstractSubcommand):
     """Show the branching history of an SVN branch."""
 
     def __call__(self):
-        def callback(svn_location):
-            print '{}@{}'.format(svn_location.url, svn_location.revision)
+        def callback(svn_location, log_entry):
+            date = '{} '.format(log_entry.date()) if log_entry else 'HEAD       '
+            print '{}{}@{}'.format(date, svn_location.url, svn_location.revision)
             
         self.location_list(self.leaf_svn_location(), callback)
     
-    def location_list(self, svn_location, callback=None):
+    def location_list(self, svn_location, callback=None, log_entry=None):
         if callback:
-            callback(svn_location)
+            callback(svn_location, log_entry)
         try:
             log = SvnLog(svn_location)
             oldest_entry = log.oldest_log_entry()
             branch_location = oldest_entry.copyfrom_location()
             if branch_location:
-                return self.location_list(branch_location, callback) + [svn_location]
+                return self.location_list(branch_location, callback, oldest_entry) + [svn_location]
         except:
             print 'Unable to follow log for SVN location "{}", it might not exist in the repository.'.format(svn_location.url)
             pass
