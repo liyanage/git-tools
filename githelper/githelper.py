@@ -187,17 +187,18 @@ API Documentation
 
 # autopep8 -i --ignore E501 githelper.py
 
-import argparse
 import os
 import re
 import sys
 import types
+import select
 import string
+import argparse
+import itertools
 import subprocess
 import contextlib
-import itertools
-import select
-
+import collections
+import xml.etree.ElementTree
 
 class PopenOutputFilter:
     """
@@ -1041,6 +1042,132 @@ class SubcommandCloneExternals(AbstractSubcommand):
     def configure_argument_parser(cls, parser):
         parser.add_argument('svn_url', help='The toplevel SVN repository to clone')
         parser.add_argument('checkout_directory', help='The path to the sandbox directory to create')
+
+    @classmethod
+    def wants_working_copy(cls):
+        return False
+
+
+class SvnInfo(object):
+    
+    def __init__(self, xml_element):
+        self.xml_element = xml_element
+    
+    def root(self):
+        return self.xml_element.findtext('entry/repository/root')
+
+    def url(self):
+        return self.xml_element.findtext('entry/url')
+    
+    def revision(self):
+        return self.xml_element.find('entry').get('revision')
+    
+    def last_changed_revision(self):
+        return self.xml_element.find('entry/commit').get('revision')
+
+    @classmethod
+    def info_for_url_or_path(cls, svn_url_or_path):
+        info = subprocess.check_output(['svn', 'info', '--xml', svn_url_or_path])
+        tree = xml.etree.ElementTree.fromstring(info)
+        return cls(tree)
+        
+
+SvnLocation = collections.namedtuple('SvnLocation', ['url', 'root', 'revision'])
+
+
+class SvnLogEntry(object):
+    
+    def __init__(self, xml_element, svn_location):
+        self.xml_element = xml_element
+        self.location = svn_location
+    
+    def revision(self):
+        return self.xml_element.get('revision')
+    
+    def copyfrom_location(self):
+        path_element = self.xml_element.find('paths/path')
+        if path_element.get('action') != 'A':
+            return None
+        path = path_element.text
+        if not self.location.url.endswith(path):
+            raise Exception('copyfrom mismatch: {} / {}'.format(self.location.url, path))
+        
+        copyfrom_path = path_element.get('copyfrom-path')
+        if not copyfrom_path:
+            return None
+
+        copyfrom_url = self.location.url.replace(path, copyfrom_path)
+        copyfrom_revision = path_element.get('copyfrom-rev')
+        copyfrom_location = SvnLocation(copyfrom_url, self.location.root, copyfrom_revision)
+        return copyfrom_location
+
+
+class SvnLog(object):
+    
+    def __init__(self, svn_location, stop_on_copy=True):
+        cmd = ['svn', 'log', '-v', '--xml']
+        if stop_on_copy:
+            cmd.append('--stop-on-copy')
+        cmd.append(svn_location.url)
+        
+        log = subprocess.check_output(cmd)
+        tree = xml.etree.ElementTree.fromstring(log)
+        self.log_entries = []
+        for entry_element in tree.findall('logentry'):
+            entry = SvnLogEntry(entry_element, svn_location)
+            self.log_entries.append(entry)
+        
+    def oldest_log_entry(self):
+        return self.log_entries[-1]
+    
+
+class SubcommandSvnLineage(AbstractSubcommand):
+    """Show the branching history of an SVN branch."""
+
+    def __call__(self):
+        def callback(svn_location):
+            print '{}@{}'.format(svn_location.url, svn_location.revision)
+            
+        leaf_svn_location = self.leaf_svn_location()
+        list = self.location_list(leaf_svn_location, callback)
+#         for index, svn_location in enumerate(list):
+#             indent = (index - 1) * '   '
+#             if index > 0:
+#                 indent += '-> '
+#             print '{}{}@{}'.format(indent, svn_location.url, svn_location.revision)
+            
+    
+    def location_list(self, svn_location, callback=None):
+        if callback:
+            callback(svn_location)
+        log = SvnLog(svn_location)
+        oldest_entry = log.oldest_log_entry()
+        branch_location = oldest_entry.copyfrom_location()
+        if branch_location:
+            return self.location_list(branch_location, callback) + [svn_location]
+        else:
+            return [svn_location]
+        
+    def leaf_svn_location(self):
+
+        svn_url = self.args.url_or_path
+        if svn_url:
+            info = SvnInfo.info_for_url_or_path(svn_url)
+            return SvnLocation(info.url(), info.root(), info.revision())
+        
+        if os.path.exists('.svn'):
+            info = SvnInfo.info_for_url_or_path('.')
+            return SvnLocation(info.url(), info.root(), info.revision())
+        
+        if os.path.exists('.git/svn'):
+            wc = GitWorkingCopy('.')
+            return SvnLocation(wc.svn_info('URL'), wc.svn_info('Repository Root'), wc.svn_info('Last Changed Rev'))
+
+        raise Exception('No SVN URL given and current directory is neither SVN nor Git root working copy')
+
+    @classmethod
+    def configure_argument_parser(cls, parser):
+        parser.add_argument('url_or_path', nargs='?', help='The SVN URL. If not given, the script tries to get it from the current directory, which can be either a git-svn or an SVN working copy.')
 
     @classmethod
     def wants_working_copy(cls):
