@@ -1128,25 +1128,22 @@ class SubcommandSvnLineage(AbstractSubcommand):
         def callback(svn_location):
             print '{}@{}'.format(svn_location.url, svn_location.revision)
             
-        leaf_svn_location = self.leaf_svn_location()
-        list = self.location_list(leaf_svn_location, callback)
-#         for index, svn_location in enumerate(list):
-#             indent = (index - 1) * '   '
-#             if index > 0:
-#                 indent += '-> '
-#             print '{}{}@{}'.format(indent, svn_location.url, svn_location.revision)
-            
+        self.location_list(self.leaf_svn_location(), callback)
     
     def location_list(self, svn_location, callback=None):
         if callback:
             callback(svn_location)
-        log = SvnLog(svn_location)
-        oldest_entry = log.oldest_log_entry()
-        branch_location = oldest_entry.copyfrom_location()
-        if branch_location:
-            return self.location_list(branch_location, callback) + [svn_location]
-        else:
-            return [svn_location]
+        try:
+            log = SvnLog(svn_location)
+            oldest_entry = log.oldest_log_entry()
+            branch_location = oldest_entry.copyfrom_location()
+            if branch_location:
+                return self.location_list(branch_location, callback) + [svn_location]
+        except:
+            print 'Unable to follow log for SVN location "{}", it might not exist in the repository.'.format(svn_location.url)
+            pass
+
+        return [svn_location]
         
     def leaf_svn_location(self):
 
