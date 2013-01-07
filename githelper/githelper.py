@@ -1249,7 +1249,8 @@ class SubcommandSvnDeleteResolve(SvnAbstractSubcommand):
 
     def __call__(self):
         for path in self.args.path:
-            print subprocess.check_output('svn rm'.split() + [path]),
+            if os.path.exists(path):
+                print subprocess.check_output('svn rm --force'.split() + [path]),
             print subprocess.check_output('svn resolve --accept working'.split() + [path]),
 
     @classmethod
