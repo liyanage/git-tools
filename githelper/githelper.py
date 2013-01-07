@@ -1048,6 +1048,70 @@ class SubcommandCloneExternals(AbstractSubcommand):
         return False
 
 
+class SubcommandEach(AbstractSubcommand):
+    """Run a shell command in each working copy"""
+
+    def __call__(self, wc):
+        command = ' '.join(self.args.shell_command)
+        wc.run_shell_command(command, header=wc, check_returncode=False)
+
+    @classmethod
+    def configure_argument_parser(cls, parser):
+        parser.add_argument('shell_command', nargs='+', help='A shell command to execute in the context of each working copy. If you need to use options starting with -, add " -- " before the first one.')
+
+
+class SubcommandSvnDiff(AbstractSubcommand):
+    """Get a diff for a git-svn working copy that matches the corresponding svn diff"""
+
+    def __call__(self, wc):
+        if not self.check_for_git_svn_and_warn(wc):
+            return GitWorkingCopy.STOP_TRAVERSAL
+
+        svn_rev = wc.svn_info('Last Changed Rev')
+        git_diff_command = 'git diff --no-prefix'.split() + self.args.git_diff_args
+        git_diff = wc.output_for_git_command(git_diff_command)
+        current_path = None
+        output_lines = []
+        for line in git_diff:
+            output_line = line
+            if line.startswith("diff --git "):
+                current_path = re.search(r'diff --git (.+) \1', line).group(1)
+            elif line.startswith('index'):
+                output_line = 'Index {0}'.format(current_path)
+            elif line.startswith('---'):
+                output_line = '{0}\t(revision {1})'.format(line, svn_rev)
+            elif line.startswith('+++'):
+                output_line = '{0}\t(working copy)'.format(line)
+
+            output_lines.append(output_line)
+
+        output_string = ''.join([line + '\n' for line in output_lines])
+
+        if self.args.copy and sys.platform == 'darwin':
+            import AppKit
+            pb = AppKit.NSPasteboard.generalPasteboard()
+            pb.clearContents()
+            pb.writeObjects_(AppKit.NSArray.arrayWithObject_(output_string))
+        else:
+            print output_string
+
+        return GitWorkingCopy.STOP_TRAVERSAL
+
+    @classmethod
+    def configure_argument_parser(cls, parser):
+        parser.add_argument('-c', '--copy', action='store_true', help='Copy the diff output to the OS X clipboard instead of printing it')
+        parser.add_argument('git_diff_args', nargs='*', help='Optional arguments to git diff. If you need to pass options starting with -, add " -- " before the first one.')
+
+
+# Some SVN-related subcommands that don't require a Git working copy
+
+class SvnAbstractSubcommand(AbstractSubcommand):
+
+    @classmethod
+    def wants_working_copy(cls):
+        return False
+
+
 class SvnInfo(object):
     
     def __init__(self, xml_element):
@@ -1121,13 +1185,6 @@ class SvnLog(object):
         return self.log_entries[-1]
     
 
-class SvnAbstractSubcommand(AbstractSubcommand):
-
-    @classmethod
-    def wants_working_copy(cls):
-        return False
-
-
 class SubcommandSvnLineage(SvnAbstractSubcommand):
     """Show the branching history of an SVN branch."""
 
@@ -1198,61 +1255,6 @@ class SubcommandSvnDeleteResolve(SvnAbstractSubcommand):
     @classmethod
     def configure_argument_parser(cls, parser):
         parser.add_argument('path', nargs='+', help='The path of the tree-conflicted file to remove and resolve.')
-
-
-class SubcommandEach(AbstractSubcommand):
-    """Run a shell command in each working copy"""
-
-    def __call__(self, wc):
-        command = ' '.join(self.args.shell_command)
-        wc.run_shell_command(command, header=wc, check_returncode=False)
-
-    @classmethod
-    def configure_argument_parser(cls, parser):
-        parser.add_argument('shell_command', nargs='+', help='A shell command to execute in the context of each working copy. If you need to use options starting with -, add " -- " before the first one.')
-
-
-class SubcommandSvnDiff(AbstractSubcommand):
-    """Get a diff for a git-svn working copy that matches the corresponding svn diff"""
-
-    def __call__(self, wc):
-        if not self.check_for_git_svn_and_warn(wc):
-            return GitWorkingCopy.STOP_TRAVERSAL
-
-        svn_rev = wc.svn_info('Last Changed Rev')
-        git_diff_command = 'git diff --no-prefix'.split() + self.args.git_diff_args
-        git_diff = wc.output_for_git_command(git_diff_command)
-        current_path = None
-        output_lines = []
-        for line in git_diff:
-            output_line = line
-            if line.startswith("diff --git "):
-                current_path = re.search(r'diff --git (.+) \1', line).group(1)
-            elif line.startswith('index'):
-                output_line = 'Index {0}'.format(current_path)
-            elif line.startswith('---'):
-                output_line = '{0}\t(revision {1})'.format(line, svn_rev)
-            elif line.startswith('+++'):
-                output_line = '{0}\t(working copy)'.format(line)
-
-            output_lines.append(output_line)
-
-        output_string = ''.join([line + '\n' for line in output_lines])
-
-        if self.args.copy and sys.platform == 'darwin':
-            import AppKit
-            pb = AppKit.NSPasteboard.generalPasteboard()
-            pb.clearContents()
-            pb.writeObjects_(AppKit.NSArray.arrayWithObject_(output_string))
-        else:
-            print output_string
-
-        return GitWorkingCopy.STOP_TRAVERSAL
-
-    @classmethod
-    def configure_argument_parser(cls, parser):
-        parser.add_argument('-c', '--copy', action='store_true', help='Copy the diff output to the OS X clipboard instead of printing it')
-        parser.add_argument('git_diff_args', nargs='*', help='Optional arguments to git diff. If you need to pass options starting with -, add " -- " before the first one.')
 
 
 class GitHelperCommandLineDriver(object):
