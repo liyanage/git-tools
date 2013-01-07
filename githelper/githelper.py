@@ -1121,7 +1121,14 @@ class SvnLog(object):
         return self.log_entries[-1]
     
 
-class SubcommandSvnLineage(AbstractSubcommand):
+class SvnAbstractSubcommand(AbstractSubcommand):
+
+    @classmethod
+    def wants_working_copy(cls):
+        return False
+
+
+class SubcommandSvnLineage(SvnAbstractSubcommand):
     """Show the branching history of an SVN branch."""
 
     def __call__(self):
@@ -1169,12 +1176,8 @@ class SubcommandSvnLineage(AbstractSubcommand):
     def configure_argument_parser(cls, parser):
         parser.add_argument('url_or_path', nargs='?', help='The SVN URL. If not given, the script tries to get it from the current directory, which can be either a git-svn or an SVN working copy.')
 
-    @classmethod
-    def wants_working_copy(cls):
-        return False
 
-
-class SubcommandSvnTreeConflicts(AbstractSubcommand):
+class SubcommandSvnTreeConflicts(SvnAbstractSubcommand):
     """Show the tree conflict lines of svn status."""
 
     def __call__(self):
@@ -1184,10 +1187,17 @@ class SubcommandSvnTreeConflicts(AbstractSubcommand):
                 print line
 
 
+class SubcommandSvnDeleteResolve(SvnAbstractSubcommand):
+    """Svn-rm and -resolve one or more tree-conflicted files."""
+
+    def __call__(self):
+        for path in self.args.path:
+            print subprocess.check_output('svn rm'.split() + [path]),
+            print subprocess.check_output('svn resolve --accept working'.split() + [path]),
 
     @classmethod
-    def wants_working_copy(cls):
-        return False
+    def configure_argument_parser(cls, parser):
+        parser.add_argument('path', nargs='+', help='The path of the tree-conflicted file to remove and resolve.')
 
 
 class SubcommandEach(AbstractSubcommand):
