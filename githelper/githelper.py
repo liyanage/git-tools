@@ -1141,7 +1141,8 @@ class SubcommandSvnLineage(AbstractSubcommand):
             branch_location = oldest_entry.copyfrom_location()
             if branch_location:
                 return self.location_list(branch_location, callback, oldest_entry) + [svn_location]
-        except:
+        except Exception as e:
+            print e
             print 'Unable to follow log for SVN location "{}", it might not exist in the repository.'.format(svn_location.url)
             pass
 
