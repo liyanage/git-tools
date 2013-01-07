@@ -1128,6 +1128,7 @@ class SubcommandSvnLineage(AbstractSubcommand):
         def callback(svn_location, log_entry):
             date = '{} '.format(log_entry.date()) if log_entry else 'HEAD       '
             print '{}{}@{}'.format(date, svn_location.url, svn_location.revision)
+            sys.stdout.flush()
             
         self.location_list(self.leaf_svn_location(), callback)
     
