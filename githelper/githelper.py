@@ -1174,6 +1174,22 @@ class SubcommandSvnLineage(AbstractSubcommand):
         return False
 
 
+class SubcommandSvnTreeConflicts(AbstractSubcommand):
+    """Show the tree conflict lines of svn status."""
+
+    def __call__(self):
+        output = subprocess.check_output('svn status'.split())
+        for line in output.splitlines():
+            if re.match('..... [C>] ', line):
+                print line
+
+
+
+    @classmethod
+    def wants_working_copy(cls):
+        return False
+
+
 class SubcommandEach(AbstractSubcommand):
     """Run a shell command in each working copy"""
 
