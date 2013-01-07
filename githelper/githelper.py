@@ -1091,21 +1091,15 @@ class SvnLogEntry(object):
         return self.timestamp()[:10]
     
     def copyfrom_location(self):
-        path_element = self.xml_element.find('paths/path')
-        if path_element.get('action') != 'A':
-            return None
-        path = path_element.text
-        if not self.location.url.endswith(path):
-            raise Exception('copyfrom mismatch: {} / {}'.format(self.location.url, path))
-        
-        copyfrom_path = path_element.get('copyfrom-path')
-        if not copyfrom_path:
-            return None
-
-        copyfrom_url = self.location.url.replace(path, copyfrom_path)
-        copyfrom_revision = path_element.get('copyfrom-rev')
-        copyfrom_location = SvnLocation(copyfrom_url, self.location.root, copyfrom_revision)
-        return copyfrom_location
+        for path_element in [path for path in self.xml_element.findall('paths/path') if path.get('action') == 'A']:
+            path = path_element.text
+            if self.location.url.endswith(path):
+                copyfrom_path = path_element.get('copyfrom-path')
+                if copyfrom_path:
+                    copyfrom_url = self.location.url.replace(path, copyfrom_path)
+                    copyfrom_revision = path_element.get('copyfrom-rev')
+                    return SvnLocation(copyfrom_url, self.location.root, copyfrom_revision)
+        return None
 
 
 class SvnLog(object):
