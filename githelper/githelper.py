@@ -1234,13 +1234,13 @@ class SubcommandSvnLineage(SvnAbstractSubcommand):
         parser.add_argument('url_or_path', nargs='?', help='The SVN URL. If not given, the script tries to get it from the current directory, which can be either a git-svn or an SVN working copy.')
 
 
-class SubcommandSvnTreeConflicts(SvnAbstractSubcommand):
-    """Show the tree conflict lines of svn status."""
+class SubcommandSvnConflicts(SvnAbstractSubcommand):
+    """Show the conflicted files of svn status."""
 
     def __call__(self):
         output = subprocess.check_output('svn status'.split())
         for line in output.splitlines():
-            if re.match('..... [C>] ', line):
+            if re.match('(?:..... [C>] |C)', line):
                 print line
 
 
