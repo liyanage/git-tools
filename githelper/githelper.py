@@ -1287,9 +1287,31 @@ class GitHelperCommandLineDriver(object):
         return subcommand_map
 
     @classmethod
+    def resolve_subcommand_abbreviation(cls, subcommand_map):
+        if len(sys.argv) < 2:
+            return
+
+        subcommand = sys.argv[1]
+        if subcommand in subcommand_map.keys():
+            return
+
+        regex = '.*'.join([char for char in subcommand])
+        subcommand_candidates = [i for i in subcommand_map.keys() if re.match(regex, i)]
+
+        if not subcommand_candidates:
+            return
+
+        if len(subcommand_candidates) == 1:
+            sys.argv[1] = subcommand_candidates[0]
+            return
+        
+        print >> sys.stderr, 'Ambiguous subcommand "{}", possible expansions: {}'.format(subcommand, ', '.join(subcommand_candidates))
+
+    @classmethod
     def run(cls):
         subcommand_map = cls.subcommand_map()
-
+        cls.resolve_subcommand_abbreviation(subcommand_map)
+    
         parser = argparse.ArgumentParser(description='Git-SVN helper')
         parser.add_argument('--root_path', help='Path to root working copy', default=os.getcwd())
         subparsers = parser.add_subparsers(title='Subcommands', dest='subcommand_name')
