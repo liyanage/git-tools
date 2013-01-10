@@ -40,9 +40,9 @@ You can extend the set of subcommands by writing plug-in classes. See
 `Extending with Plug-In Classes`_ for details.
 
 You can abbreviate the subcommand name. The abbreviation does not have
-to be a contiguous substring of the full name, any sequence of characters
-that unanbiguously matches one of the subcommands will work. For example
-you can type "sc" or "scf" for "svn-conflicts".
+to be a contiguous prefix or substring of the full name, any sequence of
+characters that unanbiguously identifies one of the subcommands will work.
+For example you can type "sc" or "scf" for "svn-conflicts".
 
 Command Line Utility Examples
 -----------------------------
@@ -1294,29 +1294,31 @@ class GitHelperCommandLineDriver(object):
     @classmethod
     def resolve_subcommand_abbreviation(cls, subcommand_map):
         if len(sys.argv) < 2:
-            return
+            return True
 
         subcommand = sys.argv[1]
         if subcommand in subcommand_map.keys():
-            return
+            return True
 
         regex = '.*'.join([char for char in subcommand])
         subcommand_candidates = [i for i in subcommand_map.keys() if re.match(regex, i)]
 
         if not subcommand_candidates:
-            return
+            return True
 
         if len(subcommand_candidates) == 1:
             print >> sys.stderr, subcommand_candidates[0]
             sys.argv[1] = subcommand_candidates[0]
-            return
+            return True
         
         print >> sys.stderr, 'Ambiguous subcommand "{}": {}'.format(subcommand, ', '.join(subcommand_candidates))
+        return False
 
     @classmethod
     def run(cls):
         subcommand_map = cls.subcommand_map()
-        cls.resolve_subcommand_abbreviation(subcommand_map)
+        if not cls.resolve_subcommand_abbreviation(subcommand_map):
+            exit(1)
     
         parser = argparse.ArgumentParser(description='Git-SVN helper')
         parser.add_argument('--root_path', help='Path to root working copy', default=os.getcwd())
