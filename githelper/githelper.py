@@ -873,6 +873,10 @@ class AbstractSubcommand(object):
         """
         return True
 
+    @classmethod
+    def subcommand_name(cls):
+        return '-'.join([i.lower() for i in re.findall(r'([A-Z][a-z]+)', re.sub(r'^Subcommand', '', cls.__name__))])
+
 
 class SubcommandResetMasterToSvnBranch(AbstractSubcommand):
     """Hard-reset the master branch of a working copy to a specific remote branch. Aborts if the working copy is dirty."""
@@ -1283,11 +1287,8 @@ class GitHelperCommandLineDriver(object):
             namespaces.update({k : getattr(githelper_local, k) for k in dir(githelper_local)})
 
         for k, v in namespaces.items():
-            if not k.startswith('Subcommand'):
-                continue
-            name_components = [i.lower() for i in re.findall(r'([A-Z][a-z]+)', k)[1:]]
-            subcommand_name = '-'.join(name_components)
-            subcommand_map[subcommand_name] = v
+            if k.startswith('Subcommand') and callable(getattr(v, 'subcommand_name', None)):
+                subcommand_map[v.subcommand_name()] = v
 
         return subcommand_map
 
