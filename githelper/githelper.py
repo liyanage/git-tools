@@ -39,6 +39,11 @@ subcommand in turn supports the -h flag::
 You can extend the set of subcommands by writing plug-in classes. See
 `Extending with Plug-In Classes`_ for details.
 
+You can abbreviate the subcommand name. The abbreviation does not have
+to be a contiguous substring of the full name, any sequence of characters
+that unanbiguously matches one of the subcommands will work. For example
+you can type "sc" or "scf" for "svn-conflicts".
+
 Command Line Utility Examples
 -----------------------------
 
@@ -1302,10 +1307,11 @@ class GitHelperCommandLineDriver(object):
             return
 
         if len(subcommand_candidates) == 1:
+            print >> sys.stderr, subcommand_candidates[0]
             sys.argv[1] = subcommand_candidates[0]
             return
         
-        print >> sys.stderr, 'Ambiguous subcommand "{}", possible expansions: {}'.format(subcommand, ', '.join(subcommand_candidates))
+        print >> sys.stderr, 'Ambiguous subcommand "{}": {}'.format(subcommand, ', '.join(subcommand_candidates))
 
     @classmethod
     def run(cls):
