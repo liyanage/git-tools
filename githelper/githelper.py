@@ -1339,18 +1339,23 @@ class SubcommandSvnMergeinfo(SvnAbstractSubcommand):
     
     def source_location(self):
         destination_location = self.current_directory_svn_location()
-        destination_url = destination_location.url
-        if '/' not in self.args.branch_name_or_url:
-            base_url = re.sub(r'branches/.*', r'branches/', destination_url)
-        else:
-            base_url = self.args.branch_name_or_url
 
+        if '/' in self.args.branch_name_or_url:
+            return SvnLocation(self.args.branch_name_or_url, destination_location.root)
+            
+        base_url = re.sub(r'branches/.*', r'branches/', destination_location.url)
         candidates = SvnLocation(base_url).directory_names()
-        matches = [i for i in candidates if self.args.branch_name_or_url.lower() in i.lower()]
-        if len(matches) != 1:
-            raise Exception('No or multiple matches for "{}" in {}: {}'.format(self.args.branch_name_or_url, base_url, matches))
+        if self.args.strict:
+            branch_name = self.args.branch_name_or_url
+            if branch_name not in candidates:
+                raise Exception('No exact match for "{}" in {}: {}'.format(branch_name, base_url, candidates))
+        else:
+            matches = [i for i in candidates if self.args.branch_name_or_url.lower() in i.lower()]
+            if len(matches) != 1:
+                raise Exception('No or multiple matches for "{}" in {}: {}'.format(self.args.branch_name_or_url, base_url, matches))
+            branch_name = matches[0]
         
-        source_url = re.sub(r'/branches/[^/]+(.*)', r'/branches/{}\1'.format(matches[0]), destination_url)
+        source_url = re.sub(r'/branches/[^/]+(.*)', r'/branches/{}\1'.format(branch_name), destination_location.url)
         source_location = SvnLocation(source_url, destination_location.root)
         print 'Eligible revisions\nfrom {}\nto   {}'.format(source_location.url, destination_location.url)
         return source_location
@@ -1382,6 +1387,7 @@ class SubcommandSvnMergeinfo(SvnAbstractSubcommand):
     @classmethod
     def configure_argument_parser(cls, parser):
         parser.add_argument('branch_name_or_url', help='branch name or URL of the source branch')
+        parser.add_argument('--strict', action='store_true', help='Do not try case insensitive substring match of the branch name')
         parser.add_argument('--short', action='store_true', help='Just the revision numbers')
         parser.add_argument('--merge', action='store_true', help='Emit svn merge commands')
         parser.add_argument('--record-only', action='store_true', help='Emit record-only svn merge command')
