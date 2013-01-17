@@ -1363,30 +1363,6 @@ class SubcommandSvnMergeinfo(SvnAbstractSubcommand):
             entry = SvnLogEntry(cmd.xml().find('logentry'))
             print entry.short_msg()
 
-    
-
-# 	cmd = 'svn log -l 1 --xml {0}@{1}'.format(svn_base_url, revision)
-# 	popen = subprocess.Popen(cmd, stdout = subprocess.PIPE, shell = True)
-# 	output = popen.communicate()[0]
-# 	if popen.returncode:
-# 		print >> sys.stderr, 'Nonzero exit status for "{0}"'.format(cmd)
-# 		continue
-# 
-# 	tree = xml.etree.ElementTree.fromstring(output)
-# 	author = tree.find('logentry').findtext('author')
-# 	msg = tree.find('logentry').findtext('msg')
-# 	msg = ' '.join(msg.strip().splitlines())
-# 	truncated = msg[:100]
-# 	if len(truncated) < len(msg):
-# 		truncated += ' [...]'
-# 	msg = '{0} [{1:<10}]  {2}'.format(line, author[0:10], truncated.encode('utf-8'))
-# 	print msg
-#         
-        
-
-
-#         print subprocess.check_output('svn mergeinfo --show-revs eligible'.split() + [path]),
-
     @classmethod
     def configure_argument_parser(cls, parser):
         parser.add_argument('branch_name_or_url', help='branch name or URL of the source branch')
