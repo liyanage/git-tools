@@ -1120,6 +1120,28 @@ class SvnAbstractSubcommand(AbstractSubcommand):
     def wants_working_copy(cls):
         return False
 
+    @classmethod
+    def current_directory_svn_location(cls):
+        if os.path.exists('.svn'):
+            info = SvnInfo.info_for_url_or_path('.')
+            return SvnLocation(info.url(), info.root(), info.revision())
+        
+        if os.path.exists('.git/svn'):
+            wc = GitWorkingCopy('.')
+            return SvnLocation(wc.svn_info('URL'), wc.svn_info('Repository Root'), wc.svn_info('Last Changed Rev'))
+
+        raise Exception('Current directory is neither SVN nor Git root working copy')
+        
+
+    def svn_location(self):
+
+        svn_url = self.args.url_or_path
+        if svn_url:
+            info = SvnInfo.info_for_url_or_path(svn_url)
+            return SvnLocation(info.url(), info.root(), info.revision())
+
+        return self.current_directory_svn_location()        
+
 
 class SvnInfo(object):
     
@@ -1140,17 +1162,68 @@ class SvnInfo(object):
 
     @classmethod
     def info_for_url_or_path(cls, svn_url_or_path):
-        info = subprocess.check_output(['svn', 'info', '--xml', svn_url_or_path])
-        tree = xml.etree.ElementTree.fromstring(info)
-        return cls(tree)
+        xml = SvnCommand.info(svn_url_or_path).xml()
+        return cls(xml)
         
 
-SvnLocation = collections.namedtuple('SvnLocation', ['url', 'root', 'revision'])
+class SvnLocation(object):
+    
+    def __init__(self, url=None, root=None, revision=None):
+        self.url = url
+        self.root = root
+        self.revision = revision
+
+    def directory_names(self):
+        tree = SvnCommand.ls(self.url).xml()
+        directory_names = []
+        for item in tree.findall('list/entry'):
+            if item.get('kind') != 'dir':
+                continue
+            directory_names.append(item.findtext('name'))
+        return directory_names
+        
+
+class SvnCommand(object):
+    
+    def __init__(self, cmd):
+        self.cmd = ['svn'] + cmd
+        self.result = subprocess.check_output(self.cmd)
+    
+    def xml(self):
+        self.cached_xml = xml.etree.ElementTree.fromstring(self.result)
+        return self.cached_xml
+
+    def lines(self):
+        return self.result.splitlines()
+
+    @classmethod
+    def log(cls, url, stop_on_copy=True, limit=None, revision=None):
+        cmd = ['log', '-v', '--xml']
+        if stop_on_copy:
+            cmd.append('--stop-on-copy')
+        if limit:
+            cmd.extend(['--limit', str(limit)])
+        if revision:
+            url += '@{}'.format(revision)
+        cmd.append(url)
+        return cls(cmd)
+
+    @classmethod
+    def info(cls, url):
+        cmd = ['info', '--xml']
+        cmd.append(url)
+        return cls(cmd)
+
+    @classmethod
+    def ls(cls, url):
+        cmd = ['ls', '--xml']
+        cmd.append(url)
+        return cls(cmd)
 
 
 class SvnLogEntry(object):
     
-    def __init__(self, xml_element, svn_location):
+    def __init__(self, xml_element, svn_location=None):
         self.xml_element = xml_element
         self.location = svn_location
     
@@ -1174,17 +1247,25 @@ class SvnLogEntry(object):
                     return SvnLocation(copyfrom_url, self.location.root, copyfrom_revision)
         return None
 
+    def msg(self):
+        return self.xml_element.findtext('msg').strip()
+    
+    def short_msg(self):
+        msg = ' '.join(self.msg().splitlines())
+        truncated = msg[:100]
+        if len(truncated) < len(msg):
+            truncated += ' [...]'
+        msg = '{0} [{1:<10}]  {2}'.format(self.revision(), self.author()[0:10], truncated.encode('utf-8'))
+        return msg
+        
+    def author(self):
+        return self.xml_element.findtext('author')
+    
 
 class SvnLog(object):
     
     def __init__(self, svn_location, stop_on_copy=True):
-        cmd = ['svn', 'log', '-v', '--xml']
-        if stop_on_copy:
-            cmd.append('--stop-on-copy')
-        cmd.append(svn_location.url)
-        
-        log = subprocess.check_output(cmd)
-        tree = xml.etree.ElementTree.fromstring(log)
+        tree = SvnCommand.log(svn_location, stop_on_copy=stop_on_copy).xml()
         self.log_entries = []
         for entry_element in tree.findall('logentry'):
             entry = SvnLogEntry(entry_element, svn_location)
@@ -1203,7 +1284,7 @@ class SubcommandSvnLineage(SvnAbstractSubcommand):
             print '{}{}@{}'.format(date, svn_location.url, svn_location.revision)
             sys.stdout.flush()
             
-        self.location_list(self.leaf_svn_location(), callback)
+        self.location_list(self.svn_location(), callback)
     
     def location_list(self, svn_location, callback=None, log_entry=None):
         if callback:
@@ -1221,23 +1302,6 @@ class SubcommandSvnLineage(SvnAbstractSubcommand):
 
         return [svn_location]
         
-    def leaf_svn_location(self):
-
-        svn_url = self.args.url_or_path
-        if svn_url:
-            info = SvnInfo.info_for_url_or_path(svn_url)
-            return SvnLocation(info.url(), info.root(), info.revision())
-        
-        if os.path.exists('.svn'):
-            info = SvnInfo.info_for_url_or_path('.')
-            return SvnLocation(info.url(), info.root(), info.revision())
-        
-        if os.path.exists('.git/svn'):
-            wc = GitWorkingCopy('.')
-            return SvnLocation(wc.svn_info('URL'), wc.svn_info('Repository Root'), wc.svn_info('Last Changed Rev'))
-
-        raise Exception('No SVN URL given and current directory is neither SVN nor Git root working copy')
-
     @classmethod
     def configure_argument_parser(cls, parser):
         parser.add_argument('url_or_path', nargs='?', help='The SVN URL. If not given, the script tries to get it from the current directory, which can be either a git-svn or an SVN working copy.')
@@ -1265,6 +1329,67 @@ class SubcommandSvnDeleteResolve(SvnAbstractSubcommand):
     @classmethod
     def configure_argument_parser(cls, parser):
         parser.add_argument('path', nargs='+', help='The path of the tree-conflicted file to remove and resolve.')
+
+
+class SubcommandSvnMergeinfo(SvnAbstractSubcommand):
+    """List the revisions eligible to be merged from another branch"""
+
+    def __call__(self):
+        self.dump_eligible_revisions(self.source_location())
+    
+    def source_location(self):
+        destination_location = self.current_directory_svn_location()
+        destination_url = destination_location.url
+        if '/' not in self.args.branch_name_or_url:
+            base_url = re.sub(r'branches/.*', r'branches/', destination_url)
+        else:
+            base_url = self.args.branch_name_or_url
+
+        candidates = SvnLocation(base_url).directory_names()
+        matches = [i for i in candidates if self.args.branch_name_or_url.lower() in i.lower()]
+        if len(matches) != 1:
+            raise Exception('No or multiple matches for "{}" in {}: {}'.format(self.args.branch_name_or_url, base_url, matches))
+        
+        source_url = re.sub(r'/branches/[^/]+(.*)', r'/branches/{}\1'.format(matches[0]), destination_url)
+        source_location = SvnLocation(source_url, destination_location.root)
+        print 'Eligible revisions\nfrom {}\nto   {}'.format(source_location.url, destination_location.url)
+        return source_location
+
+    def dump_eligible_revisions(self, source_location):
+        mergeinfo_cmd = SvnCommand('mergeinfo --show-revs eligible'.split() + [source_location.url])
+        for revision in mergeinfo_cmd.lines():
+            revision = revision.lstrip('r')
+            cmd = SvnCommand.log(source_location.root, limit=1, revision=revision)
+            entry = SvnLogEntry(cmd.xml().find('logentry'))
+            print entry.short_msg()
+
+    
+
+# 	cmd = 'svn log -l 1 --xml {0}@{1}'.format(svn_base_url, revision)
+# 	popen = subprocess.Popen(cmd, stdout = subprocess.PIPE, shell = True)
+# 	output = popen.communicate()[0]
+# 	if popen.returncode:
+# 		print >> sys.stderr, 'Nonzero exit status for "{0}"'.format(cmd)
+# 		continue
+# 
+# 	tree = xml.etree.ElementTree.fromstring(output)
+# 	author = tree.find('logentry').findtext('author')
+# 	msg = tree.find('logentry').findtext('msg')
+# 	msg = ' '.join(msg.strip().splitlines())
+# 	truncated = msg[:100]
+# 	if len(truncated) < len(msg):
+# 		truncated += ' [...]'
+# 	msg = '{0} [{1:<10}]  {2}'.format(line, author[0:10], truncated.encode('utf-8'))
+# 	print msg
+#         
+        
+
+
+#         print subprocess.check_output('svn mergeinfo --show-revs eligible'.split() + [path]),
+
+    @classmethod
+    def configure_argument_parser(cls, parser):
+        parser.add_argument('branch_name_or_url', help='branch name or URL of the source branch')
 
 
 class GitHelperCommandLineDriver(object):
