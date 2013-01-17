@@ -1357,15 +1357,35 @@ class SubcommandSvnMergeinfo(SvnAbstractSubcommand):
 
     def dump_eligible_revisions(self, source_location):
         mergeinfo_cmd = SvnCommand('mergeinfo --show-revs eligible'.split() + [source_location.url])
-        for revision in mergeinfo_cmd.lines():
-            revision = revision.lstrip('r')
+        revisions = [i.lstrip('r') for i in mergeinfo_cmd.lines()]
+
+        if self.args.record_only_all:
+            print 'svn merge --record-only -c {} {}'.format(','.join(revisions), source_location.url)
+            return
+        
+        for revision in revisions:
+            if self.args.short:
+                print revision
+                continue
+
             cmd = SvnCommand.log(source_location.root, limit=1, revision=revision)
             entry = SvnLogEntry(cmd.xml().find('logentry'))
-            print entry.short_msg()
+
+            if self.args.merge:
+                print 'svn merge -c {} {} # {}'.format(revision, source_location.url, entry.short_msg())
+            elif self.args.record_only:
+                print 'svn merge --record-only -c {} {} # {}'.format(revision, source_location.url, entry.short_msg())
+            else:
+                print entry.short_msg()
+
 
     @classmethod
     def configure_argument_parser(cls, parser):
         parser.add_argument('branch_name_or_url', help='branch name or URL of the source branch')
+        parser.add_argument('--short', action='store_true', help='Just the revision numbers')
+        parser.add_argument('--merge', action='store_true', help='Emit svn merge commands')
+        parser.add_argument('--record-only', action='store_true', help='Emit record-only svn merge command')
+        parser.add_argument('--record-only-all', action='store_true', help='Emit combined record-only svn merge command')
 
 
 class GitHelperCommandLineDriver(object):
