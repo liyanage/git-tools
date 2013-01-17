@@ -1341,11 +1341,12 @@ class SubcommandSvnMergeinfo(SvnAbstractSubcommand):
         destination_location = self.current_directory_svn_location()
 
         if '/' in self.args.branch_name_or_url:
-            return SvnLocation(self.args.branch_name_or_url, destination_location.root)
-        
-        branch_name = self.find_branch_name(destination_location, self.args.branch_name_or_url)        
-        source_url = re.sub(r'/branches/[^/]+(.*)', r'/branches/{}\1'.format(branch_name), destination_location.url)
-        source_location = SvnLocation(source_url, destination_location.root)
+            source_location = SvnLocation(self.args.branch_name_or_url, destination_location.root)
+        else:
+            branch_name = self.find_branch_name(destination_location, self.args.branch_name_or_url)        
+            source_url = re.sub(r'/branches/[^/]+(.*)', r'/branches/{}\1'.format(branch_name), destination_location.url)
+            source_location = SvnLocation(source_url, destination_location.root)
+
         print 'Eligible revisions\nfrom {}\nto   {}'.format(source_location.url, destination_location.url)
         return source_location
 
