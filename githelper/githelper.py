@@ -1342,7 +1342,14 @@ class SubcommandSvnMergeinfo(SvnAbstractSubcommand):
 
         if '/' in self.args.branch_name_or_url:
             return SvnLocation(self.args.branch_name_or_url, destination_location.root)
-            
+        
+        branch_name = self.find_branch_name(destination_location, self.args.branch_name_or_url)        
+        source_url = re.sub(r'/branches/[^/]+(.*)', r'/branches/{}\1'.format(branch_name), destination_location.url)
+        source_location = SvnLocation(source_url, destination_location.root)
+        print 'Eligible revisions\nfrom {}\nto   {}'.format(source_location.url, destination_location.url)
+        return source_location
+
+    def find_branch_name(self, destination_location, branch_name):
         base_url = re.sub(r'branches/.*', r'branches/', destination_location.url)
         candidates = SvnLocation(base_url).directory_names()
         if self.args.strict:
@@ -1354,11 +1361,7 @@ class SubcommandSvnMergeinfo(SvnAbstractSubcommand):
             if len(matches) != 1:
                 raise Exception('No or multiple matches for "{}" in {}: {}'.format(self.args.branch_name_or_url, base_url, matches))
             branch_name = matches[0]
-        
-        source_url = re.sub(r'/branches/[^/]+(.*)', r'/branches/{}\1'.format(branch_name), destination_location.url)
-        source_location = SvnLocation(source_url, destination_location.root)
-        print 'Eligible revisions\nfrom {}\nto   {}'.format(source_location.url, destination_location.url)
-        return source_location
+        return branch_name
 
     def dump_eligible_revisions(self, source_location):
         mergeinfo_cmd = SvnCommand('mergeinfo --show-revs eligible'.split() + [source_location.url])
