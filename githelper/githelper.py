@@ -4,13 +4,16 @@
 Introduction
 ============
 
-githelper is both a module and a command line utility for working
+Githelper is both a module and a command line utility for working
 with git_ working copies, especially git-svn ones where
 ``svn:externals`` references are mapped to nested git-svn working copies.
 
-Maintained at https://github.com/liyanage/git-tools/tree/master/githelper
+Over time the utility also acquired a few features for pure SVN sandboxes,
+so its name doesn't fully reflect its purpose.
 
-HTML version of this documentation at http://liyanage.github.com/git-tools/
+Githelper is maintained at https://github.com/liyanage/git-tools/tree/master/githelper
+
+The HTML version of this documentation is available at http://liyanage.github.com/git-tools/
 
 .. _git: http://git-scm.com
 
@@ -42,7 +45,7 @@ You can extend the set of subcommands by writing plug-in classes. See
 You can abbreviate the subcommand name. The abbreviation does not have
 to be a contiguous prefix or substring of the full name, any sequence of
 characters that unanbiguously identifies one of the subcommands will work.
-For example you can type "sc" or "scf" for "svn-conflicts".
+For example, you can type "sc" or "scf" for "svn-conflicts".
 
 Command Line Utility Examples
 -----------------------------
@@ -54,7 +57,7 @@ Below are some command line usage examples. The examples assume a
 
 Start out by cloning an SVN repository with svn:externals as nested git working copies::
 
-    $ gh cloneexternals https://svn.example.com/repo/project my-great-project
+    $ gh clone-externals https://svn.example.com/repo/project my-great-project
     ...
     $ cd my-great-project
 
@@ -70,7 +73,7 @@ To get an overview of the nested working copies, use the ``tree`` subcommand::
     |----<Working copy /path/to/my-great-project/Subproject/ABC/Demo>
     |--<Working copy /path/to/my-great-project/Xyz>
 
-(The * indicates a working copy with uncommited changes)
+The * indicates a working copy with uncommited changes.
 
 To get a combined git status view, use ``status``::
 
@@ -85,7 +88,7 @@ Only working copies that have any interesting status are listed.
 To recursively update all git-svn sandboxes to the latest SVN state (i.e. perform a
 ``git svn rebase`` in all sub-working copies), use ``svnrebase``::
 
-    $ gh svnrebase
+    $ gh svn-rebase
     <Working copy /path/to/my-great-project/Foo>
         M	Widget/Foo/Foo.m
     r1234 = a7fca99445fa4518cdc47b008656359c1d8ce188 (refs/remotes/svn)
@@ -93,6 +96,8 @@ To recursively update all git-svn sandboxes to the latest SVN state (i.e. perfor
     r1235 = d8faece12674ac8c670a15e10992c13876577834 (refs/remotes/svn)
     First, rewinding head to replay your work on top of it...
     Fast-forwarded master to refs/remotes/svn.
+
+As a reminder, you could shorten the subcommand name and type just ``gh srb`` here.
 
 To check out a certain point in time in the past in all nested sandboxes, you could
 use the ``each`` subcommand, which runs a shell command in each working copy:
