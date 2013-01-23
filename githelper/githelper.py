@@ -445,7 +445,7 @@ class ANSIColor(object):
     def clear(cls):
         for stream in [sys.stdout, sys.stderr]:
             stream.write(cls.clear_sequence())
-
+    
     @classmethod
     def start_sequence(cls, color=red):
         return "\x1b[3{0}m".format(color)
@@ -1449,18 +1449,34 @@ class GitHelperCommandLineDriver(object):
         if subcommand in subcommand_map.keys():
             return True
 
-        regex = '.*'.join([char for char in subcommand])
-        subcommand_candidates = [i for i in subcommand_map.keys() if re.match(regex, i)]
+        SubcommandCandidate = collections.namedtuple('SubcommandCandidate', ['name', 'decorated_name'])
+        regex = '.*?'.join(['(' + char + ')' for char in subcommand])
+        subcommand_candidates = []
+        for subcommand_name in subcommand_map.keys():
+            match = re.match(regex, subcommand_name)
+            if not match:
+                continue
+            
+            decorated_name = ''
+            for i in range(1, match.lastindex + 1):
+                span = match.span(i)
+                preceding = subcommand_name[match.span(i - 1)[1]:span[0]] if span[0] else ''
+                letter = subcommand_name[span[0]:span[1]]
+                decorated_name += preceding + ANSIColor.wrap(letter)
+            trailing = subcommand_name[span[1]:]
+            decorated_name += trailing
 
+            subcommand_candidates.append(SubcommandCandidate(subcommand_name, decorated_name))
+            
         if not subcommand_candidates:
             return True
 
         if len(subcommand_candidates) == 1:
-            print >> sys.stderr, subcommand_candidates[0]
-            sys.argv[1] = subcommand_candidates[0]
+            print >> sys.stderr, subcommand_candidates[0].decorated_name
+            sys.argv[1] = subcommand_candidates[0].name
             return True
         
-        print >> sys.stderr, 'Ambiguous subcommand "{}": {}'.format(subcommand, ', '.join(subcommand_candidates))
+        print >> sys.stderr, 'Ambiguous subcommand "{}": {}'.format(subcommand, ', '.join([i.decorated_name for i in subcommand_candidates]))
         return False
 
     @classmethod
