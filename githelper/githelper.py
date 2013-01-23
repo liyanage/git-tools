@@ -44,8 +44,9 @@ You can extend the set of subcommands by writing plug-in classes. See
 
 You can abbreviate the subcommand name. The abbreviation does not have
 to be a contiguous prefix or substring of the full name, any sequence of
-characters that unanbiguously identifies one of the subcommands will work.
-For example, you can type "sc" or "scf" for "svn-conflicts".
+characters that unanbiguously identifies one of the subcommands will work
+(it must be anchored at the beginning). For example, you can type "sc" or "scf"
+for "svn-conflicts".
 
 Command Line Utility Examples
 -----------------------------
