@@ -1448,11 +1448,12 @@ class GitHelperCommandLineDriver(object):
         subcommand = sys.argv[1]
         if subcommand in subcommand_map.keys():
             return True
-
-        regex = '.*?'.join(['(' + char + ')' for char in subcommand])
+        
+        # converts a string like 'abc' to a regex like '(a).*?(b).*?(c)'
+        regex = re.compile('.*?'.join(['(' + char + ')' for char in subcommand]))
         subcommand_candidates = []
         for subcommand_name in subcommand_map.keys():
-            match = re.match(regex, subcommand_name)
+            match = regex.match(subcommand_name)
             if not match:
                 continue
             subcommand_candidates.append(cls.subcommand_candidate_for_abbreviation_match(subcommand_name, match))
