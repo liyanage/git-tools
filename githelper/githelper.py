@@ -1449,24 +1449,13 @@ class GitHelperCommandLineDriver(object):
         if subcommand in subcommand_map.keys():
             return True
 
-        SubcommandCandidate = collections.namedtuple('SubcommandCandidate', ['name', 'decorated_name'])
         regex = '.*?'.join(['(' + char + ')' for char in subcommand])
         subcommand_candidates = []
         for subcommand_name in subcommand_map.keys():
             match = re.match(regex, subcommand_name)
             if not match:
                 continue
-            
-            decorated_name = ''
-            for i in range(1, match.lastindex + 1):
-                span = match.span(i)
-                preceding = subcommand_name[match.span(i - 1)[1]:span[0]] if span[0] else ''
-                letter = subcommand_name[span[0]:span[1]]
-                decorated_name += preceding + ANSIColor.wrap(letter)
-            trailing = subcommand_name[span[1]:]
-            decorated_name += trailing
-
-            subcommand_candidates.append(SubcommandCandidate(subcommand_name, decorated_name))
+            subcommand_candidates.append(cls.subcommand_candidate_for_abbreviation_match(subcommand_name, match))
             
         if not subcommand_candidates:
             return True
@@ -1478,6 +1467,19 @@ class GitHelperCommandLineDriver(object):
         
         print >> sys.stderr, 'Ambiguous subcommand "{}": {}'.format(subcommand, ', '.join([i.decorated_name for i in subcommand_candidates]))
         return False
+
+    @classmethod
+    def subcommand_candidate_for_abbreviation_match(cls, subcommand_name, match):
+        SubcommandCandidate = collections.namedtuple('SubcommandCandidate', ['name', 'decorated_name'])
+        decorated_name = ''
+        for i in range(1, match.lastindex + 1):
+            span = match.span(i)
+            preceding = subcommand_name[match.span(i - 1)[1]:span[0]] if span[0] else ''
+            letter = subcommand_name[span[0]:span[1]]
+            decorated_name += preceding + ANSIColor.wrap(letter)
+        trailing = subcommand_name[span[1]:]
+        decorated_name += trailing
+        return SubcommandCandidate(subcommand_name, decorated_name)
 
     @classmethod
     def run(cls):
