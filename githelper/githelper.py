@@ -458,6 +458,7 @@ class ANSIColor(object):
     def wrap(cls, value, color=red):
         return u'{}{}{}'.format(cls.start_sequence(color), value, cls.clear_sequence())
 
+
 class GitWorkingCopy(object):
     """
     A class to represent a git or git-svn working copy.
@@ -1477,7 +1478,7 @@ class GitHelperCommandLineDriver(object):
             span = match.span(i)
             preceding = subcommand_name[match.span(i - 1)[1]:span[0]] if span[0] else ''
             letter = subcommand_name[span[0]:span[1]]
-            decorated_name += preceding + ANSIColor.wrap(letter)
+            decorated_name += preceding + ANSIColor.wrap(letter, color=ANSIColor.green)
         trailing = subcommand_name[span[1]:]
         decorated_name += trailing
         return SubcommandCandidate(subcommand_name, decorated_name)
