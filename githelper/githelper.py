@@ -459,6 +459,25 @@ class ANSIColor(object):
         return u'{}{}{}'.format(cls.start_sequence(color), value, cls.clear_sequence())
 
 
+class GitRevision(object):
+
+    def __init__(self, revision, message):
+        self.revision = revision
+        self.message = message
+    
+    @classmethod
+    def parse_log_line_oneline(cls, log_line):
+        match = re.match(r'^([0-9a-f]+)\s+(.*)', log_line)
+        if not match:
+            print >> sys.stderr, 'Unable to parse git log line "{}":'.format(log_line)
+            return None
+        return GitRevision(match.group(1), match.group(2))
+
+    @classmethod
+    def parse_log_lines_oneline(cls, log_lines):
+        return [cls.parse_log_line_oneline(line) for line in log_lines]
+
+
 class GitWorkingCopy(object):
     """
     A class to represent a git or git-svn working copy.
@@ -605,6 +624,18 @@ class GitWorkingCopy(object):
             ancestors.append(self.parent)
             ancestors.extend(self.parent.ancestors())
         return ancestors
+
+    def commits_not_in_svn(self):
+        """If the receiver is a Git-SVN working copy, returns a list of git commits that have not yet been pushed to SVN."""
+        if not self.is_git_svn():
+            print >> sys.stderr, '{} is not git-svn:'.format(self.path)
+            return []
+            
+        output = self.output_for_git_command('git svn log --limit=1 --show-commit --oneline'.split())[0].split(' | ')
+        revision, commit = output[0:2]
+        output = self.output_for_git_command('git log --oneline {}..HEAD'.format(commit).split())
+        return GitRevision.parse_log_lines_oneline(output)
+
 
     def root_working_copy(self):
         """Returns the root working copy, which could be self."""
@@ -1006,6 +1037,7 @@ class SubcommandBranch(AbstractSubcommand):
 
     column_accessors = (
         lambda x: str(x),
+        lambda x: str(len(x.commits_not_in_svn())),
         lambda x: os.path.basename(x.svn_info('URL')),
         lambda x: x.current_branch(),
     )
