@@ -1308,6 +1308,11 @@ class SvnLogEntry(object):
         msg = '{0} [{1:<10}]  {2}'.format(self.revision(), self.author()[0:10], truncated.encode('utf-8'))
         return msg
         
+    def long_msg(self):
+        msg = ' '.join(self.msg().splitlines())
+        msg = '{0} [{1:<10}]  {2}'.format(self.revision(), self.author()[0:10], msg.encode('utf-8'))
+        return msg
+        
     def author(self):
         return self.xml_element.findtext('author')
     
@@ -1388,20 +1393,21 @@ class SubcommandSvnMergeinfo(SvnAbstractSubcommand):
         self.dump_eligible_revisions(self.source_location())
     
     def source_location(self):
-        destination_location = self.current_directory_svn_location()
+        target_location = self.current_directory_svn_location()
 
         if '/' in self.args.branch_name_or_url:
-            source_location = SvnLocation(self.args.branch_name_or_url, destination_location.root)
+            source_location = SvnLocation(self.args.branch_name_or_url, target_location.root)
         else:
-            branch_name = self.find_branch_name(destination_location, self.args.branch_name_or_url)        
-            source_url = re.sub(r'/branches/[^/]+(.*)', r'/branches/{}\1'.format(branch_name), destination_location.url)
-            source_location = SvnLocation(source_url, destination_location.root)
+            branch_name = self.find_branch_name(target_location, self.args.branch_name_or_url)        
+            source_url = re.sub(r'/branches/[^/]+(.*)', r'/branches/{}\1'.format(branch_name), target_location.url)
+            source_location = SvnLocation(source_url, target_location.root)
 
-        print 'Eligible revisions\nfrom {}\nto   {}'.format(source_location.url, destination_location.url)
+        print 'Eligible revisions\nfrom {}\nto   {}'.format(source_location.url, target_location.url)
         return source_location
 
-    def find_branch_name(self, destination_location, branch_name):
-        base_url = re.sub(r'branches/.*', r'branches/', destination_location.url)
+    
+    def find_branch_name(self, target_location, branch_name):
+        base_url = re.sub(r'branches/.*', r'branches/', target_location.url)
         candidates = SvnLocation(base_url).directory_names()
         if self.args.strict:
             branch_name = self.args.branch_name_or_url
@@ -1415,7 +1421,10 @@ class SubcommandSvnMergeinfo(SvnAbstractSubcommand):
         return branch_name
 
     def dump_eligible_revisions(self, source_location):
-        mergeinfo_cmd = SvnCommand('mergeinfo --show-revs eligible'.split() + [source_location.url])
+        target_location = self.current_directory_svn_location()
+
+        cmd = 'mergeinfo --show-revs eligible'.split() + [source_location.url, target_location.url]
+        mergeinfo_cmd = SvnCommand(cmd)
         revisions = [i.lstrip('r') for i in mergeinfo_cmd.lines()]
 
         if self.args.record_only_all:
@@ -1434,6 +1443,8 @@ class SubcommandSvnMergeinfo(SvnAbstractSubcommand):
                 print 'svn merge -c {} {} # {}'.format(revision, source_location.url, entry.short_msg())
             elif self.args.record_only:
                 print 'svn merge --record-only -c {} {} # {}'.format(revision, source_location.url, entry.short_msg())
+            elif self.args.long:
+                print entry.long_msg()
             else:
                 print entry.short_msg()
 
@@ -1443,6 +1454,7 @@ class SubcommandSvnMergeinfo(SvnAbstractSubcommand):
         parser.add_argument('branch_name_or_url', help='branch name or URL of the source branch')
         parser.add_argument('--strict', action='store_true', help='Do not try case insensitive substring match of the branch name')
         parser.add_argument('--short', action='store_true', help='Just the revision numbers')
+        parser.add_argument('--long', action='store_true', help='Do not truncate the log message, print it all on one line')
         parser.add_argument('--merge', action='store_true', help='Emit svn merge commands')
         parser.add_argument('--record-only', action='store_true', help='Emit record-only svn merge command')
         parser.add_argument('--record-only-all', action='store_true', help='Emit combined record-only svn merge command')
