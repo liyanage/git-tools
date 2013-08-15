@@ -204,6 +204,7 @@ import sys
 import types
 import select
 import string
+import logging
 import argparse
 import itertools
 import subprocess
@@ -361,6 +362,7 @@ class FilteringPopen(object):
             raise Exception('Non-zero exit status for shell command "{}" in {}'.format(self.cmd, self.wd))
 
     def check_pipes(self, timeout=1):
+        logging.debug('about to select(), timeout = {}'.format(timeout))
         ready_read_handles = select.select([self.popen.stdout, self.popen.stderr], (), (), timeout)[0]
         for handle in ready_read_handles:
             is_stdout = False
@@ -1487,10 +1489,11 @@ class GitHelperCommandLineDriver(object):
 
     @classmethod
     def resolve_subcommand_abbreviation(cls, subcommand_map):
-        if len(sys.argv) < 2:
+        non_option_arguments = [i for i in sys.argv[1:] if not i.startswith('-')]
+        if not non_option_arguments:
             return True
 
-        subcommand = sys.argv[1]
+        subcommand = non_option_arguments[0]
         if subcommand in subcommand_map.keys():
             return True
         
@@ -1508,7 +1511,7 @@ class GitHelperCommandLineDriver(object):
 
         if len(subcommand_candidates) == 1:
             print >> sys.stderr, subcommand_candidates[0].decorated_name
-            sys.argv[1] = subcommand_candidates[0].name
+            sys.argv[sys.argv.index(subcommand)] = subcommand_candidates[0].name
             return True
         
         print >> sys.stderr, 'Ambiguous subcommand "{}": {}'.format(subcommand, ', '.join([i.decorated_name for i in subcommand_candidates]))
@@ -1535,12 +1538,15 @@ class GitHelperCommandLineDriver(object):
     
         parser = argparse.ArgumentParser(description='Git-SVN helper')
         parser.add_argument('--root_path', help='Path to root working copy', default=os.getcwd())
+        parser.add_argument('--verbose', action='store_true', help='Enable verbose debug logging')
         subparsers = parser.add_subparsers(title='Subcommands', dest='subcommand_name')
         for subcommand_name, subcommand_class in subcommand_map.items():
             subparser = subparsers.add_parser(subcommand_name, help=subcommand_class.__doc__)
             subcommand_class.configure_argument_parser(subparser)
 
         args = parser.parse_args()
+        if args.verbose:
+            logging.basicConfig(level=logging.DEBUG)
 
         subcommand_class = subcommand_map[args.subcommand_name]
         subcommand = subcommand_class(args)
