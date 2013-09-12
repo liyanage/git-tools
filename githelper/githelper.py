@@ -200,12 +200,16 @@ API Documentation
 
 import os
 import re
+import imp
 import sys
 import types
 import select
 import string
 import logging
+import getpass
+import tempfile
 import argparse
+import StringIO
 import itertools
 import subprocess
 import contextlib
@@ -459,6 +463,79 @@ class ANSIColor(object):
     @classmethod
     def wrap(cls, value, color=red):
         return u'{}{}{}'.format(cls.start_sequence(color), value, cls.clear_sequence())
+
+
+class CrucibleToolWrapper(object):
+
+    def __init__(self, args, title_suggestion=None):
+        self._crucible_module = None
+        self.find_crucible_tool()
+
+        self.repository = args.cru_repository
+        if args.cru_title:
+            self.title = args.cru_title
+            self.user_supplied_title = True
+        else:
+            self.title = title_suggestion
+            self.user_supplied_title = False
+
+        config = self.crucible_tool_configuration()
+        self.username = config.username
+        self.crucible_url = config.url
+        
+        self.noanchor = args.cru_noanchor
+
+    def find_crucible_tool(self):
+        self.crucible_path = self.find_tool_in_search_path('crucible.py')
+        if not self.crucible_path:
+            raise Exception('Unable to find crucible.py anywhere in $PATH')
+    
+    def crucible_tool_configuration(self):
+        config = self.crucible_module().Configuration()
+        config.fill_from_defaults()
+        return config
+        
+    def crucible_module(self):
+        if self._crucible_module:
+            return self._crucible_module
+        
+        self._crucible_module = imp.load_source('crucible', self.crucible_path)
+        return self._crucible_module
+        
+    def find_tool_in_search_path(self, tool):
+        for path in os.environ['PATH'].split(':'):
+            tool_path = os.path.join(path, tool)
+            if os.path.exists(tool_path):
+                return tool_path
+        return None
+    
+    def create_review_with_patch(self, patch):
+        with tempfile.NamedTemporaryFile() as patchfile:
+            patchfile.write(patch)
+            patchfile.flush()
+
+            pw = getpass.getpass('Crucible password: ')
+            if not self.user_supplied_title:
+                print 'Auto-detected title: {}'.format(self.title)
+                new_title = raw_input('Hit return to accept, or enter new title: '.format(self.title))
+                if new_title:
+                    self.title = new_title
+            
+            # '--debug'
+            cmd = [self.crucible_path, '--user', self.username, '--password', pw, '--file', patchfile.name, '--title', self.title]
+            if self.noanchor:
+                cmd.append('--noanchor')
+            else:
+                cmd.extend(['--repository', self.repository])
+
+            cruciblepy_process = subprocess.Popen(cmd)
+            stdoutdata, stderrdata = cruciblepy_process.communicate()
+
+    @classmethod
+    def configure_argument_parser(cls, parser):
+        parser.add_argument('--cru-repository', help='Feed the diff to the crucible.py command line tool to create a code review in the given repository.')
+        parser.add_argument('--cru-title', help='Title for code review')
+        parser.add_argument('--cru-noanchor', action='store_true', help="Don't try to anchor the patch")
 
 
 class GitRevision(object):
@@ -1153,6 +1230,12 @@ class SubcommandSvnDiff(AbstractSubcommand):
             pb = AppKit.NSPasteboard.generalPasteboard()
             pb.clearContents()
             pb.writeObjects_(AppKit.NSArray.arrayWithObject_(output_string))
+        elif self.args.cru_repository:
+            title_suggestion = wc.output_for_git_command('git log --pretty=format:%s -n1'.split())
+            if title_suggestion:
+                title_suggestion = title_suggestion[0]
+            crucible = CrucibleToolWrapper(self.args, title_suggestion)
+            crucible.create_review_with_patch(output_string)
         else:
             print output_string
 
@@ -1160,6 +1243,7 @@ class SubcommandSvnDiff(AbstractSubcommand):
 
     @classmethod
     def configure_argument_parser(cls, parser):
+        CrucibleToolWrapper.configure_argument_parser(parser)
         parser.add_argument('-c', '--copy', action='store_true', help='Copy the diff output to the OS X clipboard instead of printing it')
         parser.add_argument('git_diff_args', nargs='*', help='Optional arguments to git diff. If you need to pass options starting with -, add " -- " before the first one.')
 
