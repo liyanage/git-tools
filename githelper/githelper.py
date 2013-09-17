@@ -512,6 +512,8 @@ class CrucibleToolWrapper(object):
     def create_review_with_patch(self, patch):
         with tempfile.NamedTemporaryFile() as patchfile:
             patchfile.write(patch)
+            if re.search(r'\s$', patch):
+                patchfile.write('xxx work around crucible bug xxx')
             patchfile.flush()
 
             pw = getpass.getpass('Crucible password: ')
