@@ -1,0 +1,21 @@
+#!/bin/sh
+#
+# Prevent commits without user.email configuration value set
+#
+# See http://stackoverflow.com/questions/19821895/can-i-configure-git-so-it-does-not-guess-user-email-configuration-settings/19823350?noredirect=1#19823350
+#
+# Maintained at https://github.com/liyanage/git-tools
+#
+#
+# To activate it, add this to your ~/.gitconfig:
+#
+#     [init]
+#         templatedir = ~/git/git-tools/template
+#
+
+if [ -z $(git config user.email) ]; then
+    echo "You need to set your user.email configuration value for this project"
+    echo "git config user.email foo@example.com"
+    exit 1
+fi
+
