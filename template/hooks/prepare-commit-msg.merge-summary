@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+
+import os
+import re
+import sys
+import subprocess
+
+
+class CommitMessageFormatter(object):
+
+    def __init__(self, args):
+        self.args = args
+    
+    def run(self):
+        if not self.is_merge():
+            return
+        
+        message_file_path = self.commit_message_file_path()
+        
+        with open(message_file_path) as f: message_lines = f.readlines()
+
+        merge_line_match = re.match(r"Merge branch '(.+)' into (.+)", message_lines[0])
+        if not merge_line_match:
+            return
+
+        source_branch = merge_line_match.group(1)
+        destination_branch = merge_line_match.group(2)
+        
+        commit_list = self.commit_list(source_branch, destination_branch)
+        diff_stat = self.diff_stat()
+
+        merge_summary_text = '\nMerged commits:\n\n{}\n\nChanged files summary:\n\n{}'.format(commit_list, diff_stat)
+        message_lines[1:1] = merge_summary_text
+        new_message_text = ''.join(message_lines)
+        
+        with open(message_file_path, 'w') as f:
+            f.write(new_message_text)
+        
+    def commit_list(self, source_branch, destination_branch):
+        cmd = ['git', 'log', '--format=format:%h  %ai [%ae] %s', source_branch, '^' + destination_branch]
+        commit_list = subprocess.check_output(cmd).splitlines()
+
+        commits = []
+        for line in commit_list:
+            (prefix, email, username, suffix), = re.findall(r'^(.+)\[((\w+)@\w+.\w+)\](.+)$', line)
+            commits.append((prefix, email, username, suffix))
+
+        commit_list = []
+        max_username_length = len(max(commits, key=lambda x: len(x[2]))[2])
+        for line in commits:
+            commit_list.append('{1}[{3:<{0}}]{4}'.format(max_username_length, *line))
+        
+        return '\n'.join(commit_list)
+
+    def diff_stat(self):
+        cmd = ['git', 'diff', '--cached', '--stat']
+        diff_stat = subprocess.check_output(cmd)
+        return diff_stat
+
+    def is_merge(self):
+        return 'merge' in self.args
+    
+    def commit_message_file_path(self):
+        return self.args[1]
+
+    @classmethod
+    def main(cls):
+        cls(sys.argv).run()
+
+
+
+if __name__ == '__main__':
+    CommitMessageFormatter.main()
+
