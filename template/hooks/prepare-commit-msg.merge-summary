@@ -42,7 +42,11 @@ class CommitMessageFormatter(object):
 
         commits = []
         for line in commit_list:
-            (prefix, email, username, suffix), = re.findall(r'^(.+)\[((\w+)@\w+.\w+)\](.+)$', line)
+            items = re.findall(r'^(.+)\[((\w+)@\w+.\w+)\](.+)$', line)
+            if not len(items) > 0 and len(items[0]) == 4:
+                print >> sys.stderr, 'Skipping log line in unexpected format: {}'.format(items)
+                continue
+            (prefix, email, username, suffix), = items
             commits.append((prefix, email, username, suffix))
 
         commit_list = []
