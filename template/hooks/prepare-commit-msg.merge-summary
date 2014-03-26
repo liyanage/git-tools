@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import subprocess
+import collections
 
 class CommitMessageFormatter(object):
 
@@ -53,19 +54,22 @@ class CommitMessageFormatter(object):
         cmd = ['git', 'log', '--format=format:%h  %ai [%ae] %s', source_branch, '^' + destination_branch]
         commit_list = subprocess.check_output(cmd).splitlines()
 
+        CommitInfo = collections.namedtuple('CommitInfo', 'commit_id timestamp author subject'.split())
+
         commits = []
         for line in commit_list:
-            items = re.findall(r'^(.+)\[(([a-zA-Z0-9._-]+)@[a-zA-Z0-9.-]+)\](.+)$', line)
+            items = re.findall(r'^(\w+)  (....-..-.. ..:..):.. ..... \[(.+?)] (.+)$', line)
             if not (len(items) > 0 and len(items[0]) == 4):
                 print >> sys.stderr, 'Skipping log line in unexpected format: "{}", parsed items = {}'.format(line, items)
                 continue
-            (prefix, email, username, suffix), = items
-            commits.append((prefix, email, username, suffix))
+            commit_id, timestamp, author, subject = items[0]
+            author = author.split('@')[0]
+            commits.append(CommitInfo(commit_id, timestamp, author, subject))
 
         commit_list = []
-        max_username_length = len(max(commits, key=lambda x: len(x[2]))[2])
-        for line in commits:
-            commit_list.append('{1}[{3:<{0}}]{4}'.format(max_username_length, *line))
+        max_username_length = len(max(commits, key=lambda c: len(c.author)).author)
+        for commit in commits:
+            commit_list.append('{1}  {2}  [{3:<{0}}] {4}'.format(max_username_length, commit.commit_id, commit.timestamp, commit.author, commit.subject))
         
         return '\n'.join(commit_list)
 
