@@ -15,15 +15,18 @@ class CommitMessageFormatter(object):
             return
         
         message_file_path = self.commit_message_file_path()
-        
         with open(message_file_path) as f: message_lines = f.readlines()
 
-        merge_line_match = re.match(r"Merge branch '(.+)' into (.+)", message_lines[0])
+        merge_line_match = re.match(r"Merge branch '(.+)'(?: into (.+))?", message_lines[0])
         if not merge_line_match:
             return
 
         source_branch = merge_line_match.group(1)
         destination_branch = merge_line_match.group(2)
+        if not destination_branch:
+            destination_branch = self.current_git_branch()
+            if not destination_branch:
+                return
         
         commit_list = self.commit_list(source_branch, destination_branch)
         diff_stat = self.diff_stat()
@@ -35,6 +38,17 @@ class CommitMessageFormatter(object):
         with open(message_file_path, 'w') as f:
             f.write(new_message_text)
         
+    def current_git_branch(self):
+        cmd = ['git', 'branch']
+        branch_list = subprocess.check_output(cmd).splitlines()
+        current_branch = [b for b in branch_list if b.startswith('*')]
+        if not current_branch and len(current_branch[0]) > 2:
+            return None
+        current_branch = current_branch[0][2:]
+        if 'no branch' in current_branch:
+            return None
+        return current_branch
+
     def commit_list(self, source_branch, destination_branch):
         cmd = ['git', 'log', '--format=format:%h  %ai [%ae] %s', source_branch, '^' + destination_branch]
         commit_list = subprocess.check_output(cmd).splitlines()
