@@ -8,8 +8,11 @@ import collections
 
 class CommitMessageFormatter(object):
 
+    commit_id_length = 12
+
     def __init__(self, args):
         self.args = args
+        self.include_diff_stat = False
     
     def run(self):
         if not self.is_merge():
@@ -28,11 +31,15 @@ class CommitMessageFormatter(object):
             destination_branch = self.current_git_branch()
             if not destination_branch:
                 return
-        
+       
         commit_list = self.commit_list(source_branch, destination_branch)
-        diff_stat = self.diff_stat()
 
-        merge_summary_text = '\nMerged commits:\n\n{}\n\nChanged files summary:\n\n{}'.format(commit_list, diff_stat)
+        if self.include_diff_stat:
+            diff_stat = self.diff_stat()
+            merge_summary_text = '\nMerged commits:\n\n{}\n\nChanged files summary:\n\n{}'.format(commit_list, diff_stat)
+        else:
+            merge_summary_text = '\nMerged commits:\n\n{}\n\n'.format(commit_list)
+
         message_lines[1:1] = merge_summary_text
         new_message_text = ''.join(message_lines)
         
@@ -51,7 +58,7 @@ class CommitMessageFormatter(object):
         return current_branch
 
     def commit_list(self, source_branch, destination_branch):
-        cmd = ['git', 'log', '--format=format:%h  %ai [%ae] %s', source_branch, '^' + destination_branch]
+        cmd = ['git', 'log', '--format=format:%H  %ai [%ae] %s', source_branch, '^' + destination_branch]
         commit_list = subprocess.check_output(cmd).splitlines()
 
         CommitInfo = collections.namedtuple('CommitInfo', 'commit_id timestamp author subject'.split())
@@ -63,8 +70,12 @@ class CommitMessageFormatter(object):
                 print >> sys.stderr, 'Skipping log line in unexpected format: "{}", parsed items = {}'.format(line, items)
                 continue
             commit_id, timestamp, author, subject = items[0]
+            commit_id = commit_id[:self.commit_id_length]
             author = author.split('@')[0]
             commits.append(CommitInfo(commit_id, timestamp, author, subject))
+
+        if not commits:
+            return ''
 
         commit_list = []
         max_username_length = len(max(commits, key=lambda c: len(c.author)).author)
