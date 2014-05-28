@@ -34,13 +34,16 @@ class CommitMessageFormatter(object):
        
         commit_list = self.commit_list(source_branch, destination_branch)
 
+        if not commit_list:
+            merge_summary_text = None
         if self.include_diff_stat:
             diff_stat = self.diff_stat()
             merge_summary_text = '\nMerged commits:\n\n{}\n\nChanged files summary:\n\n{}'.format(commit_list, diff_stat)
         else:
             merge_summary_text = '\nMerged commits:\n\n{}\n\n'.format(commit_list)
 
-        message_lines[1:1] = merge_summary_text
+        if merge_summary_text:
+            message_lines[1:1] = merge_summary_text
         new_message_text = ''.join(message_lines)
         
         with open(message_file_path, 'w') as f:
