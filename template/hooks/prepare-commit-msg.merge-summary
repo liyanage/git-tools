@@ -21,7 +21,7 @@ class CommitMessageFormatter(object):
         message_file_path = self.commit_message_file_path()
         with open(message_file_path) as f: message_lines = f.readlines()
 
-        merge_line_match = re.match(r"Merge branch '(.+)'(?: into (.+))?", message_lines[0])
+        merge_line_match = re.match(r"Merge (?:branch|commit) '(.+)'(?: into (.+))?", message_lines[0])
         if not merge_line_match:
             return
 
