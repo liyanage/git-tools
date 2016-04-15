@@ -5,11 +5,7 @@ Introduction
 ============
 
 Githelper is both a module and a command line utility for working
-with git_ working copies, especially git-svn ones where
-``svn:externals`` references are mapped to nested git-svn working copies.
-
-Over time the utility also acquired a few features for pure SVN sandboxes,
-so its name doesn't fully reflect its purpose.
+with git_ working copies.
 
 Githelper is maintained at https://github.com/liyanage/git-tools/tree/master/githelper
 
@@ -45,8 +41,7 @@ You can extend the set of subcommands by writing plug-in classes. See
 You can abbreviate the subcommand name. The abbreviation does not have
 to be a contiguous prefix or substring of the full name, any sequence of
 characters that unanbiguously identifies one of the subcommands will work
-(it must be anchored at the beginning). For example, you can type "sc" or "scf"
-for "svn-conflicts".
+(it must be anchored at the beginning).
 
 Command Line Utility Examples
 -----------------------------
@@ -55,12 +50,6 @@ Below are some command line usage examples. The examples assume a
 ``gh`` shell alias for githelper::
 
     alias gh githelper.py
-
-Start out by cloning an SVN repository with svn:externals as nested git working copies::
-
-    $ gh clone-externals https://svn.example.com/repo/project my-great-project
-    ...
-    $ cd my-great-project
 
 To get an overview of the nested working copies, use the ``tree`` subcommand::
 
@@ -86,19 +75,7 @@ To get a combined git status view, use ``status``::
 
 Only working copies that have any interesting status are listed.
 
-To recursively update all git-svn sandboxes to the latest SVN state (i.e. perform a
-``git svn rebase`` in all sub-working copies), use ``svnrebase``::
-
-    $ gh svn-rebase
-    <Working copy /path/to/my-great-project/Foo>
-        M	Widget/Foo/Foo.m
-    r1234 = a7fca99445fa4518cdc47b008656359c1d8ce188 (refs/remotes/svn)
-        M	Engine/Bar/Bar.m
-    r1235 = d8faece12674ac8c670a15e10992c13876577834 (refs/remotes/svn)
-    First, rewinding head to replay your work on top of it...
-    Fast-forwarded master to refs/remotes/svn.
-
-As a reminder, you could shorten the subcommand name and type just ``gh srb`` here.
+As a reminder, you could shorten the subcommand name and type just ``gh sta`` here.
 
 To check out a certain point in time in the past in all nested sandboxes, you could
 use the ``each`` subcommand, which runs a shell command in each working copy:
@@ -114,8 +91,7 @@ If the utility does not provide what you need, you can write your own script
 based on githelper as a module. The rest of this document explains the module's API.
 
 The main entry point is the :py:class:`GitWorkingCopy` class. You instantiate it
-with the path to a git or git-svn working copy (which possibly
-has nested sub-working copies).
+with the path to a git working copy (which possibly has nested sub-working copies).
 
 .. _iteration-example:
 
@@ -561,7 +537,7 @@ class GitRevision(object):
 
 class GitWorkingCopy(object):
     """
-    A class to represent a git or git-svn working copy.
+    A class to represent a git working copy.
 
     :param str path: The file system path to the working copy.
     :param githelper.GitWorkingCopy parent: A parent instance, you don't usually use this yourself.
@@ -572,8 +548,6 @@ class GitWorkingCopy(object):
 
     def __init__(self, path, parent=None):
         self.path = os.path.abspath(path)
-        self._svn_info = None
-        self._svn_externals = None
         self.parent = parent
         self.child_list = None
 
@@ -706,17 +680,11 @@ class GitWorkingCopy(object):
             ancestors.extend(self.parent.ancestors())
         return ancestors
 
-    def commits_not_in_svn(self):
-        """If the receiver is a Git-SVN working copy, returns a list of git commits that have not yet been pushed to SVN."""
-        if not self.is_git_svn():
-            print >> sys.stderr, '{} is not git-svn:'.format(self.path)
-            return []
-            
-        output = self.output_for_git_command('git svn log --limit=1 --show-commit --oneline'.split())[0].split(' | ')
-        revision, commit = output[0:2]
-        output = self.output_for_git_command('git log --oneline {}..HEAD'.format(commit).split())
-        return GitRevision.parse_log_lines_oneline(output)
+    def commits_not_in_upstream(self):
+        """Returns a list of git commits that have not yet been pushed to upstream."""
 
+        output = self.output_for_git_command('git log --oneline @{u}..HEAD'.split())
+        return GitRevision.parse_log_lines_oneline(output)
 
     def root_working_copy(self):
         """Returns the root working copy, which could be self."""
@@ -730,46 +698,6 @@ class GitWorkingCopy(object):
         except:
             print >> sys.stderr, 'Error running shell command in "{}":'.format(self.path)
             raise
-
-    def svn_info(self, key=None):
-        """
-        Returns a dictionary containing the key/value pairs in the output of ``git svn info``.
-
-        :param str key: When present, returns just the one value associated with the given key.
-
-        """
-        if not self._svn_info:
-            output = self._check_output_in_path('git svn info'.split())
-            self._svn_info = {}
-            for match in re.finditer('^([^:]+): (.*)$', output, re.MULTILINE):
-                self._svn_info[match.group(1)] = match.group(2)
-
-        if key:
-            return self._svn_info[key]
-        else:
-            return self._svn_info
-
-    def svn_externals(self):
-        """
-        Returns a dictionary with the externals in the output of ``git svn show-externals``.
-        """
-        if not self._svn_externals:
-            output = self._check_output_in_path('git svn show-externals'.split())
-            self._svn_externals = {}
-            for match in re.finditer('^/(\S+)\s+(\S+)[\t ]*$', output, re.MULTILINE):
-                self._svn_externals[match.group(1)] = match.group(2)
-
-        return self._svn_externals
-
-    def svn_ignore_paths(self):
-        """
-        Returns a dictionary with the items in the output of ``git svn show-ignore``.
-        """
-        output = self._check_output_in_path('git svn show-ignore'.split())
-        ignore_paths = []
-        for match in re.finditer('^/(\S+)', output, re.MULTILINE):
-            ignore_paths.append(match.group(1))
-        return ignore_paths
 
     def is_dirty(self):
         """
@@ -785,11 +713,6 @@ class GitWorkingCopy(object):
         output = self._check_output_in_path('git status --porcelain'.split()).splitlines()
         dirty_file_lines = [line[3:].strip('"') for line in output if not line.startswith('?')]
         return dirty_file_lines
-
-    def is_git_svn(self):
-        """Returns True if the receiver's git working copy is a git-svn working copy."""
-        status = subprocess.call('git svn info 1>/dev/null 2>/dev/null', shell=True, cwd=self.path)
-        return not status
 
     def info(self):
         config_path = os.path.join(self.path, '.git/config')
@@ -972,18 +895,6 @@ class AbstractSubcommand(object):
         """
         pass
 
-    def check_for_git_svn_and_warn(self, wc):
-        """
-        This returns False and warns if the given working copy is not a git-svn working copy.
-
-        :param githelper.GitWorkingCopy wc: The working copy to check.
-
-        """
-        if not wc.is_git_svn():
-            print >> sys.stderr, '{0} is not git-svn, skipping'.format(wc)
-            return False
-        return True
-
     @classmethod
     def configure_argument_parser(cls, parser):
         """
@@ -1006,59 +917,6 @@ class AbstractSubcommand(object):
     @classmethod
     def subcommand_name(cls):
         return '-'.join([i.lower() for i in re.findall(r'([A-Z][a-z]+)', re.sub(r'^Subcommand', '', cls.__name__))])
-
-
-class SubcommandResetMasterToSvnBranch(AbstractSubcommand):
-    """Hard-reset the master branch of a working copy to a specific remote branch. Aborts if the working copy is dirty."""
-
-    def __call__(self, wc):
-        if not self.check_preconditions(wc):
-            return GitWorkingCopy.STOP_TRAVERSAL
-
-        if not self.check_for_git_svn_and_warn(wc):
-            return
-
-        if not wc.has_branch('master'):
-            print >> sys.stderr, '{0} does not have a master branch, skipping'.format(wc)
-            return
-
-        branch_names = self.args.remote_branch_names
-
-        target_remote_branch = wc.remote_branch_name_for_name_list(branch_names)
-        if not target_remote_branch:
-            print >> sys.stderr, 'No remote branch matches {0}, skipping {1}'.format(branch_names, wc)
-            return
-
-        with wc.switched_to_branch('master'):
-            full_target_remote_branch = 'remotes/' + target_remote_branch
-            print >> sys.stderr, 'Hard-resetting {0} to {1}'.format(wc, full_target_remote_branch)
-            wc.hard_reset_current_branch(full_target_remote_branch)
-
-    @classmethod
-    def configure_argument_parser(cls, parser):
-        parser.add_argument('remote_branch_names', nargs='+', help='A list of one or more remote branch names. The tool will try to find a remote name using all combinations of the given items, ignoring case.')
-
-
-class SubcommandSvnRebase(AbstractSubcommand):
-    """Perform git svn rebase in each working copy. Temporarily switches to branch "master" if not already there. Aborts if the working copy is dirty."""
-
-    def __call__(self, wc):
-        if not self.check_preconditions(wc):
-            return GitWorkingCopy.STOP_TRAVERSAL
-
-        if not self.check_for_git_svn_and_warn(wc):
-            return
-
-        if not wc.has_branch('master'):
-            print >> sys.stderr, '{0} does not have a master branch, skipping'.format(wc)
-            return
-
-        rules = (
-            ('-', r'Current branch master is up to date'),
-        )
-
-        with wc.switched_to_branch('master'):
-            wc.run_shell_command('git svn rebase', header=wc, filter_rules=rules)
 
 
 class SubcommandTree(AbstractSubcommand):
@@ -1113,13 +971,13 @@ class SubcommandCheckout(AbstractSubcommand):
     def configure_argument_parser(cls, parser):
         parser.add_argument('branch', help='The name of the branch that should be checked out')
 
+
 class SubcommandBranch(AbstractSubcommand):
-    """Show local and SVN branch of each working copy"""
+    """Show checked out branch of each working copy"""
 
     column_accessors = (
         lambda x: str(x),
-        lambda x: str(len(x.commits_not_in_svn())),
-        lambda x: os.path.basename(x.svn_info('URL')),
+        lambda x: str(len(x.commits_not_in_upstream())),
         lambda x: x.current_branch(),
     )
 
@@ -1137,57 +995,6 @@ class SubcommandBranch(AbstractSubcommand):
         print format.format(*[string.ljust(SubcommandBranch.column_accessors[i](wc), self.maxlen[i]) for i in xrange(self.column_count())])
 
 
-class SubcommandCloneExternals(AbstractSubcommand):
-    """Clone an SVN repository and its ``svn:externals`` recursively."""
-
-    def __call__(self):
-        path = self.args.checkout_directory
-        self.checkout_svn_url(self.args.checkout_directory, self.args.svn_url)
-
-    def checkout_svn_url(self, path, svn_url):
-        print 'Checking out "{0}" into "{1}"'.format(svn_url, path)
-
-        if not os.path.exists(path):
-            cmd = 'git svn clone -r HEAD'.split() + [svn_url, path]
-            popen = FilteringPopen(cmd)
-            popen.run()
-        else:
-            print '"{0}" already exists'.format(path)
-
-        wc = GitWorkingCopy(path)
-        print wc
-        with wc.chdir_to_path():
-            externals = wc.svn_externals()
- #           print externals
-            self.update_exclude_file_with_paths(externals.keys() + wc.svn_ignore_paths())
-            for directory, svn_url in externals.viewitems():
-                self.checkout_svn_url(directory, svn_url)
-
-    def update_exclude_file_with_paths(self, paths):
-        lines_to_add = [path + '\n' for path in paths]
-        excludefile_path = '.git/info/exclude'
-        with open(excludefile_path, 'r+') as f:
-            lines = f.readlines()
-            lines_to_add = [line for line in lines_to_add if not line in lines]
-            if not lines_to_add:
-                return
-
-#            print 'Adding "{0}" to "{1}"'.format(lines_to_add, os.path.abspath(excludefile_path))
-            lines.extend(lines_to_add)
-            f.seek(0)
-            f.truncate()
-            f.writelines(lines)
-
-    @classmethod
-    def configure_argument_parser(cls, parser):
-        parser.add_argument('svn_url', help='The toplevel SVN repository to clone')
-        parser.add_argument('checkout_directory', help='The path to the sandbox directory to create')
-
-    @classmethod
-    def wants_working_copy(cls):
-        return False
-
-
 class SubcommandEach(AbstractSubcommand):
     """Run a shell command in each working copy"""
 
@@ -1198,354 +1005,6 @@ class SubcommandEach(AbstractSubcommand):
     @classmethod
     def configure_argument_parser(cls, parser):
         parser.add_argument('shell_command', nargs='+', help='A shell command to execute in the context of each working copy. If you need to use options starting with -, add " -- " before the first one.')
-
-
-class SubcommandSvnDiff(AbstractSubcommand):
-    """Get a diff for a git-svn working copy that matches the corresponding svn diff"""
-
-    def __call__(self, wc):
-        if not self.check_for_git_svn_and_warn(wc):
-            return GitWorkingCopy.STOP_TRAVERSAL
-
-        svn_rev = wc.svn_info('Last Changed Rev')
-        git_diff_command = 'git diff --no-prefix'.split() + self.args.git_diff_args
-        git_diff = wc.output_for_git_command(git_diff_command)
-        current_path = None
-        output_lines = []
-        for line in git_diff:
-            output_line = line
-            if line.startswith("diff --git "):
-                current_path = re.search(r'diff --git (.+) \1', line).group(1)
-            elif line.startswith('index'):
-                output_line = 'Index {0}'.format(current_path)
-            elif line.startswith('---'):
-                output_line = '{0}\t(revision {1})'.format(line, svn_rev)
-            elif line.startswith('+++'):
-                output_line = '{0}\t(working copy)'.format(line)
-
-            output_lines.append(output_line)
-
-        output_string = ''.join([line + '\n' for line in output_lines])
-
-        if self.args.copy and sys.platform == 'darwin':
-            import AppKit
-            pb = AppKit.NSPasteboard.generalPasteboard()
-            pb.clearContents()
-            pb.writeObjects_(AppKit.NSArray.arrayWithObject_(output_string))
-        elif self.args.cru_repository:
-            title_suggestion = wc.output_for_git_command('git log --pretty=format:%s -n1'.split())
-            if title_suggestion:
-                title_suggestion = title_suggestion[0]
-            crucible = CrucibleToolWrapper(self.args, title_suggestion)
-            crucible.create_review_with_patch(output_string)
-        else:
-            print output_string
-
-        return GitWorkingCopy.STOP_TRAVERSAL
-
-    @classmethod
-    def configure_argument_parser(cls, parser):
-        CrucibleToolWrapper.configure_argument_parser(parser)
-        parser.add_argument('-c', '--copy', action='store_true', help='Copy the diff output to the OS X clipboard instead of printing it')
-        parser.add_argument('git_diff_args', nargs='*', help='Optional arguments to git diff. If you need to pass options starting with -, add " -- " before the first one.')
-
-
-# Some SVN-related subcommands that don't require a Git working copy
-
-class SvnAbstractSubcommand(AbstractSubcommand):
-
-    @classmethod
-    def wants_working_copy(cls):
-        return False
-
-    @classmethod
-    def current_directory_svn_location(cls):
-        if os.path.exists('.svn'):
-            info = SvnInfo.info_for_url_or_path('.')
-            return SvnLocation(info.url(), info.root(), info.revision())
-        
-        if os.path.exists('.git/svn'):
-            wc = GitWorkingCopy('.')
-            return SvnLocation(wc.svn_info('URL'), wc.svn_info('Repository Root'), wc.svn_info('Last Changed Rev'))
-
-        raise Exception('Current directory is neither SVN nor Git root working copy')
-        
-
-    def svn_location(self):
-
-        svn_url = self.args.url_or_path
-        if svn_url:
-            info = SvnInfo.info_for_url_or_path(svn_url)
-            return SvnLocation(info.url(), info.root(), info.revision())
-
-        return self.current_directory_svn_location()        
-
-
-class SvnInfo(object):
-    
-    def __init__(self, xml_element):
-        self.xml_element = xml_element
-    
-    def root(self):
-        return self.xml_element.findtext('entry/repository/root')
-
-    def url(self):
-        return self.xml_element.findtext('entry/url')
-    
-    def revision(self):
-        return self.xml_element.find('entry').get('revision')
-    
-    def last_changed_revision(self):
-        return self.xml_element.find('entry/commit').get('revision')
-
-    @classmethod
-    def info_for_url_or_path(cls, svn_url_or_path):
-        xml = SvnCommand.info(svn_url_or_path).xml()
-        return cls(xml)
-        
-
-class SvnLocation(object):
-    
-    def __init__(self, url=None, root=None, revision=None):
-        self.url = url
-        self.root = root
-        self.revision = revision
-
-    def directory_names(self):
-        tree = SvnCommand.ls(self.url).xml()
-        directory_names = []
-        for item in tree.findall('list/entry'):
-            if item.get('kind') != 'dir':
-                continue
-            directory_names.append(item.findtext('name'))
-        return directory_names
-        
-
-class SvnCommand(object):
-    
-    def __init__(self, cmd):
-        self.cmd = ['svn'] + cmd
-        self.result = subprocess.check_output(self.cmd)
-    
-    def xml(self):
-        self.cached_xml = xml.etree.ElementTree.fromstring(self.result)
-        return self.cached_xml
-
-    def lines(self):
-        return self.result.splitlines()
-
-    @classmethod
-    def log(cls, url, stop_on_copy=True, limit=None, revision=None):
-        cmd = ['log', '-v', '--xml']
-        if stop_on_copy:
-            cmd.append('--stop-on-copy')
-        if limit:
-            cmd.extend(['--limit', str(limit)])
-        if revision:
-            url += '@{}'.format(revision)
-        cmd.append(url)
-        return cls(cmd)
-
-    @classmethod
-    def info(cls, url):
-        cmd = ['info', '--xml']
-        cmd.append(url)
-        return cls(cmd)
-
-    @classmethod
-    def ls(cls, url):
-        cmd = ['ls', '--xml']
-        cmd.append(url)
-        return cls(cmd)
-
-
-class SvnLogEntry(object):
-    
-    def __init__(self, xml_element, svn_location=None):
-        self.xml_element = xml_element
-        self.location = svn_location
-    
-    def revision(self):
-        return self.xml_element.get('revision')
-    
-    def timestamp(self):
-        return self.xml_element.findtext('date')
-    
-    def date(self):
-        return self.timestamp()[:10]
-    
-    def copyfrom_location(self):
-        for path_element in [path for path in self.xml_element.findall('paths/path') if path.get('action') == 'A']:
-            path = path_element.text
-            if self.location.url.endswith(path):
-                copyfrom_path = path_element.get('copyfrom-path')
-                if copyfrom_path:
-                    copyfrom_url = self.location.url.replace(path, copyfrom_path)
-                    copyfrom_revision = path_element.get('copyfrom-rev')
-                    return SvnLocation(copyfrom_url, self.location.root, copyfrom_revision)
-        return None
-
-    def msg(self):
-        return self.xml_element.findtext('msg').strip()
-    
-    def short_msg(self):
-        msg = ' '.join(self.msg().splitlines())
-        truncated = msg[:100]
-        if len(truncated) < len(msg):
-            truncated += ' [...]'
-        msg = '{0} [{1:<10}]  {2}'.format(self.revision(), self.author()[0:10], truncated.encode('utf-8'))
-        return msg
-        
-    def long_msg(self):
-        msg = ' '.join(self.msg().splitlines())
-        msg = '{0} [{1:<10}]  {2}'.format(self.revision(), self.author()[0:10], msg.encode('utf-8'))
-        return msg
-        
-    def author(self):
-        return self.xml_element.findtext('author')
-    
-
-class SvnLog(object):
-    
-    def __init__(self, svn_location, stop_on_copy=True):
-        tree = SvnCommand.log(svn_location, stop_on_copy=stop_on_copy).xml()
-        self.log_entries = []
-        for entry_element in tree.findall('logentry'):
-            entry = SvnLogEntry(entry_element, svn_location)
-            self.log_entries.append(entry)
-        
-    def oldest_log_entry(self):
-        return self.log_entries[-1]
-    
-
-class SubcommandSvnLineage(SvnAbstractSubcommand):
-    """Show the branching history of an SVN branch."""
-
-    def __call__(self):
-        def callback(svn_location, log_entry):
-            date = '{} '.format(log_entry.date()) if log_entry else 'HEAD       '
-            print '{}{}@{}'.format(date, svn_location.url, svn_location.revision)
-            sys.stdout.flush()
-            
-        self.location_list(self.svn_location(), callback)
-    
-    def location_list(self, svn_location, callback=None, log_entry=None):
-        if callback:
-            callback(svn_location, log_entry)
-        try:
-            log = SvnLog(svn_location)
-            oldest_entry = log.oldest_log_entry()
-            branch_location = oldest_entry.copyfrom_location()
-            if branch_location:
-                return self.location_list(branch_location, callback, oldest_entry) + [svn_location]
-        except Exception as e:
-            print e
-            print 'Unable to follow log for SVN location "{}", it might not exist in the repository.'.format(svn_location.url)
-            pass
-
-        return [svn_location]
-        
-    @classmethod
-    def configure_argument_parser(cls, parser):
-        parser.add_argument('url_or_path', nargs='?', help='The SVN URL. If not given, the script tries to get it from the current directory, which can be either a git-svn or an SVN working copy.')
-
-
-class SubcommandSvnConflicts(SvnAbstractSubcommand):
-    """Show the conflicted files of svn status."""
-
-    def __call__(self):
-        output = subprocess.check_output('svn status'.split())
-        for line in output.splitlines():
-            if re.match('(?:..... [C>] |C)', line):
-                print line
-
-
-class SubcommandSvnDeleteResolve(SvnAbstractSubcommand):
-    """Svn-rm and -resolve one or more tree-conflicted files."""
-
-    def __call__(self):
-        for path in self.args.path:
-            if os.path.exists(path):
-                print subprocess.check_output('svn rm --force'.split() + [path]),
-            print subprocess.check_output('svn resolve --accept working'.split() + [path]),
-
-    @classmethod
-    def configure_argument_parser(cls, parser):
-        parser.add_argument('path', nargs='+', help='The path of the tree-conflicted file to remove and resolve.')
-
-
-class SubcommandSvnMergeinfo(SvnAbstractSubcommand):
-    """List the revisions eligible to be merged from another branch"""
-
-    def __call__(self):
-        self.dump_eligible_revisions(self.source_location())
-    
-    def source_location(self):
-        target_location = self.current_directory_svn_location()
-
-        if '/' in self.args.branch_name_or_url:
-            source_location = SvnLocation(self.args.branch_name_or_url, target_location.root)
-        else:
-            branch_name = self.find_branch_name(target_location, self.args.branch_name_or_url)        
-            source_url = re.sub(r'/branches/[^/]+(.*)', r'/branches/{}\1'.format(branch_name), target_location.url)
-            source_location = SvnLocation(source_url, target_location.root)
-
-        print 'Eligible revisions\nfrom {}\nto   {}'.format(source_location.url, target_location.url)
-        return source_location
-
-    
-    def find_branch_name(self, target_location, branch_name):
-        base_url = re.sub(r'branches/.*', r'branches/', target_location.url)
-        candidates = SvnLocation(base_url).directory_names()
-        if self.args.strict:
-            branch_name = self.args.branch_name_or_url
-            if branch_name not in candidates:
-                raise Exception('No exact match for "{}" in {}: {}'.format(branch_name, base_url, candidates))
-        else:
-            matches = [i for i in candidates if self.args.branch_name_or_url.lower() in i.lower()]
-            if len(matches) != 1:
-                raise Exception('No or multiple matches for "{}" in {}: {}'.format(self.args.branch_name_or_url, base_url, matches))
-            branch_name = matches[0]
-        return branch_name
-
-    def dump_eligible_revisions(self, source_location):
-        target_location = self.current_directory_svn_location()
-
-        cmd = 'mergeinfo --show-revs eligible'.split() + [source_location.url, target_location.url]
-        mergeinfo_cmd = SvnCommand(cmd)
-        revisions = [i.lstrip('r') for i in mergeinfo_cmd.lines()]
-
-        if self.args.record_only_all:
-            print 'svn merge --record-only -c {} {}'.format(','.join(revisions), source_location.url)
-            return
-        
-        for revision in revisions:
-            if self.args.short:
-                print revision
-                continue
-
-            cmd = SvnCommand.log(source_location.root, limit=1, revision=revision)
-            entry = SvnLogEntry(cmd.xml().find('logentry'))
-
-            if self.args.merge:
-                print 'svn merge -c {} {} # {}'.format(revision, source_location.url, entry.short_msg())
-            elif self.args.record_only:
-                print 'svn merge --record-only -c {} {} # {}'.format(revision, source_location.url, entry.short_msg())
-            elif self.args.long:
-                print entry.long_msg()
-            else:
-                print entry.short_msg()
-
-
-    @classmethod
-    def configure_argument_parser(cls, parser):
-        parser.add_argument('branch_name_or_url', help='branch name or URL of the source branch')
-        parser.add_argument('--strict', action='store_true', help='Do not try case insensitive substring match of the branch name')
-        parser.add_argument('--short', action='store_true', help='Just the revision numbers')
-        parser.add_argument('--long', action='store_true', help='Do not truncate the log message, print it all on one line')
-        parser.add_argument('--merge', action='store_true', help='Emit svn merge commands')
-        parser.add_argument('--record-only', action='store_true', help='Emit record-only svn merge command')
-        parser.add_argument('--record-only-all', action='store_true', help='Emit combined record-only svn merge command')
 
 
 class GitHelperCommandLineDriver(object):
@@ -1622,7 +1081,7 @@ class GitHelperCommandLineDriver(object):
         if not cls.resolve_subcommand_abbreviation(subcommand_map):
             exit(1)
     
-        parser = argparse.ArgumentParser(description='Git-SVN helper')
+        parser = argparse.ArgumentParser(description='Git helper')
         parser.add_argument('--root_path', help='Path to root working copy', default=os.getcwd())
         parser.add_argument('--verbose', action='store_true', help='Enable verbose debug logging')
         subparsers = parser.add_subparsers(title='Subcommands', dest='subcommand_name')
