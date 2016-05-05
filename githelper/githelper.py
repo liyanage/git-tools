@@ -493,6 +493,12 @@ class GitWorkingCopy(object):
         [branch] = [i[2:] for i in output if i.startswith('* ')]
         return branch
 
+    def current_repository(self):
+        """Returns the name of the current git repository."""
+        output = self.output_for_git_command('git remote -v'.split())[0]
+        repository_names = re.findall(r'/([^/]+?)(?:\s|\.git)', output)
+        return repository_names[0]
+
     def has_branch(self, branch_name):
         """Returns True if the working copy has a git branch with the given name"""
         return branch_name in self.branch_names()
@@ -577,7 +583,7 @@ class GitWorkingCopy(object):
         popen = FilteringPopen(command, cwd=self.path, shell=shell)
         popen.run(filter_rules=filter_rules, store_stdout=False, store_stderr=False, header=header, check_returncode=check_returncode)
 
-    def output_for_git_command(self, command, shell=False, filter_rules=None, header=None):
+    def output_for_git_command(self, command, shell=False, filter_rules=None, header=None, check_returncode=None):
         """
         Runs the given shell command (array or string) in the receiver's working directory and returns the output.
 
@@ -585,7 +591,7 @@ class GitWorkingCopy(object):
 
         """
         popen = FilteringPopen(command, cwd=self.path, shell=shell)
-        popen.run(filter_rules=filter_rules, echo_stdout=False, header=header)
+        popen.run(filter_rules=filter_rules, echo_stdout=False, header=header, check_returncode=check_returncode)
         return popen.stdoutlines()
 
     def is_root(self):
@@ -831,6 +837,22 @@ class AbstractSubcommand(object):
         """
         pass
 
+    @classmethod
+    def read_string_from_clipboard(cls):
+        string = None
+        if sys.platform == 'darwin':
+            import AppKit
+            pb = AppKit.NSPasteboard.generalPasteboard()
+            string = pb.stringForType_('public.utf8-plain-text')
+        return string
+
+    @classmethod
+    def write_string_to_clipboard(cls, string):
+        if sys.platform == 'darwin':
+            import AppKit
+            pb = AppKit.NSPasteboard.generalPasteboard()
+            pb.clearContents()
+            pb.writeObjects_(AppKit.NSArray.arrayWithObject_(string))
 
     @classmethod
     def wants_working_copy(cls):
@@ -861,6 +883,112 @@ class SubcommandStatus(AbstractSubcommand):
         )
 
         wc.run_shell_command('git status -s', filter_rules=rules, header=wc)
+
+
+class SubcommandCopyHeadCommitHash(AbstractSubcommand):
+    """Copy repository / branch / head hash to clipboard"""
+
+    def __call__(self, wc):
+        repository = wc.current_repository()
+        branch = wc.current_branch()
+        hash = wc.output_for_git_command(['git', 'rev-parse', 'HEAD'])[0][:8]
+        output = '{} {} {}'.format(repository, branch, hash)
+        self.write_string_to_clipboard(output)
+        print output
+        
+        return GitWorkingCopy.STOP_TRAVERSAL
+
+
+class SubcommandCheckoutBugfixBranch(AbstractSubcommand):
+    """Check out a bugfix branch named user/<username>/name, with name based on the contents of the clipboard."""
+
+    def __call__(self, wc):
+        import readline
+
+        clipboard_string = self.read_string_from_clipboard()
+        branch_name_suggestion = None
+        branch_name_suggestion_raw = None
+        if clipboard_string:
+            items = re.findall(r'.*?(\d+)(.*)', clipboard_string)
+            if items:
+                number, string = items[0]
+                words = re.findall(r'([a-zA-Z]{3,})', string)
+                branch_name_suggestion_raw = 'user/{}/{}'.format(os.environ['USER'], '-'.join([number] + words)).lower()
+                if len(words) > 5:
+                    del(words[5:])
+                branch_name_suggestion = 'user/{}/{}'.format(os.environ['USER'], '-'.join([number] + words)).lower()
+
+        if branch_name_suggestion:
+            prompt = 'Type branch name or hit return to accept "{}"\n'.format(branch_name_suggestion)
+            self.write_string_to_clipboard(branch_name_suggestion_raw)
+        else:
+            prompt = 'Type branch name\n'
+
+        branch_name = raw_input(prompt)
+        if not len(branch_name):
+            if not branch_name_suggestion:
+                print >> sys.stderr, 'No suitable branch name'
+                return
+            branch_name = branch_name_suggestion
+
+        self.write_string_to_clipboard(branch_name)
+        wc.run_shell_command('git checkout -b {}'.format(branch_name))
+
+        output = wc.output_for_git_command('git status --porcelain -uno'.split())
+        staged = [l for l in output if l.startswith('M')]
+        if staged:
+            wc.run_shell_command(['git', 'commit', '-m', clipboard_string])
+
+
+class SubcommandDropBugfixBranch(AbstractSubcommand):
+    """Delete a bugfix branch locally and remotely. The branch must be prefixed with "user/" """
+
+    def __call__(self, wc):
+        local_branch_ref = self.args.branch
+        output = wc.output_for_git_command('git rev-parse --abbrev-ref HEAD'.split())
+        current_branch_ref = output[0]
+        if not local_branch_ref:
+            local_branch_ref = current_branch_ref
+            
+        if not local_branch_ref.startswith('user/'):
+            print >> sys.stderr, 'Branch name does not start with "user/", please delete manually'
+            return GitWorkingCopy.STOP_TRAVERSAL
+
+        remote_names = wc.output_for_git_command('git remote'.split())
+        if len(remote_names) > 1:
+            print >> sys.stderr, 'More or less than one remote: "{}", please delete manually'.format(', '.join(remote_names))
+            return GitWorkingCopy.STOP_TRAVERSAL
+        remote_name = None 
+        if remote_names:
+            remote_name = remote_names[0]
+
+        remote_branch_ref = None
+        if remote_name:
+            output = wc.output_for_git_command(['git', 'rev-parse', '--abbrev-ref', '--symbolic-full-name', local_branch_ref + '@{u}'], filter_rules=[('-', r'fatal')], check_returncode=False)
+            if output:
+                remote_branch_ref = output[0][len(remote_name) + 1:]
+                if not remote_branch_ref.startswith('user/'):
+                    print >> sys.stderr, 'Remote branch name does not start with "user/", please delete manually'
+                    return GitWorkingCopy.STOP_TRAVERSAL
+            else:
+                print >> sys.stderr, 'No upstream branch configured, will delete only local branch'
+
+        if current_branch_ref == local_branch_ref:
+            output = wc.output_for_git_command('git rev-parse --abbrev-ref --symbolic-full-name @{-1}'.split())
+            if not output:
+                print >> sys.stderr, 'Current branch is branch to be deleted, but previous branch is unknown, please delete manually'
+                return GitWorkingCopy.STOP_TRAVERSAL
+            wc.run_shell_command('git checkout @{-1}'.split())
+        
+        wc.run_shell_command('git branch -D'.split() + [local_branch_ref])
+        if remote_branch_ref:
+            wc.run_shell_command('git push -d'.split() + [remote_name, remote_branch_ref])
+
+        return GitWorkingCopy.STOP_TRAVERSAL
+
+    @classmethod
+    def configure_argument_parser(cls, parser):
+        parser.add_argument('branch', nargs='?', default=None, help='The name of the branch that should be deleted, defaults to the currently checked out branch')
 
 
 class SubcommandCheckout(AbstractSubcommand):
