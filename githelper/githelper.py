@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding=utf-8
 
 """
 Introduction
@@ -617,6 +618,12 @@ class GitWorkingCopy(object):
         output = self.output_for_git_command('git log --oneline @{u}..HEAD'.split())
         return GitRevision.parse_log_lines_oneline(output)
 
+    def commits_only_in_upstream(self):
+        """Returns a list of git commits that are only in upstream but not in the local tracking branch."""
+
+        output = self.output_for_git_command('git log --oneline HEAD..@{u}'.split())
+        return GitRevision.parse_log_lines_oneline(output)
+
     def root_working_copy(self):
         """Returns the root working copy, which could be self."""
         if self.is_root():
@@ -639,6 +646,30 @@ class GitWorkingCopy(object):
         """
         return bool(self.dirty_file_lines())
 
+    def create_stash_and_reset_hard(self):
+        """
+        Stashes the uncommitted changes in the working copy using "stash create", i.e. without
+        updating the "stash" reference, and runs "git reset --hard". Prints and returns the
+        commit id if anything was stashed, None otherwise.
+
+        """
+        if not self.is_dirty():
+            return None
+        
+        stash_commit = None
+        output = self.output_for_git_command('git stash create'.split())
+        if len(output):
+            stash_commit = output[0]
+            print 'Stashed changes, restore with "git stash apply {0}"'.format(stash_commit)
+            output = self.output_for_git_command('git reset --hard'.split())
+            #print '\n'.join(output)
+        
+        return stash_commit
+
+    def apply_stash_commit(self, stash_commit):
+        #print 'Applying stash ' + stash_commit
+        output = self.output_for_git_command('git stash apply'.split() + [stash_commit])
+
     def dirty_file_lines(self):
         """Returns the output of git status for the files marked as modified, renamed etc."""
         output = self._check_output_in_path('git status --porcelain'.split()).splitlines()
@@ -658,7 +689,7 @@ class GitWorkingCopy(object):
     def children(self):
         if self.child_list is None:
             self.child_list = []
-            for (dirpath, dirnames, filenames) in os.walk(self.path):
+            for (dirpath, dirnames, filenames) in os.walk(self.path, followlinks=True):
                 if dirpath == self.path:
                     continue
 
@@ -684,7 +715,7 @@ class GitWorkingCopy(object):
             for item in child:
                 yield item
 
-    def self_or_descendants_are_dirty(self, list_dirty=False):
+    def self_or_descendants_dirty_working_copies(self):
         """
         Returns True if the receiver's or one of its nested working copies are dirty.
 
@@ -695,15 +726,8 @@ class GitWorkingCopy(object):
         for item in self:
             if item.is_dirty():
                 dirty_working_copies.append(item)
-
-        if dirty_working_copies and list_dirty:
-            print >> sys.stderr, 'Dirty working copies found, please commit or stash first:'
-            for wc in dirty_working_copies:
-                print >> sys.stderr, wc
-                with ANSIColor.terminal_color(ANSIColor.red, ANSIColor.red):
-                    print >> sys.stderr, ''.join([i + '\n' for i in wc.dirty_file_lines()])
-
-        return bool(dirty_working_copies)
+        
+        return dirty_working_copies
 
     def traverse(self, iterator):
         """
@@ -716,7 +740,8 @@ class GitWorkingCopy(object):
         See the :ref:`example above <iteration-example>`.
         """
         if callable(getattr(iterator, "prepare_for_root", None)):
-            iterator.prepare_for_root(self)
+            if iterator.prepare_for_root(self) is GitWorkingCopy.STOP_TRAVERSAL:
+                return
 
         if not callable(iterator):
             raise Exception('{0} is not callable'.format(iterator))
@@ -798,33 +823,27 @@ class AbstractSubcommand(object):
         """
         pass
 
-    def check_preconditions(self, wc):
-        """
-        This method returns False if any of the working copies are dirty.
-
-        You can call this as a first step in your :py:meth:`__call__` implementation
-        and abort if your custom subcommand performs operations that require
-        clean working copies.
-
-        :param githelper.GitWorkingCopy wc: The working copy to check.
-
-        """
-        # perform this check only once at the root
-        if not wc.is_root():
-            return True
-
-        return not wc.self_or_descendants_are_dirty(list_dirty=True)
-
     def prepare_for_root(self, root_wc):
         """
         This method gets called on the root working copy only and lets you
         perform preparation steps that you want to do only once for the entire
         tree.
 
-        :param githelper.GitWorkingCopy wc: The working copy to check.
+        :param githelper.GitWorkingCopy root_wc: The working copy to check.
 
         """
         pass
+    
+    def chained_post_traversal_subcommand_for_root_working_copy(self, root_wc):
+        """
+        This method gets called on the root working copy after the traversal
+        of a tree has finished. The subcommand class can return another subcommand
+        instance that will be run next.
+
+        :param githelper.GitWorkingCopy root_wc: The working copy to process.
+
+        """
+        return None
 
     @classmethod
     def configure_argument_parser(cls, parser):
@@ -853,6 +872,13 @@ class AbstractSubcommand(object):
             pb = AppKit.NSPasteboard.generalPasteboard()
             pb.clearContents()
             pb.writeObjects_(AppKit.NSArray.arrayWithObject_(string))
+
+    @classmethod
+    def format_and_print_dirty_working_copy_list(cls, dirty_working_copies):
+        for wc in dirty_working_copies:
+            print >> sys.stderr, wc
+            with ANSIColor.terminal_color(ANSIColor.red, ANSIColor.red):
+                print >> sys.stderr, ''.join([i + '\n' for i in wc.dirty_file_lines()])
 
     @classmethod
     def wants_working_copy(cls):
@@ -909,6 +935,7 @@ class SubcommandCheckoutBugfixBranch(AbstractSubcommand):
         branch_name_suggestion = None
         branch_name_suggestion_raw = None
         if clipboard_string:
+            clipboard_string = re.sub(r'\[.+?\]\s+', '', clipboard_string)
             items = re.findall(r'.*?(\d+)(.*)', clipboard_string)
             if items:
                 number, string = items[0]
@@ -991,62 +1018,130 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
         parser.add_argument('branch', nargs='?', default=None, help='The name of the branch that should be deleted, defaults to the currently checked out branch')
 
 
-class SubcommandCheckout(AbstractSubcommand):
+class WorkingCopyTreeStashingSubcommand(AbstractSubcommand):
+
+    def prepare_for_root(self, root_wc):
+        dirty_working_copies = root_wc.self_or_descendants_dirty_working_copies()
+        if dirty_working_copies and not self.args.stash_pop:
+            print >> sys.stderr, ANSIColor.wrap('Dirty working copies found, please commit or stash first, or use the -s/--stash-pop option\n', color=ANSIColor.red)
+            self.format_and_print_dirty_working_copy_list(dirty_working_copies)
+            return GitWorkingCopy.STOP_TRAVERSAL
+    
+    @classmethod
+    def configure_argument_parser(cls, parser):
+        parser.add_argument('-s', '--stash-pop', action='store_true', help='Allow dirty working copy. Stash before checkout and pop afterwards.')
+
+
+class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
     """Check out a given branch if it exists"""
 
     def __call__(self, wc):
-        if not self.check_preconditions(wc):
-            return GitWorkingCopy.STOP_TRAVERSAL
-
-        target_branch = self.args.branch
+        target_branch_candidates = self.args.branch
         current_branch = wc.current_branch()
+        
+        target_branch = None
+        for target_branch_candidate in target_branch_candidates:
+            branch_candidates = [i for i in wc.local_branch_names() if target_branch_candidate in i]
 
-        branch_candidates = [i for i in wc.local_branch_names() if target_branch in i]
+            if not branch_candidates:
+                continue
 
-        if not branch_candidates:
-            print >> sys.stderr, 'No branch "{0}" in {1}, staying on "{2}"'.format(target_branch, wc, current_branch)
+            if len(branch_candidates) > 1:
+                print >> sys.stderr, 'Branch name "{0}" is ambiguous in {1}, staying on "{2}":'.format(target_branch_candidate, wc, current_branch)
+                print >> sys.stderr, [i + '\n' for i in branch_candidates]
+                return
+
+            target_branch = branch_candidates[0]
+            break
+
+        if not target_branch:
+            print >> sys.stderr, 'No branch found matching any of "{0}" in {1}, staying on "{2}"'.format(', '.join(target_branch_candidates), wc, current_branch)
             return
-
-        if len(branch_candidates) > 1:
-            print >> sys.stderr, 'Branch name "{0}" is ambiguous in {1}, staying on "{2}":'.format(target_branch, wc, current_branch)
-            print >> sys.stderr, [i + '\n' for i in branch_candidates]
-            return
-
-        target_branch = branch_candidates[0]
 
         if current_branch == target_branch:
             print >> sys.stderr, '{0} is already on branch "{1}"'.format(wc, target_branch)
             return
 
-        wc.run_shell_command('git checkout {0}'.format(target_branch), header=wc)
+        print ANSIColor.wrap(wc, color=ANSIColor.green)
+        stash_commit = None
+        if wc.is_dirty():
+            stash_commit = wc.create_stash_and_reset_hard()
+
+        try:
+            rules = [
+                ('-', r'use "git pull"'),
+            ]
+            wc.run_shell_command('git checkout {0}'.format(target_branch), filter_rules=rules)
+        finally:
+            if stash_commit:
+                wc.apply_stash_commit(stash_commit)
 
     @classmethod
     def configure_argument_parser(cls, parser):
-        parser.add_argument('branch', help='The name of the branch that should be checked out')
+        super(SubcommandCheckout, cls).configure_argument_parser(parser)
+        parser.add_argument('branch', nargs='+', help='One or more names of the branch that should be checked out. The first one to exist will be used')
+
+
+class SubcommandPull(WorkingCopyTreeStashingSubcommand):
+    """Check out a given branch if it exists"""
+
+    def __call__(self, wc):
+        stash_commit = None
+        print ANSIColor.wrap(wc, color=ANSIColor.green)
+        if wc.is_dirty():
+            stash_commit = wc.create_stash_and_reset_hard()
+
+        try:
+            rules = [
+                ('-', r'Rebasing'),
+            ]
+            wc.run_shell_command('git pull', filter_rules=rules)
+        finally:
+            if stash_commit:
+                wc.apply_stash_commit(stash_commit)
+
 
 
 class SubcommandBranch(AbstractSubcommand):
     """Show checked out branch of each working copy"""
 
-    column_accessors = (
-        lambda x: str(x),
-        lambda x: str(len(x.commits_not_in_upstream())),
-        lambda x: x.current_branch(),
+    column_justifiers_and_accessors = (
+        (string.ljust, lambda x: unicode(x)),
+        (string.rjust, lambda x: unicode(len(x.commits_not_in_upstream())) + u'↑'),
+        (string.rjust, lambda x: unicode(len(x.commits_only_in_upstream())) + u'↓'),
+        (string.ljust, lambda x: x.current_branch()),
     )
-
+    
     def column_count(self):
-        return len(SubcommandBranch.column_accessors)
+        return len(SubcommandBranch.column_justifiers_and_accessors)
 
     def prepare_for_root(self, root_wc):
         self.maxlen = [0] * self.column_count()
         for wc in root_wc:
-            for index, accessor in enumerate(SubcommandBranch.column_accessors):
+            for index, (justifier, accessor) in enumerate(SubcommandBranch.column_justifiers_and_accessors):
                 self.maxlen[index] = max((self.maxlen[index], len(accessor(wc))))
 
     def __call__(self, wc):
-        format = ' '.join(['{' + str(i) + '}' for i in range(self.column_count())])
-        print format.format(*[string.ljust(SubcommandBranch.column_accessors[i](wc), self.maxlen[i]) for i in xrange(self.column_count())])
+        def access(index, item):
+            return self.column_justifiers_and_accessors[index][1](item)
 
+        def justify(index, string, length):
+            return self.column_justifiers_and_accessors[index][0](string, length)
+
+        format = ' '.join(['{' + unicode(i) + '}' for i in range(self.column_count())])
+        output = format.format(*[justify(i, access(i, wc), self.maxlen[i]) for i in xrange(self.column_count())])
+        print output
+
+
+class SubcommandFetch(AbstractSubcommand):
+    """Run git fetch"""
+
+    def __call__(self, wc):
+        wc.run_shell_command('git fetch')
+
+    def chained_post_traversal_subcommand_for_root_working_copy(self, root_wc):
+        return SubcommandBranch(self.args)
+        
 
 class SubcommandEach(AbstractSubcommand):
     """Run a shell command in each working copy"""
@@ -1150,8 +1245,10 @@ class GitHelperCommandLineDriver(object):
         subcommand = subcommand_class(args)
 
         if subcommand_class.wants_working_copy():
-            wc = GitWorkingCopy(args.root_path)
-            wc.traverse(subcommand)
+            while subcommand:
+                wc = GitWorkingCopy(args.root_path)
+                wc.traverse(subcommand)
+                subcommand = subcommand.chained_post_traversal_subcommand_for_root_working_copy(wc)
         else:
             subcommand()
 
