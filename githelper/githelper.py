@@ -482,11 +482,15 @@ class GitWorkingCopy(object):
             raise Exception('{0} is not a git working copy'.format(self.path))
 
     def __str__(self):
-        is_dirty = ''
+        flags = ''
+        if not self.current_branch_has_upstream():
+            flags += 'l' # l for local-only
         if self.is_dirty():
-            is_dirty = ' *'
+            flags += '*'
+        if flags:
+            flags = ' ' + flags
 
-        return '<Working copy {0}{1}>'.format(self.path, is_dirty)
+        return '<{0}{1}>'.format(self.path, flags)
 
     def current_branch(self):
         """Returns the name of the current git branch."""
@@ -612,9 +616,15 @@ class GitWorkingCopy(object):
             ancestors.extend(self.parent.ancestors())
         return ancestors
 
+    def current_branch_upstream(self):
+        output = self.output_for_git_command('git rev-parse --abbrev-ref --symbolic-full-name @{u}'.split(), filter_rules=[('-', r'fatal')])
+        return output
+    
+    def current_branch_has_upstream(self):
+        return bool(self.current_branch_upstream())
+
     def commits_not_in_upstream(self):
         """Returns a list of git commits that have not yet been pushed to upstream."""
-
         output = self.output_for_git_command('git log --oneline @{u}..HEAD'.split())
         return GitRevision.parse_log_lines_oneline(output)
 
@@ -1107,8 +1117,8 @@ class SubcommandBranch(AbstractSubcommand):
 
     column_justifiers_and_accessors = (
         (string.ljust, lambda x: unicode(x)),
-        (string.rjust, lambda x: unicode(len(x.commits_not_in_upstream())) + u'↑'),
-        (string.rjust, lambda x: unicode(len(x.commits_only_in_upstream())) + u'↓'),
+        (string.rjust, lambda x: unicode(len(x.commits_not_in_upstream())) + u'↑' if x.current_branch_has_upstream() else '-'),
+        (string.rjust, lambda x: unicode(len(x.commits_only_in_upstream())) + u'↓' if x.current_branch_has_upstream() else '-'),
         (string.ljust, lambda x: x.current_branch()),
     )
     
