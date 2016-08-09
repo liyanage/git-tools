@@ -498,6 +498,9 @@ class GitWorkingCopy(object):
         [branch] = [i[2:] for i in output if i.startswith('* ')]
         return branch
 
+    def head_commit_hash(self):
+        return self.output_for_git_command(['git', 'rev-parse', 'HEAD'])[0][:8]
+
     def current_repository(self):
         """Returns the name of the current git repository."""
         output = self.output_for_git_command('git remote -v'.split())[0]
@@ -925,10 +928,7 @@ class SubcommandCopyHeadCommitHash(AbstractSubcommand):
     """Copy repository / branch / head hash to clipboard"""
 
     def __call__(self, wc):
-        repository = wc.current_repository()
-        branch = wc.current_branch()
-        hash = wc.output_for_git_command(['git', 'rev-parse', 'HEAD'])[0][:8]
-        output = '{} {} {}'.format(repository, branch, hash)
+        output = '{} {} {}'.format(wc.current_repository(), wc.current_branch(), wc.head_commit_hash())
         self.write_string_to_clipboard(output)
         print output
         
@@ -965,7 +965,7 @@ class SubcommandCheckoutBugfixBranch(AbstractSubcommand):
         if not len(branch_name):
             if not branch_name_suggestion:
                 print >> sys.stderr, 'No suitable branch name'
-                return
+                return GitWorkingCopy.STOP_TRAVERSAL
             branch_name = branch_name_suggestion
 
         self.write_string_to_clipboard(branch_name)
@@ -976,6 +976,7 @@ class SubcommandCheckoutBugfixBranch(AbstractSubcommand):
         if staged:
             wc.run_shell_command(['git', 'commit', '-m', clipboard_string])
 
+        return GitWorkingCopy.STOP_TRAVERSAL
 
 class SubcommandDropBugfixBranch(AbstractSubcommand):
     """Delete a bugfix branch locally and remotely. The branch must be prefixed with "user/" """
@@ -1050,20 +1051,12 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
         current_branch = wc.current_branch()
         
         target_branch = None
+
         for target_branch_candidate in target_branch_candidates:
-            branch_candidates = [i for i in wc.local_branch_names() if target_branch_candidate in i]
-
-            if not branch_candidates:
-                continue
-
-            if len(branch_candidates) > 1:
-                print >> sys.stderr, 'Branch name "{0}" is ambiguous in {1}, staying on "{2}":'.format(target_branch_candidate, wc, current_branch)
-                print >> sys.stderr, [i + '\n' for i in branch_candidates]
-                return
-
-            target_branch = branch_candidates[0]
-            break
-
+            target_branch = self.target_branch_for_branch_name(target_branch_candidate, wc)
+            if target_branch:
+                break
+            
         if not target_branch:
             print >> sys.stderr, 'No branch found matching any of "{0}" in {1}, staying on "{2}"'.format(', '.join(target_branch_candidates), wc, current_branch)
             return
@@ -1085,6 +1078,57 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
         finally:
             if stash_commit:
                 wc.apply_stash_commit(stash_commit)
+
+    def target_branch_for_branch_name(self, target_branch_candidate, wc):
+        local_branch_candidates = [i for i in wc.local_branch_names() if target_branch_candidate in i]
+        remote_branch_candidates = [re.sub(r'^[^/]+/', '', i) for i in wc.remote_branch_names() if target_branch_candidate in i]
+        
+        TargetBranchResult = collections.namedtuple('TargetBranchResult', ['name', 'needs_remote_checkout', 'should_abort'])
+
+        def find_exact_local_match():
+            if target_branch_candidate in local_branch_candidates:
+                return TargetBranchResult(target_branch_candidate, False, False)
+        
+        def find_exact_remote_match():
+            if target_branch_candidate in remote_branch_candidates:
+                return TargetBranchResult(target_branch_candidate, True, False)
+
+        def find_local_substring_match():
+            count = len(local_branch_candidates)
+            if count > 1:
+                print >> sys.stderr, 'Branch name "{0}" is ambiguous in {1}, staying on "{2}":'.format(target_branch_candidate, wc, current_branch)
+                print >> sys.stderr, [i + '\n' for i in local_branch_candidates]
+                return TargetBranchResult(None, False, True)
+            elif count == 1:
+                return TargetBranchResult(local_branch_candidates[0], False, False)
+
+        def find_remote_substring_match():
+            remote_branch_candidates.remove(target_branch_candidate) # remove exact remote match whose checkout user must have declined
+            count = len(remote_branch_candidates)
+            if count > 1:
+                print >> sys.stderr, 'Branch name "{0}" is ambiguous for remote branches in {1}, staying on "{2}":'.format(target_branch_candidate, wc, current_branch)
+                print >> sys.stderr, [i + '\n' for i in remote_branch_candidates]
+                return TargetBranchResult(None, False, True)
+            elif count == 1:
+                return TargetBranchResult(remote_branch_candidates[0], True, False)
+
+        ordered_strategies = [find_exact_local_match, find_exact_remote_match, find_local_substring_match, find_remote_substring_match]
+        for strategy in ordered_strategies:
+            target_branch_result = strategy()
+            if not target_branch_result:
+                continue
+
+            if target_branch_result.should_abort:
+                return
+
+            if target_branch_result.needs_remote_checkout:
+                prompt = 'No local branch found for "{0}" in {1} but a remote branch exists, check it out? [Y/n] '.format(target_branch_candidate, wc)
+                remote_checkout_prompt_input = raw_input(prompt)
+                if remote_checkout_prompt_input != '' and not remote_checkout_prompt_input.lower().startswith('y'):
+                    continue
+                wc.run_shell_command('git checkout {}'.format(target_branch_result.name))
+
+            return target_branch_result.name
 
     @classmethod
     def configure_argument_parser(cls, parser):
@@ -1110,6 +1154,8 @@ class SubcommandPull(WorkingCopyTreeStashingSubcommand):
             if stash_commit:
                 wc.apply_stash_commit(stash_commit)
 
+    def chained_post_traversal_subcommand_for_root_working_copy(self, root_wc):
+        return SubcommandBranch(self.args)
 
 
 class SubcommandBranch(AbstractSubcommand):
@@ -1120,6 +1166,7 @@ class SubcommandBranch(AbstractSubcommand):
         (string.rjust, lambda x: unicode(len(x.commits_not_in_upstream())) + u'↑' if x.current_branch_has_upstream() else '-'),
         (string.rjust, lambda x: unicode(len(x.commits_only_in_upstream())) + u'↓' if x.current_branch_has_upstream() else '-'),
         (string.ljust, lambda x: x.current_branch()),
+        (string.ljust, lambda x: x.head_commit_hash()),
     )
     
     def column_count(self):
