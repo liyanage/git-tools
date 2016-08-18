@@ -1096,8 +1096,7 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
         def find_local_substring_match():
             count = len(local_branch_candidates)
             if count > 1:
-                print >> sys.stderr, 'Branch name "{0}" is ambiguous in {1}, staying on "{2}":'.format(target_branch_candidate, wc, current_branch)
-                print >> sys.stderr, [i + '\n' for i in local_branch_candidates]
+                print >> sys.stderr, 'Branch name "{}" is ambiguous in {}: {}'.format(target_branch_candidate, wc, ', '.join(local_branch_candidates))
                 return TargetBranchResult(None, False, True)
             elif count == 1:
                 return TargetBranchResult(local_branch_candidates[0], False, False)
@@ -1106,8 +1105,7 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
             remote_branch_candidates.remove(target_branch_candidate) # remove exact remote match whose checkout user must have declined
             count = len(remote_branch_candidates)
             if count > 1:
-                print >> sys.stderr, 'Branch name "{0}" is ambiguous for remote branches in {1}, staying on "{2}":'.format(target_branch_candidate, wc, current_branch)
-                print >> sys.stderr, [i + '\n' for i in remote_branch_candidates]
+                print >> sys.stderr, 'Branch name "{}" is ambiguous for remote branches in {}: {}'.format(target_branch_candidate, wc, ', '.join(remote_branch_candidates))
                 return TargetBranchResult(None, False, True)
             elif count == 1:
                 return TargetBranchResult(remote_branch_candidates[0], True, False)
@@ -1129,6 +1127,9 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
                 wc.run_shell_command('git checkout {}'.format(target_branch_result.name))
 
             return target_branch_result.name
+
+    def chained_post_traversal_subcommand_for_root_working_copy(self, root_wc):
+        return SubcommandBranch(self.args)
 
     @classmethod
     def configure_argument_parser(cls, parser):
