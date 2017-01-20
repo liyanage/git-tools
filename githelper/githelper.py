@@ -1102,7 +1102,8 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
                 return TargetBranchResult(local_branch_candidates[0], False, False)
 
         def find_remote_substring_match():
-            remote_branch_candidates.remove(target_branch_candidate) # remove exact remote match whose checkout user must have declined
+            if remote_branch_candidates in remote_branch_candidates:
+                remote_branch_candidates.remove(target_branch_candidate) # remove exact remote match whose checkout user must have declined
             count = len(remote_branch_candidates)
             if count > 1:
                 print >> sys.stderr, 'Branch name "{}" is ambiguous for remote branches in {}: {}'.format(target_branch_candidate, wc, ', '.join(remote_branch_candidates))
