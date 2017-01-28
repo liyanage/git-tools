@@ -859,6 +859,11 @@ class AbstractSubcommand(object):
         return None
 
     @classmethod
+    def affirmative_answer_for_prompt(cls, prompt_string):
+        prompt_input = raw_input('{} [Y/n] '.format(prompt_string))
+        return prompt_input == '' or prompt_input.lower().startswith('y')
+
+    @classmethod
     def configure_argument_parser(cls, parser):
         """
         If you override this in your subclass, you can configure additional command line arguments
@@ -1011,13 +1016,20 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
             else:
                 print >> sys.stderr, 'No upstream branch configured, will delete only local branch'
 
+        if not self.args.no_prompt:
+            prompt = 'Delete local branch "{}"'.format(local_branch_ref)
+            if remote_branch_ref:
+                prompt += ' and remote branch "{}:{}"'.format(remote_name, remote_branch_ref)
+            if not self.affirmative_answer_for_prompt(prompt + '?'):
+                return GitWorkingCopy.STOP_TRAVERSAL
+    
         if current_branch_ref == local_branch_ref:
             output = wc.output_for_git_command('git rev-parse --abbrev-ref --symbolic-full-name @{-1}'.split())
             if not output:
                 print >> sys.stderr, 'Current branch is branch to be deleted, but previous branch is unknown, please delete manually'
                 return GitWorkingCopy.STOP_TRAVERSAL
             wc.run_shell_command('git checkout @{-1}'.split())
-        
+
         wc.run_shell_command('git branch -D'.split() + [local_branch_ref])
         if remote_branch_ref:
             wc.run_shell_command('git push -d'.split() + [remote_name, remote_branch_ref])
@@ -1027,6 +1039,7 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
     @classmethod
     def configure_argument_parser(cls, parser):
         parser.add_argument('branch', nargs='?', default=None, help='The name of the branch that should be deleted, defaults to the currently checked out branch')
+        parser.add_argument('-n', '--no-prompt', action='store_true', help="Don't prompt for confirmation")
 
 
 class WorkingCopyTreeStashingSubcommand(AbstractSubcommand):
@@ -1121,9 +1134,7 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
                 return
 
             if target_branch_result.needs_remote_checkout:
-                prompt = 'No local branch found for "{0}" in {1} but a remote branch exists, check it out? [Y/n] '.format(target_branch_candidate, wc)
-                remote_checkout_prompt_input = raw_input(prompt)
-                if remote_checkout_prompt_input != '' and not remote_checkout_prompt_input.lower().startswith('y'):
+                if not self.affirmative_answer_for_prompt('No local branch found for "{0}" in {1} but a remote branch exists, check it out?'.format(target_branch_candidate, wc)):
                     continue
                 wc.run_shell_command('git checkout {}'.format(target_branch_result.name))
 
