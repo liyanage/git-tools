@@ -1147,6 +1147,10 @@ class SubcommandPull(WorkingCopyTreeStashingSubcommand):
         if wc.is_dirty():
             stash_commit = wc.create_stash_and_reset_hard()
 
+        if not wc.current_branch_has_upstream():
+            print 'Current branch {} has no upstream branch to pull from'.format(wc.current_branch())
+            return
+
         try:
             rules = [
                 ('-', r'Rebasing'),
