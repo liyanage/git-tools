@@ -154,7 +154,7 @@ doctest:
 
 docs: html
 	rm -r docs/
-	rsync -avP --exclude=.* _build/html/ docs/	
+	rsync -avP --exclude=.* _build/html/ ../docs/	
 
 preview: html
 	open _build/html/index.html
