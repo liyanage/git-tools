@@ -5,8 +5,7 @@
 Introduction
 ============
 
-Githelper is both a module and a command line utility for working
-with git_ working copies.
+Githelper is both a module and a command line utility for working with git_ working copies.
 
 Githelper is maintained at https://github.com/liyanage/git-tools/tree/master/githelper
 
@@ -48,7 +47,7 @@ Command Line Utility Examples
 -----------------------------
 
 Below are some command line usage examples. The examples assume a
-``gh`` shell alias for githelper::
+``gh`` shell alias for githelper defined as follows::
 
     alias gh githelper.py
 

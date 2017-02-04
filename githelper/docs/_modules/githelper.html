@@ -1,0 +1,1452 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>githelper &mdash; githelper 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="githelper 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">githelper 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for githelper</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># coding=utf-8</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Introduction</span>
+<span class="sd">============</span>
+
+<span class="sd">Githelper is both a module and a command line utility for working with git_ working copies.</span>
+
+<span class="sd">Githelper is maintained at https://github.com/liyanage/git-tools/tree/master/githelper</span>
+
+<span class="sd">The HTML version of this documentation is available at http://liyanage.github.com/git-tools/</span>
+
+<span class="sd">.. _git: http://git-scm.com</span>
+
+<span class="sd">Installation</span>
+<span class="sd">============</span>
+
+<span class="sd">You can install githelper directly from github like this::</span>
+
+<span class="sd">    sudo curl -o /usr/local/bin/githelper.py -L https://github.com/liyanage/git-tools/raw/master/githelper/githelper.py</span>
+<span class="sd">    sudo chmod 755 /usr/local/bin/githelper.py</span>
+
+<span class="sd">Command Line Utility</span>
+<span class="sd">====================</span>
+
+<span class="sd">This documentation does not cover the command line utility usage</span>
+<span class="sd">in detail because you can get that with the help option::</span>
+
+<span class="sd">    githelper.py -h</span>
+
+<span class="sd">The utility is subcommand-based, and each subcommand has its own options.</span>
+<span class="sd">You can get a list of subcommands with the -h option shown above, and each</span>
+<span class="sd">subcommand in turn supports the -h flag::</span>
+
+<span class="sd">    githelper.py some_subcommand -h</span>
+
+<span class="sd">You can extend the set of subcommands by writing plug-in classes. See</span>
+<span class="sd">`Extending with Plug-In Classes`_ for details.</span>
+
+<span class="sd">You can abbreviate the subcommand name. The abbreviation does not have</span>
+<span class="sd">to be a contiguous prefix or substring of the full name, any sequence of</span>
+<span class="sd">characters that unanbiguously identifies one of the subcommands will work</span>
+<span class="sd">(it must be anchored at the beginning).</span>
+
+<span class="sd">Command Line Utility Examples</span>
+<span class="sd">-----------------------------</span>
+
+<span class="sd">Below are some command line usage examples. The examples assume a</span>
+<span class="sd">``gh`` shell alias for githelper defined as follows::</span>
+
+<span class="sd">    alias gh githelper.py</span>
+
+<span class="sd">To get an overview of the nested working copies, use the ``tree`` subcommand::</span>
+
+<span class="sd">    $ gh tree</span>
+<span class="sd">    |&lt;Working copy /path/to/my-great-project&gt;</span>
+<span class="sd">    |--&lt;Working copy /path/to/my-great-project/Foo *&gt;</span>
+<span class="sd">    |----&lt;Working copy /path/to/my-great-project/Foo/subexternal&gt;</span>
+<span class="sd">    |--&lt;Working copy /path/to/my-great-project/Bar&gt;</span>
+<span class="sd">    |--&lt;Working copy /path/to/my-great-project/Baz&gt;</span>
+<span class="sd">    |--&lt;Working copy /path/to/my-great-project/Subproject *&gt;</span>
+<span class="sd">    |----&lt;Working copy /path/to/my-great-project/Subproject/ABC/Demo&gt;</span>
+<span class="sd">    |--&lt;Working copy /path/to/my-great-project/Xyz&gt;</span>
+
+<span class="sd">The * indicates a working copy with uncommited changes.</span>
+
+<span class="sd">To get a combined git status view, use ``status``::</span>
+
+<span class="sd">    $ gh status</span>
+<span class="sd">    &lt;Working copy /path/to/my-great-project/Foo *&gt;</span>
+<span class="sd">     M data.txt</span>
+<span class="sd">    &lt;Working copy /path/to/my-great-project/Subproject *&gt;</span>
+<span class="sd">     A xyz.dat</span>
+
+<span class="sd">Only working copies that have any interesting status are listed.</span>
+
+<span class="sd">As a reminder, you could shorten the subcommand name and type just ``gh sta`` here.</span>
+
+<span class="sd">To check out a certain point in time in the past in all nested sandboxes, you could</span>
+<span class="sd">use the ``each`` subcommand, which runs a shell command in each working copy:</span>
+
+<span class="sd">    $ gh each &quot;git checkout \$(git rev-list -n 1 --before=&#39;2012-01-01 00:00&#39; master)&quot;</span>
+
+<span class="sd">These are just a few examples, see the command line help for the remaining subcommands.</span>
+
+<span class="sd">Usage as Toolkit Module</span>
+<span class="sd">=======================</span>
+
+<span class="sd">If the utility does not provide what you need, you can write your own script</span>
+<span class="sd">based on githelper as a module. The rest of this document explains the module&#39;s API.</span>
+
+<span class="sd">The main entry point is the :py:class:`GitWorkingCopy` class. You instantiate it</span>
+<span class="sd">with the path to a git working copy (which possibly has nested sub-working copies).</span>
+
+<span class="sd">.. _iteration-example:</span>
+
+<span class="sd">You can then traverse the tree of nested working copies by iterating over the</span>
+<span class="sd">GitWorkingCopy instance::</span>
+
+<span class="sd">    #!/usr/bin/env python</span>
+
+<span class="sd">    import githelper</span>
+<span class="sd">    import os</span>
+<span class="sd">    import sys</span>
+
+<span class="sd">    root_wc = githelper.GitWorkingCopy(sys.argv[1])</span>
+
+<span class="sd">    for wc in root_wc:</span>
+<span class="sd">        # Gets called once for root_wc and all sub-working copies.</span>
+<span class="sd">        # Do something interesting with wc using its API here...</span>
+
+<span class="sd">The :py:meth:`~GitWorkingCopy.traverse` method provides another way to do this,</span>
+<span class="sd">it takes a callable, in the following example a function::</span>
+
+<span class="sd">    def process_working_copy(wc):</span>
+<span class="sd">        print wc.current_branch()</span>
+
+<span class="sd">    root_wc = githelper.GitWorkingCopy(sys.argv[1])</span>
+<span class="sd">    root_wc.traverse(process_working_copy)</span>
+
+<span class="sd">Any callable object works, in the following example an instance of a class that implements :py:meth:`~object.__call__`::</span>
+
+<span class="sd">    class Foo:</span>
+
+<span class="sd">        def __init__(self, some_state):</span>
+<span class="sd">            self.some_state = some_state</span>
+
+<span class="sd">        def __call__(self, wc):</span>
+<span class="sd">            # possibly use self.some_state</span>
+<span class="sd">            print wc.current_branch()</span>
+
+<span class="sd">    root_wc = githelper.GitWorkingCopy(sys.argv[1])</span>
+<span class="sd">    iterator = Foo(&#39;bar&#39;)</span>
+<span class="sd">    root_wc.traverse(iterator)</span>
+
+<span class="sd">You can take a look at the various ``Subcommand...`` classes in the `module&#39;s</span>
+<span class="sd">source code`_ to see examples of the API usage. These classes implement the various</span>
+<span class="sd">subcommands provided by the command line utility front end and they exercise most of</span>
+<span class="sd">the :py:class:`GitWorkingCopy` API.</span>
+
+<span class="sd">.. _`module&#39;s source code`: https://github.com/liyanage/git-tools/blob/master/githelper/githelper.py</span>
+
+<span class="sd">Extending with Plug-In Classes</span>
+<span class="sd">==============================</span>
+
+<span class="sd">To extend the command line utility with additional custom subcommands, create a</span>
+<span class="sd">file called :file:`githelper_local.py` and store it somewhere in your :envvar:`PATH`.</span>
+<span class="sd">The file must contain one class per subcommand. Each class name must start with</span>
+<span class="sd">``Subcommand``, anything after that part is used as the actual subcommand name</span>
+<span class="sd">that you pass on the command line to invoke it.</span>
+
+<span class="sd">Here is an example :file:`githelper_local.py` with one subcommand named ``foo``::</span>
+
+<span class="sd">    from githelper import AbstractSubcommand, GitWorkingCopy</span>
+
+<span class="sd">    class SubcommandFoo(AbstractSubcommand):</span>
+<span class="sd">        # The class-level doc comment is reused for the command-line usage help string.</span>
+<span class="sd">        \&quot;&quot;&quot;</span><span class="n">Provide</span> <span class="n">a</span> <span class="n">useful</span> <span class="n">description</span> <span class="n">of</span> <span class="n">this</span> <span class="n">subcommand</span> <span class="n">here</span>\<span class="s">&quot;&quot;&quot;</span>
+
+<span class="s">        def __call__(self, wc):</span>
+<span class="s">            print wc</span>
+<span class="s">            return GitWorkingCopy.STOP_TRAVERSAL</span>
+
+<span class="s">        @classmethod</span>
+<span class="s">        def configure_argument_parser(cls, parser):</span>
+<span class="s">            # Add any command line options here. If you don&#39;t need any, just add a &quot;pass&quot; statement instead.</span>
+<span class="s">            parser.add_argument(&#39;-b&#39;, &#39;--bar&#39;, help=&#39;Provide a useful description of this option here&#39;)</span>
+
+<span class="s">API Documentation</span>
+<span class="s">=================</span>
+
+<span class="s">&quot;&quot;&quot;</span>
+
+<span class="c"># autopep8 -i --ignore E501 githelper.py</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">imp</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">import</span> <span class="nn">select</span>
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">getpass</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">StringIO</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">contextlib</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">xml.etree.ElementTree</span>
+
+<div class="viewcode-block" id="PopenOutputFilter"><a class="viewcode-back" href="../index.html#githelper.PopenOutputFilter">[docs]</a><span class="k">class</span> <span class="nc">PopenOutputFilter</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a set of inclusion/exclusion rules to filter the output of :py:class:`FilteringPopen`.</span>
+<span class="sd">    You create instance of this class to pass to :py:meth:`FilteringPopen.run` (but see ``run()``&#39;s</span>
+<span class="sd">    ``filter_rules`` parameter for a convenience shortcut).</span>
+
+<span class="sd">    There are two independent rule sets to filter stdout and stderr individually. If you don&#39;t</span>
+<span class="sd">    supply the (optional) rule set for stderr, the (mandatory) one for stdout is reused.</span>
+
+<span class="sd">    Rule sets are lists of lists of this form::</span>
+
+<span class="sd">        rules = [</span>
+<span class="sd">            (&#39;-&#39;, r&#39;^foo&#39;),</span>
+<span class="sd">            (&#39;-&#39;, r&#39;bar$&#39;),</span>
+<span class="sd">            ...</span>
+<span class="sd">        ]</span>
+
+<span class="sd">    Each rule is a two-element list where the first element is either the string &quot;-&quot; or &quot;+&quot;</span>
+<span class="sd">    representing the actions for exclusion and inclusion, and the second element is a</span>
+<span class="sd">    regular expression.</span>
+
+<span class="sd">    Each line of stdout or stderr output is matched against each regular expression. If one</span>
+<span class="sd">    of them matches, the line is filtered out if the action element is &quot;-&quot; or included if</span>
+<span class="sd">    the action is &quot;+&quot;. After the first rule matches, no further rules are evaluated.</span>
+
+<span class="sd">    If no rule matches a given line, the line is included (not filtered out), i.e. there is</span>
+<span class="sd">    an implicit last rule like this::</span>
+
+<span class="sd">        (&#39;+&#39;, &#39;.*&#39;)</span>
+
+<span class="sd">    In the example given above, all lines beginning with ``foo`` or ending with ``bar``</span>
+<span class="sd">    are filtered out.</span>
+
+<span class="sd">    In the following example, only lines containing foo or bar are included, everything else</span>
+<span class="sd">    is filtered out::</span>
+
+<span class="sd">        rules = [</span>
+<span class="sd">            (&#39;+&#39;, r&#39;foo&#39;),</span>
+<span class="sd">            (&#39;+&#39;, r&#39;bar&#39;),</span>
+<span class="sd">            (&#39;-&#39;, &#39;.*&#39;)</span>
+<span class="sd">        ]</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stdout_rules</span><span class="p">,</span> <span class="n">stderr_rules</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stdout_rules</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compile_rules</span><span class="p">(</span><span class="n">stdout_rules</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">stderr_rules</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stderr_rules</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout_rules</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stderr_rules</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compile_rules</span><span class="p">(</span><span class="n">stderr_rules</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">compile_rules</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ruleset</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ruleset</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="p">[(</span><span class="n">action</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">regex_string</span><span class="p">))</span> <span class="k">for</span> <span class="n">action</span><span class="p">,</span> <span class="n">regex_string</span> <span class="ow">in</span> <span class="n">ruleset</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">filtered_stdoutlines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lines</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">lines</span>
+        <span class="n">ruleset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout_rules</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">line</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">keep_line</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">ruleset</span><span class="p">)]</span>
+
+    <span class="k">def</span> <span class="nf">keep_stdoutline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">keep_line</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout_rules</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">keep_stderrline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">keep_line</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stderr_rules</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">filtered_stderrlines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lines</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">lines</span>
+        <span class="n">ruleset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stderr_rules</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">line</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">keep_line</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">ruleset</span><span class="p">)]</span>
+
+    <span class="k">def</span> <span class="nf">keep_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">ruleset</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">rule</span> <span class="ow">in</span> <span class="n">ruleset</span><span class="p">:</span>
+<span class="c">#            print &#39;{0} {1} {2} {3}&#39;.format(action, regex, regex.search(line), line)</span>
+            <span class="n">action</span><span class="p">,</span> <span class="n">regex</span> <span class="o">=</span> <span class="n">rule</span>
+            <span class="k">if</span> <span class="n">regex</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s">&#39;+&#39;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">True</span>
+                <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s">&#39;-&#39;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">True</span>
+
+</div>
+<div class="viewcode-block" id="FilteringPopen"><a class="viewcode-back" href="../index.html#githelper.FilteringPopen">[docs]</a><span class="k">class</span> <span class="nc">FilteringPopen</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A wrapper around :py:class:`subprocess.Popen` that filters the subprocess&#39;s output.</span>
+
+<span class="sd">    The constructor&#39;s parameters are forwarded mostly unchanged to :py:class:`Popen&#39;s constructor &lt;subprocess.Popen&gt;`.</span>
+<span class="sd">    Exceptions are ``bufsize``, which is set to ``1`` for line-buffered output, and ``stdout``, and ``stderr``,</span>
+<span class="sd">    which are both set to :py:data:`subprocess.PIPE`.</span>
+
+<span class="sd">    This method sets up the Popen instance but does not run it. See :py:meth:`run` for that.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stdoutbuffer</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stderrbuffer</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cmd</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wd</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;cwd&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;bufsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;stdout&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;stderr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">popen</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="FilteringPopen.run"><a class="viewcode-back" href="../index.html#githelper.FilteringPopen.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">filter_rules</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">store_stdout</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">store_stderr</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">echo_stdout</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">echo_stderr</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">check_returncode</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run the command and capture its (potentially filtered) output, similar to :py:meth:`subprocess.Popen.communicate`.</span>
+
+<span class="sd">        :param githelper.PopenOutputFilter filter: An optional filter for stderr and stdout.</span>
+<span class="sd">        :param array filter_rules: Instead of a :py:class:`PopenOutputFilter` instance, you can also pass a rule set directly.</span>
+<span class="sd">        :param bool store_stdout: If ``False``, the command&#39;s output will not be stored for later retrieval. If set to ``True``, the output can be retrieved through the :py:meth:`stdoutlines` method after it has finished executing.</span>
+<span class="sd">        :param bool store_stderr: If ``False``, the command&#39;s output will not be stored for later retrieval. If set to ``True``, the output can be retrieved through the :py:meth:`stderrlines` method after it has finished executing.</span>
+<span class="sd">        :param bool echo_stdout: If ``False``, the command&#39;s output will not be printed to stdout.</span>
+<span class="sd">        :param bool echo_stderr: If ``False``, the command&#39;s output will not be printed to stderr.</span>
+<span class="sd">        :param bool check_returncode: If ``True``, the method raises an exception if the command terminates with a non-zero exit code.</span>
+<span class="sd">        :param object header: This value will be printed to the console exactly once if the subcommand produces any output that does not get filtered out.</span>
+<span class="sd">                              This is useful if you want to print something, but not if the command would not produce any output anyway.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter</span> <span class="o">=</span> <span class="nb">filter</span>
+        <span class="k">if</span> <span class="nb">filter</span> <span class="ow">and</span> <span class="n">filter_rules</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;&#39;filter&#39; and &#39;filter_rules&#39; can&#39;t be used together&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">filter_rules</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filter</span> <span class="o">=</span> <span class="n">PopenOutputFilter</span><span class="p">(</span><span class="n">filter_rules</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="n">header</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">did_print_header</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">store_stdout</span> <span class="o">=</span> <span class="n">store_stdout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">store_stderr</span> <span class="o">=</span> <span class="n">store_stderr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">echo_stdout</span> <span class="o">=</span> <span class="n">echo_stdout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">echo_stderr</span> <span class="o">=</span> <span class="n">echo_stderr</span>
+
+        <span class="n">returncode</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">while</span> <span class="n">returncode</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">check_pipes</span><span class="p">()</span>
+            <span class="n">returncode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">popen</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_pipes</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">check_returncode</span> <span class="ow">and</span> <span class="n">returncode</span><span class="p">:</span>
+            <span class="n">wd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wd</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">wd</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Non-zero exit status for shell command &quot;{}&quot; in {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cmd</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wd</span><span class="p">))</span>
+</div>
+    <span class="k">def</span> <span class="nf">check_pipes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;about to select(), timeout = {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">timeout</span><span class="p">))</span>
+        <span class="n">ready_read_handles</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">select</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">popen</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">popen</span><span class="o">.</span><span class="n">stderr</span><span class="p">],</span> <span class="p">(),</span> <span class="p">(),</span> <span class="n">timeout</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">handle</span> <span class="ow">in</span> <span class="n">ready_read_handles</span><span class="p">:</span>
+            <span class="n">is_stdout</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="n">is_stderr</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">if</span> <span class="n">handle</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">popen</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>
+                <span class="n">is_stdout</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">if</span> <span class="n">handle</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">popen</span><span class="o">.</span><span class="n">stderr</span><span class="p">:</span>
+                <span class="n">is_stderr</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="k">if</span> <span class="n">handle</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">popen</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter</span><span class="o">.</span><span class="n">keep_stdoutline</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">store_stdout</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">stdoutbuffer</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">echo_stdout</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">print_header_once</span><span class="p">()</span>
+                        <span class="k">with</span> <span class="n">ANSIColor</span><span class="o">.</span><span class="n">terminal_color</span><span class="p">(</span><span class="n">ANSIColor</span><span class="o">.</span><span class="n">blue</span><span class="p">,</span> <span class="n">ANSIColor</span><span class="o">.</span><span class="n">blue</span><span class="p">):</span>
+                            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="n">line</span>
+                <span class="k">elif</span> <span class="n">handle</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">popen</span><span class="o">.</span><span class="n">stderr</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter</span><span class="o">.</span><span class="n">keep_stderrline</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">store_stderr</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">stderrbuffer</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">echo_stderr</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">print_header_once</span><span class="p">()</span>
+                        <span class="k">with</span> <span class="n">ANSIColor</span><span class="o">.</span><span class="n">terminal_color</span><span class="p">(</span><span class="n">ANSIColor</span><span class="o">.</span><span class="n">blue</span><span class="p">,</span> <span class="n">ANSIColor</span><span class="o">.</span><span class="n">blue</span><span class="p">):</span>
+                            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">line</span>
+
+    <span class="k">def</span> <span class="nf">print_header_once</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">did_print_header</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">did_print_header</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span>
+
+<div class="viewcode-block" id="FilteringPopen.stdoutlines"><a class="viewcode-back" href="../index.html#githelper.FilteringPopen.stdoutlines">[docs]</a>    <span class="k">def</span> <span class="nf">stdoutlines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns an array of the stdout lines that were not filtered, with trailing newlines removed.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdoutbuffer</span>
+</div>
+<div class="viewcode-block" id="FilteringPopen.stderrlines"><a class="viewcode-back" href="../index.html#githelper.FilteringPopen.stderrlines">[docs]</a>    <span class="k">def</span> <span class="nf">stderrlines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns an array of the stderr lines that were not filtered, with trailing newlines removed.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stderrbuffer</span>
+</div>
+<div class="viewcode-block" id="FilteringPopen.returncode"><a class="viewcode-back" href="../index.html#githelper.FilteringPopen.returncode">[docs]</a>    <span class="k">def</span> <span class="nf">returncode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the command&#39;s exit code.</span>
+
+<span class="sd">        :rtype: int</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">popen</span><span class="o">.</span><span class="n">returncode</span>
+
+</div></div>
+<span class="k">class</span> <span class="nc">ANSIColor</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="n">red</span> <span class="o">=</span> <span class="s">&#39;1&#39;</span>
+    <span class="n">green</span> <span class="o">=</span> <span class="s">&#39;2&#39;</span>
+    <span class="n">yellow</span> <span class="o">=</span> <span class="s">&#39;3&#39;</span>
+    <span class="n">blue</span> <span class="o">=</span> <span class="s">&#39;4&#39;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="nd">@contextlib.contextmanager</span>
+    <span class="k">def</span> <span class="nf">terminal_color</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">stdout_color</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">stderr_color</span><span class="o">=</span><span class="n">red</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">stdout_color</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">start_sequence</span><span class="p">(</span><span class="n">stdout_color</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">stderr_color</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">start_sequence</span><span class="p">(</span><span class="n">stderr_color</span><span class="p">))</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">cls</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="k">raise</span>
+
+        <span class="n">cls</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">stream</span> <span class="ow">in</span> <span class="p">[</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">]:</span>
+            <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">clear_sequence</span><span class="p">())</span>
+    
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">start_sequence</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">red</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;</span><span class="se">\x1b</span><span class="s">[3{0}m&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">color</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">clear_sequence</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;</span><span class="se">\x1b</span><span class="s">[m&quot;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">wrap</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">red</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">u&#39;{}{}{}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">start_sequence</span><span class="p">(</span><span class="n">color</span><span class="p">),</span> <span class="n">value</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">clear_sequence</span><span class="p">())</span>
+
+
+<span class="k">class</span> <span class="nc">GitRevision</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">revision</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">revision</span> <span class="o">=</span> <span class="n">revision</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
+    
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">parse_log_line_oneline</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">log_line</span><span class="p">):</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">r&#39;^([0-9a-f]+)\s+(.*)&#39;</span><span class="p">,</span> <span class="n">log_line</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">match</span><span class="p">:</span>
+            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;Unable to parse git log line &quot;{}&quot;:&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">log_line</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="n">GitRevision</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">parse_log_lines_oneline</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">log_lines</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">cls</span><span class="o">.</span><span class="n">parse_log_line_oneline</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">log_lines</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="GitWorkingCopy"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy">[docs]</a><span class="k">class</span> <span class="nc">GitWorkingCopy</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class to represent a git working copy.</span>
+
+<span class="sd">    :param str path: The file system path to the working copy.</span>
+<span class="sd">    :param githelper.GitWorkingCopy parent: A parent instance, you don&#39;t usually use this yourself.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">STOP_TRAVERSAL</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="sd">&quot;&quot;&quot;returned from a :py:meth:`~AbstractSubcommand.__call__` implementation to stop further recursion by :py:meth:`traverse`.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">parent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">child_list</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="n">status</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s">&#39;git status 1&gt;/dev/null 2&gt;/dev/null&#39;</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">cwd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;{0} is not a git working copy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_branch_has_upstream</span><span class="p">():</span>
+            <span class="n">flags</span> <span class="o">+=</span> <span class="s">&#39;l&#39;</span> <span class="c"># l for local-only</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dirty</span><span class="p">():</span>
+            <span class="n">flags</span> <span class="o">+=</span> <span class="s">&#39;*&#39;</span>
+        <span class="k">if</span> <span class="n">flags</span><span class="p">:</span>
+            <span class="n">flags</span> <span class="o">=</span> <span class="s">&#39; &#39;</span> <span class="o">+</span> <span class="n">flags</span>
+
+        <span class="k">return</span> <span class="s">&#39;&lt;{0}{1}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GitWorkingCopy.current_branch"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.current_branch">[docs]</a>    <span class="k">def</span> <span class="nf">current_branch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the name of the current git branch.&quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="s">&#39;git branch -a&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+        <span class="p">[</span><span class="n">branch</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;* &#39;</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">branch</span>
+</div>
+    <span class="k">def</span> <span class="nf">head_commit_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">([</span><span class="s">&#39;git&#39;</span><span class="p">,</span> <span class="s">&#39;rev-parse&#39;</span><span class="p">,</span> <span class="s">&#39;HEAD&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">][:</span><span class="mi">8</span><span class="p">]</span>
+
+<div class="viewcode-block" id="GitWorkingCopy.current_repository"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.current_repository">[docs]</a>    <span class="k">def</span> <span class="nf">current_repository</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the name of the current git repository.&quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="s">&#39;git remote -v&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">repository_names</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">r&#39;/([^/]+?)(?:\s|\.git)&#39;</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">repository_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.has_branch"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.has_branch">[docs]</a>    <span class="k">def</span> <span class="nf">has_branch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">branch_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if the working copy has a git branch with the given name&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">branch_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">branch_names</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.branch_names"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.branch_names">[docs]</a>    <span class="k">def</span> <span class="nf">branch_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a list of git branch names.&quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="s">&#39;git branch -a&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.remote_branch_names"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.remote_branch_names">[docs]</a>    <span class="k">def</span> <span class="nf">remote_branch_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a list of git branch names starting with ``remote/``.</span>
+
+<span class="sd">        The leading ``remote/`` part will be removed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">8</span><span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">branch_names</span><span class="p">()</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;remotes/&#39;</span><span class="p">)]</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.local_branch_names"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.local_branch_names">[docs]</a>    <span class="k">def</span> <span class="nf">local_branch_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a list of git branch names not starting with ``remote/``.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">branch_names</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">i</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;remotes/&#39;</span><span class="p">)]</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.remote_branch_name_for_name_list"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.remote_branch_name_for_name_list">[docs]</a>    <span class="k">def</span> <span class="nf">remote_branch_name_for_name_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a remote branch name matching a list of candidate strings.</span>
+
+<span class="sd">        Tries to find a remote branch names using all possible combinations</span>
+<span class="sd">        of the names in the list. For example, given::</span>
+
+<span class="sd">            [&#39;foo&#39;, &#39;bar&#39;]</span>
+
+<span class="sd">        as ``name_list``, it would find any of these::</span>
+
+<span class="sd">            remotes/foo</span>
+<span class="sd">            remotes/Foo</span>
+<span class="sd">            remotes/bar</span>
+<span class="sd">            remotes/Bar</span>
+<span class="sd">            remotes/Foo-Bar</span>
+<span class="sd">            remotes/foo-bar</span>
+<span class="sd">            remotes/Bar-Foo</span>
+<span class="sd">            remotes/bar-foo</span>
+
+<span class="sd">        etc. and return the part after ``remotes/`` of the first match.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">name_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">name_list</span><span class="p">]</span>
+        <span class="n">candidates</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">name_list</span><span class="p">)</span>
+        <span class="n">candidates</span><span class="o">.</span><span class="n">update</span><span class="p">([</span><span class="s">&#39;-&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">permutations</span><span class="p">(</span><span class="n">name_list</span><span class="p">)])</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">remote_branch_names</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">name</span>
+
+        <span class="k">return</span> <span class="bp">None</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.switch_to_branch"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.switch_to_branch">[docs]</a>    <span class="k">def</span> <span class="nf">switch_to_branch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">branch_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Checks out the given git branch&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_branch</span><span class="p">(</span><span class="n">branch_name</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;{0} does not have a branch named {1}, cannot switch&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">branch_name</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">([</span><span class="s">&#39;git&#39;</span><span class="p">,</span> <span class="s">&#39;checkout&#39;</span><span class="p">,</span> <span class="n">branch_name</span><span class="p">])</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.hard_reset_current_branch"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.hard_reset_current_branch">[docs]</a>    <span class="k">def</span> <span class="nf">hard_reset_current_branch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hard-resets the current branch to the given ref&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">([</span><span class="s">&#39;git&#39;</span><span class="p">,</span> <span class="s">&#39;reset&#39;</span><span class="p">,</span> <span class="s">&#39;--hard&#39;</span><span class="p">,</span> <span class="n">target</span><span class="p">])</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.run_shell_command"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.run_shell_command">[docs]</a>    <span class="k">def</span> <span class="nf">run_shell_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">filter_rules</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">check_returncode</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Runs the given shell command (array or string) in the receiver&#39;s working directory using :py:class:`FilteringPopen`.</span>
+
+<span class="sd">        :param str command: Passed to :py:class:`FilteringPopen`&#39;s constructor. Can also be an array.</span>
+<span class="sd">        :param array filter_rules: Passed to :py:class:`FilteringPopen`&#39;s constructor.</span>
+<span class="sd">        :param bool shell: Passed to :py:class:`FilteringPopen`&#39;s constructor.</span>
+<span class="sd">        :param object header: Passed to :py:class:`FilteringPopen.run`.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">shell</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">types</span><span class="o">.</span><span class="n">StringTypes</span><span class="p">):</span>
+                <span class="n">shell</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">shell</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="n">popen</span> <span class="o">=</span> <span class="n">FilteringPopen</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">cwd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="n">shell</span><span class="p">)</span>
+        <span class="n">popen</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">filter_rules</span><span class="o">=</span><span class="n">filter_rules</span><span class="p">,</span> <span class="n">store_stdout</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">store_stderr</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">header</span><span class="p">,</span> <span class="n">check_returncode</span><span class="o">=</span><span class="n">check_returncode</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.output_for_git_command"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.output_for_git_command">[docs]</a>    <span class="k">def</span> <span class="nf">output_for_git_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">filter_rules</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">check_returncode</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Runs the given shell command (array or string) in the receiver&#39;s working directory and returns the output.</span>
+
+<span class="sd">        :param bool shell: If ``True``, runs the command through the shell. See the :py:mod:`subprocess` library module documentation for details.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">popen</span> <span class="o">=</span> <span class="n">FilteringPopen</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">cwd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="n">shell</span><span class="p">)</span>
+        <span class="n">popen</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">filter_rules</span><span class="o">=</span><span class="n">filter_rules</span><span class="p">,</span> <span class="n">echo_stdout</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">header</span><span class="p">,</span> <span class="n">check_returncode</span><span class="o">=</span><span class="n">check_returncode</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">popen</span><span class="o">.</span><span class="n">stdoutlines</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.is_root"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.is_root">[docs]</a>    <span class="k">def</span> <span class="nf">is_root</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if the receiver does not have a parent working copy.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="bp">None</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.ancestors"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.ancestors">[docs]</a>    <span class="k">def</span> <span class="nf">ancestors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a list of parent working copies.</span>
+
+<span class="sd">        If the receiver is the root working copy, this returns an empty list.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ancestors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_root</span><span class="p">():</span>
+            <span class="n">ancestors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
+            <span class="n">ancestors</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">ancestors</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">ancestors</span>
+</div>
+    <span class="k">def</span> <span class="nf">current_branch_upstream</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="s">&#39;git rev-parse --abbrev-ref --symbolic-full-name @{u}&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">(),</span> <span class="n">filter_rules</span><span class="o">=</span><span class="p">[(</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="s">r&#39;fatal&#39;</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">output</span>
+    
+    <span class="k">def</span> <span class="nf">current_branch_has_upstream</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_branch_upstream</span><span class="p">())</span>
+
+<div class="viewcode-block" id="GitWorkingCopy.commits_not_in_upstream"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.commits_not_in_upstream">[docs]</a>    <span class="k">def</span> <span class="nf">commits_not_in_upstream</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a list of git commits that have not yet been pushed to upstream.&quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="s">&#39;git log --oneline @{u}..HEAD&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">GitRevision</span><span class="o">.</span><span class="n">parse_log_lines_oneline</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.commits_only_in_upstream"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.commits_only_in_upstream">[docs]</a>    <span class="k">def</span> <span class="nf">commits_only_in_upstream</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a list of git commits that are only in upstream but not in the local tracking branch.&quot;&quot;&quot;</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="s">&#39;git log --oneline HEAD..@{u}&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">GitRevision</span><span class="o">.</span><span class="n">parse_log_lines_oneline</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.root_working_copy"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.root_working_copy">[docs]</a>    <span class="k">def</span> <span class="nf">root_working_copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the root working copy, which could be self.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_root</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">root_working_copy</span><span class="p">()</span>
+</div>
+    <span class="k">def</span> <span class="nf">_check_output_in_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">cwd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;Error running shell command in &quot;{}&quot;:&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+<div class="viewcode-block" id="GitWorkingCopy.is_dirty"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.is_dirty">[docs]</a>    <span class="k">def</span> <span class="nf">is_dirty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns True if the receiver&#39;s working copy has uncommitted modifications.</span>
+
+<span class="sd">        Many operations depend on a clean state.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dirty_file_lines</span><span class="p">())</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.create_stash_and_reset_hard"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.create_stash_and_reset_hard">[docs]</a>    <span class="k">def</span> <span class="nf">create_stash_and_reset_hard</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stashes the uncommitted changes in the working copy using &quot;stash create&quot;, i.e. without</span>
+<span class="sd">        updating the &quot;stash&quot; reference, and runs &quot;git reset --hard&quot;. Prints and returns the</span>
+<span class="sd">        commit id if anything was stashed, None otherwise.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dirty</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        
+        <span class="n">stash_commit</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="s">&#39;git stash create&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">):</span>
+            <span class="n">stash_commit</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">print</span> <span class="s">&#39;Stashed changes, restore with &quot;git stash apply {0}&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">stash_commit</span><span class="p">)</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="s">&#39;git reset --hard&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+            <span class="c">#print &#39;\n&#39;.join(output)</span>
+        
+        <span class="k">return</span> <span class="n">stash_commit</span>
+</div>
+    <span class="k">def</span> <span class="nf">apply_stash_commit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stash_commit</span><span class="p">):</span>
+        <span class="c">#print &#39;Applying stash &#39; + stash_commit</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="s">&#39;git stash apply&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">stash_commit</span><span class="p">])</span>
+
+<div class="viewcode-block" id="GitWorkingCopy.dirty_file_lines"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.dirty_file_lines">[docs]</a>    <span class="k">def</span> <span class="nf">dirty_file_lines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the output of git status for the files marked as modified, renamed etc.&quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_output_in_path</span><span class="p">(</span><span class="s">&#39;git status --porcelain&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+        <span class="n">dirty_file_lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39;&quot;&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">output</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;?&#39;</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">dirty_file_lines</span>
+</div>
+    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;.git/config&#39;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span> <span class="k">as</span> <span class="nb">file</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">basename</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">basename</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">child_list</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">child_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">dirpath</span><span class="p">,</span> <span class="n">dirnames</span><span class="p">,</span> <span class="n">filenames</span><span class="p">)</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">followlinks</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">dirpath</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;.git&#39;</span> <span class="ow">in</span> <span class="n">dirnames</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="k">del</span> <span class="n">dirnames</span><span class="p">[:]</span>
+
+                <span class="n">wc</span> <span class="o">=</span> <span class="n">GitWorkingCopy</span><span class="p">(</span><span class="n">dirpath</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">child_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wc</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">child_list</span>
+
+<div class="viewcode-block" id="GitWorkingCopy.__iter__"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.__iter__">[docs]</a>    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns an iterator over ``self`` and all of its nested git working copies.</span>
+
+<span class="sd">        See the :ref:`example above &lt;iteration-example&gt;`.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">yield</span> <span class="bp">self</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">child</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">item</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.self_or_descendants_dirty_working_copies"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.self_or_descendants_dirty_working_copies">[docs]</a>    <span class="k">def</span> <span class="nf">self_or_descendants_dirty_working_copies</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns True if the receiver&#39;s or one of its nested working copies are dirty.</span>
+
+<span class="sd">        :param bool list_dirty: If ``True``, prints the working copy path and the list of dirty files.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dirty_working_copies</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">is_dirty</span><span class="p">():</span>
+                <span class="n">dirty_working_copies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">dirty_working_copies</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.traverse"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.traverse">[docs]</a>    <span class="k">def</span> <span class="nf">traverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterator</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Runs the given callable ``iterator`` on the receiver and all of its</span>
+<span class="sd">        nested sub-working copies.</span>
+
+<span class="sd">        Before each call to iterator for a given working copy, the current directory is first</span>
+<span class="sd">        set to that working copy&#39;s path.</span>
+
+<span class="sd">        See the :ref:`example above &lt;iteration-example&gt;`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="s">&quot;prepare_for_root&quot;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">iterator</span><span class="o">.</span><span class="n">prepare_for_root</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="ow">is</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span><span class="p">:</span>
+                <span class="k">return</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">iterator</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;{0} is not callable&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">iterator</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">item</span><span class="o">.</span><span class="n">chdir_to_path</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">iterator</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="ow">is</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span><span class="p">:</span>
+                    <span class="k">break</span>
+</div>
+    <span class="nd">@contextlib.contextmanager</span>
+<div class="viewcode-block" id="GitWorkingCopy.chdir_to_path"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.chdir_to_path">[docs]</a>    <span class="k">def</span> <span class="nf">chdir_to_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A :ref:`context manager &lt;context-managers&gt;` for the :py:keyword:`with` statement</span>
+<span class="sd">        that temporarily switches the current working directory to the receiver&#39;s working</span>
+<span class="sd">        copy directory::</span>
+
+<span class="sd">            with wc.chdir_to_path():</span>
+<span class="sd">                # do something useful here inside the working copy directory.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">oldwd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">yield</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">oldwd</span><span class="p">)</span>
+</div>
+    <span class="nd">@contextlib.contextmanager</span>
+<div class="viewcode-block" id="GitWorkingCopy.switched_to_branch"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.switched_to_branch">[docs]</a>    <span class="k">def</span> <span class="nf">switched_to_branch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">branch_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A :ref:`context manager &lt;context-managers&gt;` for the :py:keyword:`with` statement</span>
+<span class="sd">        that temporarily switches the current git branch to another one and afterwards</span>
+<span class="sd">        restores the original one.</span>
+
+<span class="sd">        Example::</span>
+
+<span class="sd">            with wc.switched_to_branch(&#39;master&#39;):</span>
+<span class="sd">                # do something useful here on the &#39;master&#39; branch.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">old_branch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_branch</span><span class="p">()</span>
+        <span class="n">different_branch</span> <span class="o">=</span> <span class="n">old_branch</span> <span class="o">!=</span> <span class="n">branch_name</span>
+        <span class="k">if</span> <span class="n">different_branch</span><span class="p">:</span>
+            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;Temporarily switching {0} from branch {1} to {2}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_branch</span><span class="p">,</span> <span class="n">branch_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">switch_to_branch</span><span class="p">(</span><span class="n">branch_name</span><span class="p">)</span>
+
+        <span class="k">yield</span>
+
+        <span class="k">if</span> <span class="n">different_branch</span><span class="p">:</span>
+            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;Switching {0} back to branch {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_branch</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">switch_to_branch</span><span class="p">(</span><span class="n">old_branch</span><span class="p">)</span>
+
+</div></div>
+<div class="viewcode-block" id="AbstractSubcommand"><a class="viewcode-back" href="../index.html#githelper.AbstractSubcommand">[docs]</a><span class="k">class</span> <span class="nc">AbstractSubcommand</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A base class for custom subcommand plug-in classes.</span>
+
+<span class="sd">    You can, but don&#39;t have to, derive from this class for</span>
+<span class="sd">    your custom subcommand extension classes. It also documents</span>
+<span class="sd">    the interface you are expected to implement in your class</span>
+<span class="sd">    and it provides some convenience methods.</span>
+
+<span class="sd">    :param argparse.Namespace arguments: The command-line options passed to your subcommand</span>
+<span class="sd">                                         in the form of a namespace instance as returned by</span>
+<span class="sd">                                         :py:meth:`argparse.ArgumentParser.parse_args`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arguments</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">arguments</span>
+
+<div class="viewcode-block" id="AbstractSubcommand.__call__"><a class="viewcode-back" href="../index.html#githelper.AbstractSubcommand.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This gets called once per working copy to perform the subcommand&#39;s task.</span>
+
+<span class="sd">        If you are only interested in the root-level working copy, you can stop</span>
+<span class="sd">        the traversal by returning :py:data:`githelper.GitWorkingCopy.STOP_TRAVERSAL`.</span>
+
+<span class="sd">        :param githelper.GitWorkingCopy wc: The working copy to process.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="AbstractSubcommand.prepare_for_root"><a class="viewcode-back" href="../index.html#githelper.AbstractSubcommand.prepare_for_root">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_root</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root_wc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method gets called on the root working copy only and lets you</span>
+<span class="sd">        perform preparation steps that you want to do only once for the entire</span>
+<span class="sd">        tree.</span>
+
+<span class="sd">        :param githelper.GitWorkingCopy root_wc: The working copy to check.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+    </div>
+<div class="viewcode-block" id="AbstractSubcommand.chained_post_traversal_subcommand_for_root_working_copy"><a class="viewcode-back" href="../index.html#githelper.AbstractSubcommand.chained_post_traversal_subcommand_for_root_working_copy">[docs]</a>    <span class="k">def</span> <span class="nf">chained_post_traversal_subcommand_for_root_working_copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root_wc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method gets called on the root working copy after the traversal</span>
+<span class="sd">        of a tree has finished. The subcommand class can return another subcommand</span>
+<span class="sd">        instance that will be run next.</span>
+
+<span class="sd">        :param githelper.GitWorkingCopy root_wc: The working copy to process.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">None</span>
+</div>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">affirmative_answer_for_prompt</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">prompt_string</span><span class="p">):</span>
+        <span class="n">prompt_input</span> <span class="o">=</span> <span class="nb">raw_input</span><span class="p">(</span><span class="s">&#39;{} [Y/n] &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prompt_string</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">prompt_input</span> <span class="o">==</span> <span class="s">&#39;&#39;</span> <span class="ow">or</span> <span class="n">prompt_input</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="AbstractSubcommand.configure_argument_parser"><a class="viewcode-back" href="../index.html#githelper.AbstractSubcommand.configure_argument_parser">[docs]</a>    <span class="k">def</span> <span class="nf">configure_argument_parser</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        If you override this in your subclass, you can configure additional command line arguments</span>
+<span class="sd">        for your subcommand&#39;s arguments parser.</span>
+
+<span class="sd">        :param argparse.ArgumentParser parser: The argument parser that you can configure.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+</div>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">read_string_from_clipboard</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s">&#39;darwin&#39;</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">AppKit</span>
+            <span class="n">pb</span> <span class="o">=</span> <span class="n">AppKit</span><span class="o">.</span><span class="n">NSPasteboard</span><span class="o">.</span><span class="n">generalPasteboard</span><span class="p">()</span>
+            <span class="n">string</span> <span class="o">=</span> <span class="n">pb</span><span class="o">.</span><span class="n">stringForType_</span><span class="p">(</span><span class="s">&#39;public.utf8-plain-text&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">string</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">write_string_to_clipboard</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">string</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s">&#39;darwin&#39;</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">AppKit</span>
+            <span class="n">pb</span> <span class="o">=</span> <span class="n">AppKit</span><span class="o">.</span><span class="n">NSPasteboard</span><span class="o">.</span><span class="n">generalPasteboard</span><span class="p">()</span>
+            <span class="n">pb</span><span class="o">.</span><span class="n">clearContents</span><span class="p">()</span>
+            <span class="n">pb</span><span class="o">.</span><span class="n">writeObjects_</span><span class="p">(</span><span class="n">AppKit</span><span class="o">.</span><span class="n">NSArray</span><span class="o">.</span><span class="n">arrayWithObject_</span><span class="p">(</span><span class="n">string</span><span class="p">))</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">format_and_print_dirty_working_copy_list</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">dirty_working_copies</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">wc</span> <span class="ow">in</span> <span class="n">dirty_working_copies</span><span class="p">:</span>
+            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="n">wc</span>
+            <span class="k">with</span> <span class="n">ANSIColor</span><span class="o">.</span><span class="n">terminal_color</span><span class="p">(</span><span class="n">ANSIColor</span><span class="o">.</span><span class="n">red</span><span class="p">,</span> <span class="n">ANSIColor</span><span class="o">.</span><span class="n">red</span><span class="p">):</span>
+                <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">i</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">wc</span><span class="o">.</span><span class="n">dirty_file_lines</span><span class="p">()])</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="AbstractSubcommand.wants_working_copy"><a class="viewcode-back" href="../index.html#githelper.AbstractSubcommand.wants_working_copy">[docs]</a>    <span class="k">def</span> <span class="nf">wants_working_copy</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return ``False`` to allow usage of your subcommand without a git working copy. The default is ``True``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">True</span>
+</div>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">subcommand_name</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;-&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">i</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">r&#39;([A-Z][a-z]+)&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">r&#39;^Subcommand&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">))])</span>
+
+</div>
+<span class="k">class</span> <span class="nc">SubcommandTree</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;List the tree of nested working copies&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s">&#39;|{0}{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">wc</span><span class="o">.</span><span class="n">ancestors</span><span class="p">())</span> <span class="o">*</span> <span class="s">&#39;--&#39;</span><span class="p">,</span> <span class="n">wc</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">SubcommandStatus</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Run git status in each working copy&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
+        <span class="n">rules</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="s">r&#39; On branch &#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="s">r&#39;working directory clean&#39;</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="s">&#39;git status -s&#39;</span><span class="p">,</span> <span class="n">filter_rules</span><span class="o">=</span><span class="n">rules</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">wc</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">SubcommandCopyHeadCommitHash</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Copy repository / branch / head hash to clipboard&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
+        <span class="n">template_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">template</span>
+        <span class="k">if</span> <span class="n">template_name</span><span class="p">:</span>
+            <span class="n">config_variable</span> <span class="o">=</span> <span class="s">&#39;githelper.copy-template-&#39;</span> <span class="o">+</span> <span class="n">template_name</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">([</span><span class="s">&#39;git&#39;</span><span class="p">,</span> <span class="s">&#39;config&#39;</span><span class="p">,</span> <span class="n">config_variable</span><span class="p">])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="p">:</span>
+                <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;No template found for git configuration variable &quot;{}&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">config_variable</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">config_variable</span> <span class="o">=</span> <span class="s">&#39;githelper.copy-template&#39;</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">([</span><span class="s">&#39;git&#39;</span><span class="p">,</span> <span class="s">&#39;config&#39;</span><span class="p">,</span> <span class="n">config_variable</span><span class="p">])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="p">:</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;{repository} {branch} {commit}&#39;</span><span class="p">]</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolate_data_into_template_lines</span><span class="p">(</span><span class="n">wc</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+        <span class="n">output_string</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">l</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">output</span><span class="p">])</span>
+  
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_string_to_clipboard</span><span class="p">(</span><span class="n">output_string</span><span class="p">)</span>
+        <span class="k">print</span> <span class="n">output_string</span><span class="p">,</span>
+        
+        <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+
+    <span class="k">def</span> <span class="nf">interpolate_data_into_template_lines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">,</span> <span class="n">template_lines</span><span class="p">):</span>
+        <span class="n">repository</span><span class="p">,</span> <span class="n">branch</span><span class="p">,</span> <span class="n">commit</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">current_repository</span><span class="p">(),</span> <span class="n">wc</span><span class="o">.</span><span class="n">current_branch</span><span class="p">(),</span> <span class="n">wc</span><span class="o">.</span><span class="n">head_commit_hash</span><span class="p">()</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="s">&#39;repository branch commit&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">(),</span> <span class="p">(</span><span class="n">repository</span><span class="p">,</span> <span class="n">branch</span><span class="p">,</span> <span class="n">commit</span><span class="p">)))</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">template_lines</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">token</span> <span class="o">=</span> <span class="s">&#39;{&#39;</span> <span class="o">+</span> <span class="n">key</span> <span class="o">+</span> <span class="s">&#39;}&#39;</span>
+                <span class="k">if</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">output</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">configure_argument_parser</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;template&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Optional name of a template stored with &quot;git config githelper.copy-template-&lt;name&gt;&quot;. If omitted, defaults to the value of githelper.copy-template, and if that is not set, defaults to a built-in template. You can use the placeholders &quot;{branch}&quot;, &quot;{repository}&quot;, and &quot;{commit}&quot;&#39;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">SubcommandCheckoutBugfixBranch</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Check out a bugfix branch named user/&lt;username&gt;/name, with name based on the contents of the clipboard.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">readline</span>
+
+        <span class="n">clipboard_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_string_from_clipboard</span><span class="p">()</span>
+        <span class="n">branch_name_suggestion</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">branch_name_suggestion_raw</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">clipboard_string</span><span class="p">:</span>
+            <span class="n">clipboard_string</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">r&#39;\[.+?\]\s+&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">clipboard_string</span><span class="p">)</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">r&#39;.*?(\d+)(.*)&#39;</span><span class="p">,</span> <span class="n">clipboard_string</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">items</span><span class="p">:</span>
+                <span class="n">number</span><span class="p">,</span> <span class="n">string</span> <span class="o">=</span> <span class="n">items</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">words</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">r&#39;([a-zA-Z]{3,})&#39;</span><span class="p">,</span> <span class="n">string</span><span class="p">)</span>
+                <span class="n">branch_name_suggestion_raw</span> <span class="o">=</span> <span class="s">&#39;user/{}/{}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;USER&#39;</span><span class="p">],</span> <span class="s">&#39;-&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">number</span><span class="p">]</span> <span class="o">+</span> <span class="n">words</span><span class="p">))</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">5</span><span class="p">:</span>
+                    <span class="k">del</span><span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="mi">5</span><span class="p">:])</span>
+                <span class="n">branch_name_suggestion</span> <span class="o">=</span> <span class="s">&#39;user/{}/{}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;USER&#39;</span><span class="p">],</span> <span class="s">&#39;-&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">number</span><span class="p">]</span> <span class="o">+</span> <span class="n">words</span><span class="p">))</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">branch_name_suggestion</span><span class="p">:</span>
+            <span class="n">prompt</span> <span class="o">=</span> <span class="s">&#39;Type branch name or hit return to accept &quot;{}&quot;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">branch_name_suggestion</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write_string_to_clipboard</span><span class="p">(</span><span class="n">branch_name_suggestion_raw</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">prompt</span> <span class="o">=</span> <span class="s">&#39;Type branch name</span><span class="se">\n</span><span class="s">&#39;</span>
+
+        <span class="n">branch_name</span> <span class="o">=</span> <span class="nb">raw_input</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">branch_name</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">branch_name_suggestion</span><span class="p">:</span>
+                <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;No suitable branch name&#39;</span>
+                <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+            <span class="n">branch_name</span> <span class="o">=</span> <span class="n">branch_name_suggestion</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_string_to_clipboard</span><span class="p">(</span><span class="n">branch_name</span><span class="p">)</span>
+        <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="s">&#39;git checkout -b {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">branch_name</span><span class="p">))</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="s">&#39;git status --porcelain -uno&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+        <span class="n">staged</span> <span class="o">=</span> <span class="p">[</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">output</span> <span class="k">if</span> <span class="n">l</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;M&#39;</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">staged</span><span class="p">:</span>
+            <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">([</span><span class="s">&#39;git&#39;</span><span class="p">,</span> <span class="s">&#39;commit&#39;</span><span class="p">,</span> <span class="s">&#39;-m&#39;</span><span class="p">,</span> <span class="n">clipboard_string</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+
+<span class="k">class</span> <span class="nc">SubcommandDropBugfixBranch</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Delete a bugfix branch locally and remotely. The branch must be prefixed with &quot;user/&quot; &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
+        <span class="n">local_branch_ref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">branch</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="s">&#39;git rev-parse --abbrev-ref HEAD&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+        <span class="n">current_branch_ref</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">local_branch_ref</span><span class="p">:</span>
+            <span class="n">local_branch_ref</span> <span class="o">=</span> <span class="n">current_branch_ref</span>
+            
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">local_branch_ref</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;user/&#39;</span><span class="p">):</span>
+            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;Branch name does not start with &quot;user/&quot;, please delete manually&#39;</span>
+            <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+
+        <span class="n">remote_names</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="s">&#39;git remote&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">remote_names</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;More or less than one remote: &quot;{}&quot;, please delete manually&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">remote_names</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+        <span class="n">remote_name</span> <span class="o">=</span> <span class="bp">None</span> 
+        <span class="k">if</span> <span class="n">remote_names</span><span class="p">:</span>
+            <span class="n">remote_name</span> <span class="o">=</span> <span class="n">remote_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">remote_branch_ref</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">remote_name</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">([</span><span class="s">&#39;git&#39;</span><span class="p">,</span> <span class="s">&#39;rev-parse&#39;</span><span class="p">,</span> <span class="s">&#39;--abbrev-ref&#39;</span><span class="p">,</span> <span class="s">&#39;--symbolic-full-name&#39;</span><span class="p">,</span> <span class="n">local_branch_ref</span> <span class="o">+</span> <span class="s">&#39;@{u}&#39;</span><span class="p">],</span> <span class="n">filter_rules</span><span class="o">=</span><span class="p">[(</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="s">r&#39;fatal&#39;</span><span class="p">)],</span> <span class="n">check_returncode</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">output</span><span class="p">:</span>
+                <span class="n">remote_branch_ref</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="nb">len</span><span class="p">(</span><span class="n">remote_name</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">remote_branch_ref</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;user/&#39;</span><span class="p">):</span>
+                    <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;Remote branch name does not start with &quot;user/&quot;, please delete manually&#39;</span>
+                    <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;No upstream branch configured, will delete only local branch&#39;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">no_prompt</span><span class="p">:</span>
+            <span class="n">prompt</span> <span class="o">=</span> <span class="s">&#39;Delete local branch &quot;{}&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">local_branch_ref</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">remote_branch_ref</span><span class="p">:</span>
+                <span class="n">prompt</span> <span class="o">+=</span> <span class="s">&#39; and remote branch &quot;{}:{}&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">remote_name</span><span class="p">,</span> <span class="n">remote_branch_ref</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">affirmative_answer_for_prompt</span><span class="p">(</span><span class="n">prompt</span> <span class="o">+</span> <span class="s">&#39;?&#39;</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+    
+        <span class="k">if</span> <span class="n">current_branch_ref</span> <span class="o">==</span> <span class="n">local_branch_ref</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="s">&#39;git rev-parse --abbrev-ref --symbolic-full-name @{-1}&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="p">:</span>
+                <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;Current branch is branch to be deleted, but previous branch is unknown, please delete manually&#39;</span>
+                <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+            <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="s">&#39;git checkout @{-1}&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+
+        <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="s">&#39;git branch -D&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">local_branch_ref</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">remote_branch_ref</span><span class="p">:</span>
+            <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="s">&#39;git push -d&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">remote_name</span><span class="p">,</span> <span class="n">remote_branch_ref</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">configure_argument_parser</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;branch&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;The name of the branch that should be deleted, defaults to the currently checked out branch&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-n&#39;</span><span class="p">,</span> <span class="s">&#39;--no-prompt&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&quot;Don&#39;t prompt for confirmation&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">WorkingCopyTreeStashingSubcommand</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">prepare_for_root</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root_wc</span><span class="p">):</span>
+        <span class="n">dirty_working_copies</span> <span class="o">=</span> <span class="n">root_wc</span><span class="o">.</span><span class="n">self_or_descendants_dirty_working_copies</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">dirty_working_copies</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">stash_pop</span><span class="p">:</span>
+            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="n">ANSIColor</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="s">&#39;Dirty working copies found, please commit or stash first, or use the -s/--stash-pop option</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ANSIColor</span><span class="o">.</span><span class="n">red</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">format_and_print_dirty_working_copy_list</span><span class="p">(</span><span class="n">dirty_working_copies</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+    
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">configure_argument_parser</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-s&#39;</span><span class="p">,</span> <span class="s">&#39;--stash-pop&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Allow dirty working copy. Stash before checkout and pop afterwards.&#39;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">SubcommandCheckout</span><span class="p">(</span><span class="n">WorkingCopyTreeStashingSubcommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Check out a given branch if it exists&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
+        <span class="n">target_branch_candidates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">branch</span>
+        <span class="n">current_branch</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">current_branch</span><span class="p">()</span>
+        
+        <span class="n">target_branch</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">for</span> <span class="n">target_branch_candidate</span> <span class="ow">in</span> <span class="n">target_branch_candidates</span><span class="p">:</span>
+            <span class="n">target_branch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_branch_for_branch_name</span><span class="p">(</span><span class="n">target_branch_candidate</span><span class="p">,</span> <span class="n">wc</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">target_branch</span><span class="p">:</span>
+                <span class="k">break</span>
+            
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">target_branch</span><span class="p">:</span>
+            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;No branch found matching any of &quot;{0}&quot; in {1}, staying on &quot;{2}&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">target_branch_candidates</span><span class="p">),</span> <span class="n">wc</span><span class="p">,</span> <span class="n">current_branch</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">current_branch</span> <span class="o">==</span> <span class="n">target_branch</span><span class="p">:</span>
+            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;{0} is already on branch &quot;{1}&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wc</span><span class="p">,</span> <span class="n">target_branch</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">print</span> <span class="n">ANSIColor</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">wc</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ANSIColor</span><span class="o">.</span><span class="n">green</span><span class="p">)</span>
+        <span class="n">stash_commit</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">wc</span><span class="o">.</span><span class="n">is_dirty</span><span class="p">():</span>
+            <span class="n">stash_commit</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">create_stash_and_reset_hard</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">rules</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="s">r&#39;use &quot;git pull&quot;&#39;</span><span class="p">),</span>
+            <span class="p">]</span>
+            <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="s">&#39;git checkout {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">target_branch</span><span class="p">),</span> <span class="n">filter_rules</span><span class="o">=</span><span class="n">rules</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">stash_commit</span><span class="p">:</span>
+                <span class="n">wc</span><span class="o">.</span><span class="n">apply_stash_commit</span><span class="p">(</span><span class="n">stash_commit</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">target_branch_for_branch_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_branch_candidate</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
+        <span class="n">local_branch_candidates</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">wc</span><span class="o">.</span><span class="n">local_branch_names</span><span class="p">()</span> <span class="k">if</span> <span class="n">target_branch_candidate</span> <span class="ow">in</span> <span class="n">i</span><span class="p">]</span>
+        <span class="n">remote_branch_candidates</span> <span class="o">=</span> <span class="p">[</span><span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">r&#39;^[^/]+/&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">wc</span><span class="o">.</span><span class="n">remote_branch_names</span><span class="p">()</span> <span class="k">if</span> <span class="n">target_branch_candidate</span> <span class="ow">in</span> <span class="n">i</span><span class="p">]</span>
+        
+        <span class="n">TargetBranchResult</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">namedtuple</span><span class="p">(</span><span class="s">&#39;TargetBranchResult&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="s">&#39;needs_remote_checkout&#39;</span><span class="p">,</span> <span class="s">&#39;should_abort&#39;</span><span class="p">])</span>
+
+        <span class="k">def</span> <span class="nf">find_exact_local_match</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">target_branch_candidate</span> <span class="ow">in</span> <span class="n">local_branch_candidates</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">TargetBranchResult</span><span class="p">(</span><span class="n">target_branch_candidate</span><span class="p">,</span> <span class="bp">False</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        
+        <span class="k">def</span> <span class="nf">find_exact_remote_match</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">target_branch_candidate</span> <span class="ow">in</span> <span class="n">remote_branch_candidates</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">TargetBranchResult</span><span class="p">(</span><span class="n">target_branch_candidate</span><span class="p">,</span> <span class="bp">True</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">find_local_substring_match</span><span class="p">():</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">local_branch_candidates</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;Branch name &quot;{}&quot; is ambiguous in {}: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">target_branch_candidate</span><span class="p">,</span> <span class="n">wc</span><span class="p">,</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">local_branch_candidates</span><span class="p">))</span>
+                <span class="k">return</span> <span class="n">TargetBranchResult</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="bp">False</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">TargetBranchResult</span><span class="p">(</span><span class="n">local_branch_candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">False</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">find_remote_substring_match</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">remote_branch_candidates</span> <span class="ow">in</span> <span class="n">remote_branch_candidates</span><span class="p">:</span>
+                <span class="n">remote_branch_candidates</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">target_branch_candidate</span><span class="p">)</span> <span class="c"># remove exact remote match whose checkout user must have declined</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">remote_branch_candidates</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;Branch name &quot;{}&quot; is ambiguous for remote branches in {}: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">target_branch_candidate</span><span class="p">,</span> <span class="n">wc</span><span class="p">,</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">remote_branch_candidates</span><span class="p">))</span>
+                <span class="k">return</span> <span class="n">TargetBranchResult</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="bp">False</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">TargetBranchResult</span><span class="p">(</span><span class="n">remote_branch_candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">True</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+
+        <span class="n">ordered_strategies</span> <span class="o">=</span> <span class="p">[</span><span class="n">find_exact_local_match</span><span class="p">,</span> <span class="n">find_exact_remote_match</span><span class="p">,</span> <span class="n">find_local_substring_match</span><span class="p">,</span> <span class="n">find_remote_substring_match</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">strategy</span> <span class="ow">in</span> <span class="n">ordered_strategies</span><span class="p">:</span>
+            <span class="n">target_branch_result</span> <span class="o">=</span> <span class="n">strategy</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">target_branch_result</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">target_branch_result</span><span class="o">.</span><span class="n">should_abort</span><span class="p">:</span>
+                <span class="k">return</span>
+
+            <span class="k">if</span> <span class="n">target_branch_result</span><span class="o">.</span><span class="n">needs_remote_checkout</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">affirmative_answer_for_prompt</span><span class="p">(</span><span class="s">&#39;No local branch found for &quot;{0}&quot; in {1} but a remote branch exists, check it out?&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">target_branch_candidate</span><span class="p">,</span> <span class="n">wc</span><span class="p">)):</span>
+                    <span class="k">continue</span>
+                <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="s">&#39;git checkout {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">target_branch_result</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+            <span class="k">return</span> <span class="n">target_branch_result</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="k">def</span> <span class="nf">chained_post_traversal_subcommand_for_root_working_copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root_wc</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">SubcommandBranch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">configure_argument_parser</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SubcommandCheckout</span><span class="p">,</span> <span class="n">cls</span><span class="p">)</span><span class="o">.</span><span class="n">configure_argument_parser</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;branch&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;+&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;One or more names of the branch that should be checked out. The first one to exist will be used&#39;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">SubcommandPull</span><span class="p">(</span><span class="n">WorkingCopyTreeStashingSubcommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Check out a given branch if it exists&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
+        <span class="n">stash_commit</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">print</span> <span class="n">ANSIColor</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">wc</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ANSIColor</span><span class="o">.</span><span class="n">green</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">wc</span><span class="o">.</span><span class="n">is_dirty</span><span class="p">():</span>
+            <span class="n">stash_commit</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">create_stash_and_reset_hard</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">wc</span><span class="o">.</span><span class="n">current_branch_has_upstream</span><span class="p">():</span>
+            <span class="k">print</span> <span class="s">&#39;Current branch {} has no upstream branch to pull from&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wc</span><span class="o">.</span><span class="n">current_branch</span><span class="p">())</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">rules</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="s">r&#39;Rebasing&#39;</span><span class="p">),</span>
+            <span class="p">]</span>
+            <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="s">&#39;git pull&#39;</span><span class="p">,</span> <span class="n">filter_rules</span><span class="o">=</span><span class="n">rules</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">stash_commit</span><span class="p">:</span>
+                <span class="n">wc</span><span class="o">.</span><span class="n">apply_stash_commit</span><span class="p">(</span><span class="n">stash_commit</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">chained_post_traversal_subcommand_for_root_working_copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root_wc</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">SubcommandBranch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">SubcommandBranch</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Show checked out branch of each working copy&quot;&quot;&quot;</span>
+
+    <span class="n">column_justifiers_and_accessors</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">ljust</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">x</span><span class="p">)),</span>
+        <span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">rjust</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">unicode</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">commits_not_in_upstream</span><span class="p">()))</span> <span class="o">+</span> <span class="s">u&#39;↑&#39;</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">current_branch_has_upstream</span><span class="p">()</span> <span class="k">else</span> <span class="s">&#39;-&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">rjust</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">unicode</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">commits_only_in_upstream</span><span class="p">()))</span> <span class="o">+</span> <span class="s">u&#39;↓&#39;</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">current_branch_has_upstream</span><span class="p">()</span> <span class="k">else</span> <span class="s">&#39;-&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">ljust</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">current_branch</span><span class="p">()),</span>
+        <span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">ljust</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">head_commit_hash</span><span class="p">()),</span>
+    <span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">column_count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">SubcommandBranch</span><span class="o">.</span><span class="n">column_justifiers_and_accessors</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">prepare_for_root</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root_wc</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxlen</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_count</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">wc</span> <span class="ow">in</span> <span class="n">root_wc</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="p">(</span><span class="n">justifier</span><span class="p">,</span> <span class="n">accessor</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">SubcommandBranch</span><span class="o">.</span><span class="n">column_justifiers_and_accessors</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">maxlen</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">maxlen</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">accessor</span><span class="p">(</span><span class="n">wc</span><span class="p">))))</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">access</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_justifiers_and_accessors</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="mi">1</span><span class="p">](</span><span class="n">item</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">justify</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">string</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_justifiers_and_accessors</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="mi">0</span><span class="p">](</span><span class="n">string</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+
+        <span class="n">format</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;{&#39;</span> <span class="o">+</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;}&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">column_count</span><span class="p">())])</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">format</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">justify</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">access</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">wc</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxlen</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">column_count</span><span class="p">())])</span>
+        <span class="k">print</span> <span class="n">output</span>
+
+
+<span class="k">class</span> <span class="nc">SubcommandFetch</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Run git fetch&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
+        <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="s">&#39;git fetch&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">chained_post_traversal_subcommand_for_root_working_copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root_wc</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">SubcommandBranch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+        
+
+<span class="k">class</span> <span class="nc">SubcommandEach</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Run a shell command in each working copy&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
+        <span class="n">command</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">shell_command</span><span class="p">)</span>
+        <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">wc</span><span class="p">,</span> <span class="n">check_returncode</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">configure_argument_parser</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;shell_command&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;+&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;A shell command to execute in the context of each working copy. If you need to use options starting with -, add &quot; -- &quot; before the first one.&#39;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">GitHelperCommandLineDriver</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">subcommand_map</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;PATH&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">))</span>
+        <span class="n">githelper_local</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">githelper_local</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;Unable to import githelper_local extension module:&#39;</span>
+            <span class="k">raise</span>
+
+        <span class="n">namespaces</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()</span>
+        <span class="n">subcommand_map</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">githelper_local</span><span class="p">:</span>
+            <span class="n">namespaces</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">k</span> <span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">githelper_local</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">githelper_local</span><span class="p">)})</span>
+
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">namespaces</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;Subcommand&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s">&#39;subcommand_name&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)):</span>
+                <span class="n">subcommand_map</span><span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">subcommand_name</span><span class="p">()]</span> <span class="o">=</span> <span class="n">v</span>
+
+        <span class="k">return</span> <span class="n">subcommand_map</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">resolve_subcommand_abbreviation</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">subcommand_map</span><span class="p">):</span>
+        <span class="n">non_option_arguments</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">i</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;-&#39;</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">non_option_arguments</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="n">subcommand</span> <span class="o">=</span> <span class="n">non_option_arguments</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">subcommand</span> <span class="ow">in</span> <span class="n">subcommand_map</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        
+        <span class="c"># converts a string like &#39;abc&#39; to a regex like &#39;(a).*?(b).*?(c)&#39;</span>
+        <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&#39;.*?&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;(&#39;</span> <span class="o">+</span> <span class="n">char</span> <span class="o">+</span> <span class="s">&#39;)&#39;</span> <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">subcommand</span><span class="p">]))</span>
+        <span class="n">subcommand_candidates</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">subcommand_name</span> <span class="ow">in</span> <span class="n">subcommand_map</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="n">regex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">subcommand_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">match</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">subcommand_candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">subcommand_candidate_for_abbreviation_match</span><span class="p">(</span><span class="n">subcommand_name</span><span class="p">,</span> <span class="n">match</span><span class="p">))</span>
+            
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">subcommand_candidates</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">subcommand_candidates</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="n">subcommand_candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">decorated_name</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">subcommand</span><span class="p">)]</span> <span class="o">=</span> <span class="n">subcommand_candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        
+        <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;Ambiguous subcommand &quot;{}&quot;: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">subcommand</span><span class="p">,</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">i</span><span class="o">.</span><span class="n">decorated_name</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">subcommand_candidates</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">subcommand_candidate_for_abbreviation_match</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">subcommand_name</span><span class="p">,</span> <span class="n">match</span><span class="p">):</span>
+        <span class="n">SubcommandCandidate</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">namedtuple</span><span class="p">(</span><span class="s">&#39;SubcommandCandidate&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="s">&#39;decorated_name&#39;</span><span class="p">])</span>
+        <span class="n">decorated_name</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">match</span><span class="o">.</span><span class="n">lastindex</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">span</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">span</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">preceding</span> <span class="o">=</span> <span class="n">subcommand_name</span><span class="p">[</span><span class="n">match</span><span class="o">.</span><span class="n">span</span><span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]:</span><span class="n">span</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="k">if</span> <span class="n">span</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">else</span> <span class="s">&#39;&#39;</span>
+            <span class="n">letter</span> <span class="o">=</span> <span class="n">subcommand_name</span><span class="p">[</span><span class="n">span</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">span</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">decorated_name</span> <span class="o">+=</span> <span class="n">preceding</span> <span class="o">+</span> <span class="n">ANSIColor</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">letter</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ANSIColor</span><span class="o">.</span><span class="n">green</span><span class="p">)</span>
+        <span class="n">trailing</span> <span class="o">=</span> <span class="n">subcommand_name</span><span class="p">[</span><span class="n">span</span><span class="p">[</span><span class="mi">1</span><span class="p">]:]</span>
+        <span class="n">decorated_name</span> <span class="o">+=</span> <span class="n">trailing</span>
+        <span class="k">return</span> <span class="n">SubcommandCandidate</span><span class="p">(</span><span class="n">subcommand_name</span><span class="p">,</span> <span class="n">decorated_name</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="n">subcommand_map</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">subcommand_map</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cls</span><span class="o">.</span><span class="n">resolve_subcommand_abbreviation</span><span class="p">(</span><span class="n">subcommand_map</span><span class="p">):</span>
+            <span class="nb">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s">&#39;Git helper&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--root_path&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Path to root working copy&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--verbose&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Enable verbose debug logging&#39;</span><span class="p">)</span>
+        <span class="n">subparsers</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_subparsers</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s">&#39;Subcommands&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;subcommand_name&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">subcommand_name</span><span class="p">,</span> <span class="n">subcommand_class</span> <span class="ow">in</span> <span class="n">subcommand_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">subparser</span> <span class="o">=</span> <span class="n">subparsers</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span><span class="n">subcommand_name</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="n">subcommand_class</span><span class="o">.</span><span class="n">__doc__</span><span class="p">)</span>
+            <span class="n">subcommand_class</span><span class="o">.</span><span class="n">configure_argument_parser</span><span class="p">(</span><span class="n">subparser</span><span class="p">)</span>
+
+        <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+        <span class="n">subcommand_class</span> <span class="o">=</span> <span class="n">subcommand_map</span><span class="p">[</span><span class="n">args</span><span class="o">.</span><span class="n">subcommand_name</span><span class="p">]</span>
+        <span class="n">subcommand</span> <span class="o">=</span> <span class="n">subcommand_class</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">subcommand_class</span><span class="o">.</span><span class="n">wants_working_copy</span><span class="p">():</span>
+            <span class="k">while</span> <span class="n">subcommand</span><span class="p">:</span>
+                <span class="n">wc</span> <span class="o">=</span> <span class="n">GitWorkingCopy</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">root_path</span><span class="p">)</span>
+                <span class="n">wc</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">subcommand</span><span class="p">)</span>
+                <span class="n">subcommand</span> <span class="o">=</span> <span class="n">subcommand</span><span class="o">.</span><span class="n">chained_post_traversal_subcommand_for_root_working_copy</span><span class="p">(</span><span class="n">wc</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">subcommand</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">GitHelperCommandLineDriver</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">githelper 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Marc Liyanage.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

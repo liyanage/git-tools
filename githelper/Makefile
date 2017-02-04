@@ -152,11 +152,9 @@ doctest:
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
 
-gh-pages: html
-	git checkout gh-pages
-	rsync -avP --exclude=.* _build/html/ ../	
-	git commit -a -m 'Doc update'
-	git checkout master
+docs: html
+	rm -r docs/
+	rsync -avP --exclude=.* _build/html/ docs/	
 
 preview: html
 	open _build/html/index.html
