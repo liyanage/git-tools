@@ -933,11 +933,42 @@ class SubcommandCopyHeadCommitHash(AbstractSubcommand):
     """Copy repository / branch / head hash to clipboard"""
 
     def __call__(self, wc):
-        output = '{} {} {}'.format(wc.current_repository(), wc.current_branch(), wc.head_commit_hash())
-        self.write_string_to_clipboard(output)
-        print output
+        template_name = self.args.template
+        if template_name:
+            config_variable = 'githelper.copy-template-' + template_name
+            output = wc.output_for_git_command(['git', 'config', config_variable])
+            if not output:
+                print >> sys.stderr, 'No template found for git configuration variable "{}"'.format(config_variable)
+                return GitWorkingCopy.STOP_TRAVERSAL
+        else:
+            config_variable = 'githelper.copy-template'
+            output = wc.output_for_git_command(['git', 'config', config_variable])
+            if not output:
+                output = ['{repository} {branch} {commit}']
+
+        output = self.interpolate_data_into_template_lines(wc, output)
+        output_string = ''.join([l + '\n' for l in output])
+  
+        self.write_string_to_clipboard(output_string)
+        print output_string,
         
         return GitWorkingCopy.STOP_TRAVERSAL
+
+    def interpolate_data_into_template_lines(self, wc, template_lines):
+        repository, branch, commit = wc.current_repository(), wc.current_branch(), wc.head_commit_hash()
+        data = dict(zip('repository branch commit'.split(), (repository, branch, commit)))
+        output = []
+        for line in template_lines:
+            for key, value in data.items():
+                token = '{' + key + '}'
+                if token in line:
+                    line = line.replace(token, value)
+            output.append(line)
+        return output
+
+    @classmethod
+    def configure_argument_parser(cls, parser):
+        parser.add_argument('template', nargs='?', default=None, help='Optional name of a template stored with "git config githelper.copy-template-<name>". If omitted, defaults to the value of githelper.copy-template, and if that is not set, defaults to a built-in template. You can use the placeholders "{branch}", "{repository}", and "{commit}"')
 
 
 class SubcommandCheckoutBugfixBranch(AbstractSubcommand):
