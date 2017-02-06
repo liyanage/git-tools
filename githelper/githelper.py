@@ -56,7 +56,7 @@ To get an overview of the nested working copies, use the ``tree`` subcommand::
     $ gh tree
     |<Working copy /path/to/my-great-project>
     |--<Working copy /path/to/my-great-project/Foo *>
-    |----<Working copy /path/to/my-great-project/Foo/subexternal>
+    |----<Working copy /path/to/my-great-project/Foo/subexternal l*>
     |--<Working copy /path/to/my-great-project/Bar>
     |--<Working copy /path/to/my-great-project/Baz>
     |--<Working copy /path/to/my-great-project/Subproject *>
@@ -64,6 +64,7 @@ To get an overview of the nested working copies, use the ``tree`` subcommand::
     |--<Working copy /path/to/my-great-project/Xyz>
 
 The * indicates a working copy with uncommited changes.
+The l indicates a local-only branch, i.e. one that's not tracking a remote branch
 
 To get a combined git status view, use ``status``::
 
@@ -81,6 +82,19 @@ To check out a certain point in time in the past in all nested sandboxes, you co
 use the ``each`` subcommand, which runs a shell command in each working copy:
 
     $ gh each "git checkout \$(git rev-list -n 1 --before='2012-01-01 00:00' master)"
+
+Another useful subcommand is "branch", it gives a complete overview of the branch
+status of each subrepository:
+
+    $ gh b
+    branch
+    </Users/liyanage/Projects/foo>                               0↑ 0↓ master      4c3b6721
+    </Users/liyanage/Projects/foo/repositories/LibraryManager>   0↑ 0↓ master      301105f7
+    </Users/liyanage/Projects/foo/repositories/Reports *>        0↑ 0↓ master      7ffa7408
+    </Users/liyanage/Projects/foo/repositories/analyzer>         0↑ 0↓ feature/xyz c2881596
+    </Users/liyanage/Projects/foo/repositories/common l>         0↑ 0↓ master      f0a1ec75
+
+In column order, it lists the path, commits to push, commits to pull, branch name, current commit.
 
 These are just a few examples, see the command line help for the remaining subcommands.
 
@@ -185,6 +199,7 @@ import logging
 import getpass
 import tempfile
 import argparse
+import textwrap
 import StringIO
 import itertools
 import subprocess
@@ -967,7 +982,34 @@ class SubcommandCopyHeadCommitHash(AbstractSubcommand):
 
     @classmethod
     def configure_argument_parser(cls, parser):
-        parser.add_argument('template', nargs='?', default=None, help='Optional name of a template stored with "git config githelper.copy-template-<name>". If omitted, defaults to the value of githelper.copy-template, and if that is not set, defaults to a built-in template. You can use the placeholders "{branch}", "{repository}", and "{commit}"')
+        parser.formatter_class = argparse.RawTextHelpFormatter
+        description = textwrap.dedent('''        Optional name of a template.
+
+        Templates are snippets of text into which the commit information is interpolated.
+        The following replacement tokens are available:
+        
+            {branch}          The current branch name
+            {repository}      The last path element of the current repository's remote URL,
+                              without any file extensions such as ".git"
+            {commit}          The head commit ID, abbreviated
+
+        If you don't select a template with this option, the default template is used:
+
+            "{repository} {branch} {commit}"
+        
+        You store a custom template with git config. To change the default, unnamed one:
+        
+            $ git config githelper.copy-template 'Repository: {repository} - Branch: {branch} - Commit: {commit}'
+
+        To set any named template, add a dash and the name to the git configuration variable,
+        in this example "merge":
+        
+            $ git config githelper.copy-template-merge $'- Code Reviewed By: \\n- Branch: {branch} ({commit})\\n- Repository: {repository}\\n- Testing Details: \\n'
+        
+        This example also shows how to set multiline-templates with \n sequences and the Bash $'' construct.
+        
+        ''')
+        parser.add_argument('template', nargs='?', default=None, help=description)
 
 
 class SubcommandCheckoutBugfixBranch(AbstractSubcommand):
@@ -1206,7 +1248,7 @@ class SubcommandPull(WorkingCopyTreeStashingSubcommand):
 
 
 class SubcommandBranch(AbstractSubcommand):
-    """Show checked out branch of each working copy"""
+    """Show checked out branch and other status information of each working copy"""
 
     column_justifiers_and_accessors = (
         (string.ljust, lambda x: unicode(x)),
@@ -1235,6 +1277,27 @@ class SubcommandBranch(AbstractSubcommand):
         format = ' '.join(['{' + unicode(i) + '}' for i in range(self.column_count())])
         output = format.format(*[justify(i, access(i, wc), self.maxlen[i]) for i in xrange(self.column_count())])
         print output
+
+    @classmethod
+    def configure_argument_parser(cls, parser):
+        parser.formatter_class = argparse.RawDescriptionHelpFormatter
+
+        parser.description = textwrap.dedent('''            This subcommand gives a complete overview of the branch
+            status of each subrepository:
+
+                $ gh b
+                branch
+                </Users/liyanage/Projects/foo>                               0↑ 0↓ master      4c3b6721
+                </Users/liyanage/Projects/foo/repositories/LibraryManager>   0↑ 0↓ master      301105f7
+                </Users/liyanage/Projects/foo/repositories/Reports *>        0↑ 0↓ master      7ffa7408
+                </Users/liyanage/Projects/foo/repositories/analyzer>         0↑ 0↓ feature/xyz c2881596
+                </Users/liyanage/Projects/foo/repositories/common l>         0↑ 0↓ master      f0a1ec75
+
+            In column order, it lists the path, commits to push, commits to pull, branch name, current commit.
+            
+            For the "commits to pull" information to be up to date, you have to run the "fetch" subcommand first.
+            
+            Many subcommands (among them "fetch") automatically run the branch subcommand afterwards.''')
 
 
 class SubcommandFetch(AbstractSubcommand):

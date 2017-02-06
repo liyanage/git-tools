@@ -105,7 +105,7 @@
 <span class="sd">    $ gh tree</span>
 <span class="sd">    |&lt;Working copy /path/to/my-great-project&gt;</span>
 <span class="sd">    |--&lt;Working copy /path/to/my-great-project/Foo *&gt;</span>
-<span class="sd">    |----&lt;Working copy /path/to/my-great-project/Foo/subexternal&gt;</span>
+<span class="sd">    |----&lt;Working copy /path/to/my-great-project/Foo/subexternal l*&gt;</span>
 <span class="sd">    |--&lt;Working copy /path/to/my-great-project/Bar&gt;</span>
 <span class="sd">    |--&lt;Working copy /path/to/my-great-project/Baz&gt;</span>
 <span class="sd">    |--&lt;Working copy /path/to/my-great-project/Subproject *&gt;</span>
@@ -113,6 +113,7 @@
 <span class="sd">    |--&lt;Working copy /path/to/my-great-project/Xyz&gt;</span>
 
 <span class="sd">The * indicates a working copy with uncommited changes.</span>
+<span class="sd">The l indicates a local-only branch, i.e. one that&#39;s not tracking a remote branch</span>
 
 <span class="sd">To get a combined git status view, use ``status``::</span>
 
@@ -130,6 +131,19 @@
 <span class="sd">use the ``each`` subcommand, which runs a shell command in each working copy:</span>
 
 <span class="sd">    $ gh each &quot;git checkout \$(git rev-list -n 1 --before=&#39;2012-01-01 00:00&#39; master)&quot;</span>
+
+<span class="sd">Another useful subcommand is &quot;branch&quot;, it gives a complete overview of the branch</span>
+<span class="sd">status of each subrepository:</span>
+
+<span class="sd">    $ gh b</span>
+<span class="sd">    branch</span>
+<span class="sd">    &lt;/Users/liyanage/Projects/foo&gt;                               0↑ 0↓ master      4c3b6721</span>
+<span class="sd">    &lt;/Users/liyanage/Projects/foo/repositories/LibraryManager&gt;   0↑ 0↓ master      301105f7</span>
+<span class="sd">    &lt;/Users/liyanage/Projects/foo/repositories/Reports *&gt;        0↑ 0↓ master      7ffa7408</span>
+<span class="sd">    &lt;/Users/liyanage/Projects/foo/repositories/analyzer&gt;         0↑ 0↓ feature/xyz c2881596</span>
+<span class="sd">    &lt;/Users/liyanage/Projects/foo/repositories/common l&gt;         0↑ 0↓ master      f0a1ec75</span>
+
+<span class="sd">In column order, it lists the path, commits to push, commits to pull, branch name, current commit.</span>
 
 <span class="sd">These are just a few examples, see the command line help for the remaining subcommands.</span>
 
@@ -234,6 +248,7 @@
 <span class="kn">import</span> <span class="nn">getpass</span>
 <span class="kn">import</span> <span class="nn">tempfile</span>
 <span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">textwrap</span>
 <span class="kn">import</span> <span class="nn">StringIO</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">import</span> <span class="nn">subprocess</span>
@@ -1016,7 +1031,34 @@
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">configure_argument_parser</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
-        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;template&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Optional name of a template stored with &quot;git config githelper.copy-template-&lt;name&gt;&quot;. If omitted, defaults to the value of githelper.copy-template, and if that is not set, defaults to a built-in template. You can use the placeholders &quot;{branch}&quot;, &quot;{repository}&quot;, and &quot;{commit}&quot;&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">formatter_class</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">RawTextHelpFormatter</span>
+        <span class="n">description</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s">&#39;&#39;&#39;        Optional name of a template.</span>
+
+<span class="s">        Templates are snippets of text into which the commit information is interpolated.</span>
+<span class="s">        The following replacement tokens are available:</span>
+<span class="s">        </span>
+<span class="s">            {branch}          The current branch name</span>
+<span class="s">            {repository}      The last path element of the current repository&#39;s remote URL,</span>
+<span class="s">                              without any file extensions such as &quot;.git&quot;</span>
+<span class="s">            {commit}          The head commit ID, abbreviated</span>
+
+<span class="s">        If you don&#39;t select a template with this option, the default template is used:</span>
+
+<span class="s">            &quot;{repository} {branch} {commit}&quot;</span>
+<span class="s">        </span>
+<span class="s">        You store a custom template with git config. To change the default, unnamed one:</span>
+<span class="s">        </span>
+<span class="s">            $ git config githelper.copy-template &#39;Repository: {repository} - Branch: {branch} - Commit: {commit}&#39;</span>
+
+<span class="s">        To set any named template, add a dash and the name to the git configuration variable,</span>
+<span class="s">        in this example &quot;merge&quot;:</span>
+<span class="s">        </span>
+<span class="s">            $ git config githelper.copy-template-merge $&#39;- Code Reviewed By: </span><span class="se">\\</span><span class="s">n- Branch: {branch} ({commit})</span><span class="se">\\</span><span class="s">n- Repository: {repository}</span><span class="se">\\</span><span class="s">n- Testing Details: </span><span class="se">\\</span><span class="s">n&#39;</span>
+<span class="s">        </span>
+<span class="s">        This example also shows how to set multiline-templates with </span><span class="se">\n</span><span class="s"> sequences and the Bash $&#39;&#39; construct.</span>
+<span class="s">        </span>
+<span class="s">        &#39;&#39;&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;template&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="n">description</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">SubcommandCheckoutBugfixBranch</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
@@ -1255,7 +1297,7 @@
 
 
 <span class="k">class</span> <span class="nc">SubcommandBranch</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Show checked out branch of each working copy&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Show checked out branch and other status information of each working copy&quot;&quot;&quot;</span>
 
     <span class="n">column_justifiers_and_accessors</span> <span class="o">=</span> <span class="p">(</span>
         <span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">ljust</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">x</span><span class="p">)),</span>
@@ -1284,6 +1326,27 @@
         <span class="n">format</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;{&#39;</span> <span class="o">+</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;}&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">column_count</span><span class="p">())])</span>
         <span class="n">output</span> <span class="o">=</span> <span class="n">format</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">justify</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">access</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">wc</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxlen</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">column_count</span><span class="p">())])</span>
         <span class="k">print</span> <span class="n">output</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">configure_argument_parser</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">formatter_class</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">RawDescriptionHelpFormatter</span>
+
+        <span class="n">parser</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s">&#39;&#39;&#39;            This subcommand gives a complete overview of the branch</span>
+<span class="s">            status of each subrepository:</span>
+
+<span class="s">                $ gh b</span>
+<span class="s">                branch</span>
+<span class="s">                &lt;/Users/liyanage/Projects/foo&gt;                               0↑ 0↓ master      4c3b6721</span>
+<span class="s">                &lt;/Users/liyanage/Projects/foo/repositories/LibraryManager&gt;   0↑ 0↓ master      301105f7</span>
+<span class="s">                &lt;/Users/liyanage/Projects/foo/repositories/Reports *&gt;        0↑ 0↓ master      7ffa7408</span>
+<span class="s">                &lt;/Users/liyanage/Projects/foo/repositories/analyzer&gt;         0↑ 0↓ feature/xyz c2881596</span>
+<span class="s">                &lt;/Users/liyanage/Projects/foo/repositories/common l&gt;         0↑ 0↓ master      f0a1ec75</span>
+
+<span class="s">            In column order, it lists the path, commits to push, commits to pull, branch name, current commit.</span>
+<span class="s">            </span>
+<span class="s">            For the &quot;commits to pull&quot; information to be up to date, you have to run the &quot;fetch&quot; subcommand first.</span>
+<span class="s">            </span>
+<span class="s">            Many subcommands (among them &quot;fetch&quot;) automatically run the branch subcommand afterwards.&#39;&#39;&#39;</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">SubcommandFetch</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>

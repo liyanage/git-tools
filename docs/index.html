@@ -90,7 +90,7 @@ characters that unanbiguously identifies one of the subcommands will work
 <div class="highlight-python"><div class="highlight"><pre>$ gh tree
 |&lt;Working copy /path/to/my-great-project&gt;
 |--&lt;Working copy /path/to/my-great-project/Foo *&gt;
-|----&lt;Working copy /path/to/my-great-project/Foo/subexternal&gt;
+|----&lt;Working copy /path/to/my-great-project/Foo/subexternal l*&gt;
 |--&lt;Working copy /path/to/my-great-project/Bar&gt;
 |--&lt;Working copy /path/to/my-great-project/Baz&gt;
 |--&lt;Working copy /path/to/my-great-project/Subproject *&gt;
@@ -98,7 +98,8 @@ characters that unanbiguously identifies one of the subcommands will work
 |--&lt;Working copy /path/to/my-great-project/Xyz&gt;
 </pre></div>
 </div>
-<p>The * indicates a working copy with uncommited changes.</p>
+<p>The * indicates a working copy with uncommited changes.
+The l indicates a local-only branch, i.e. one that&#8217;s not tracking a remote branch</p>
 <p>To get a combined git status view, use <tt class="docutils literal"><span class="pre">status</span></tt>:</p>
 <div class="highlight-python"><div class="highlight"><pre>$ gh status
 &lt;Working copy /path/to/my-great-project/Foo *&gt;
@@ -113,6 +114,17 @@ characters that unanbiguously identifies one of the subcommands will work
 use the <tt class="docutils literal"><span class="pre">each</span></tt> subcommand, which runs a shell command in each working copy:</p>
 <blockquote>
 <div>$ gh each &#8220;git checkout $(git rev-list -n 1 &#8211;before=&#8216;2012-01-01 00:00&#8217; master)&#8221;</div></blockquote>
+<p>Another useful subcommand is &#8220;branch&#8221;, it gives a complete overview of the branch
+status of each subrepository:</p>
+<blockquote>
+<div>$ gh b
+branch
+&lt;/Users/liyanage/Projects/foo&gt;                               0↑ 0↓ master      4c3b6721
+&lt;/Users/liyanage/Projects/foo/repositories/LibraryManager&gt;   0↑ 0↓ master      301105f7
+&lt;/Users/liyanage/Projects/foo/repositories/Reports <a href="#id1"><span class="problematic" id="id2">*</span></a>&gt;        0↑ 0↓ master      7ffa7408
+&lt;/Users/liyanage/Projects/foo/repositories/analyzer&gt;         0↑ 0↓ feature/xyz c2881596
+&lt;/Users/liyanage/Projects/foo/repositories/common l&gt;         0↑ 0↓ master      f0a1ec75</div></blockquote>
+<p>In column order, it lists the path, commits to push, commits to pull, branch name, current commit.</p>
 <p>These are just a few examples, see the command line help for the remaining subcommands.</p>
 </div>
 </div>

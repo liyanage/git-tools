@@ -153,8 +153,9 @@ doctest:
 	      "results in $(BUILDDIR)/doctest/output.txt."
 
 docs: html
-	rm -r docs/
+	rm -rf ../docs/
 	rsync -avP --exclude=.* _build/html/ ../docs/	
+	touch ../docs/.nojekyll
 
 preview: html
 	open _build/html/index.html
