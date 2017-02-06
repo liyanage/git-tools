@@ -49,7 +49,7 @@ Command Line Utility Examples
 Below are some command line usage examples. The examples assume a
 ``gh`` shell alias for githelper defined as follows::
 
-    alias gh githelper.py
+    $ alias gh githelper.py
 
 To get an overview of the nested working copies, use the ``tree`` subcommand::
 
