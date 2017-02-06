@@ -79,12 +79,12 @@ Only working copies that have any interesting status are listed.
 As a reminder, you could shorten the subcommand name and type just ``gh sta`` here.
 
 To check out a certain point in time in the past in all nested sandboxes, you could
-use the ``each`` subcommand, which runs a shell command in each working copy:
+use the ``each`` subcommand, which runs a shell command in each working copy::
 
     $ gh each "git checkout \$(git rev-list -n 1 --before='2012-01-01 00:00' master)"
 
 Another useful subcommand is "branch", it gives a complete overview of the branch
-status of each subrepository:
+status of each subrepository::
 
     $ gh b
     branch
