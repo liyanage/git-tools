@@ -95,6 +95,10 @@ status of each subrepository::
     </Users/liyanage/Projects/foo/repositories/common l>         0↑ 0↓ master      f0a1ec75
 
 In column order, it lists the path, commits to push, commits to pull, branch name, current commit.
+You need to run the ``fetch`` subcommand first for the commits to pull/push information to be
+up to date.
+
+Many subcommands, ``fetch`` included, run the ``branch` subcommand automatically after they finish.
 
 These are just a few examples, see the command line help for the remaining subcommands.
 
