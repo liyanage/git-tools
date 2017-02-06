@@ -16,7 +16,10 @@ test_build_dir=$TMPDIR/githelper-docs-build
 make --silent html BUILDDIR=$test_build_dir SPHINXOPTS=-q >/dev/null
 
 if ! diff -q ../docs/index.html $test_build_dir/html/index.html; then
-    echo githelper/docs/index.html is not up to date, update with \"make docs\"
+	make docs
+	echo
+    echo githelper/docs/index.html was not up to date, automatically ran \"make docs\".
+	echo Please add changed files and try again.
     exit 1
 fi
 
