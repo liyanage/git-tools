@@ -56,7 +56,7 @@
 
 <span class="sd">Githelper is both a module and a command line utility for working with git_ working copies.</span>
 
-<span class="sd">Githelper is maintained at https://github.com/liyanage/git-tools/tree/master/githelper</span>
+<span class="sd">It is maintained at https://github.com/liyanage/git-tools/tree/master/githelper</span>
 
 <span class="sd">The HTML version of this documentation is available at http://liyanage.github.com/git-tools/</span>
 
@@ -90,7 +90,7 @@
 <span class="sd">You can abbreviate the subcommand name. The abbreviation does not have</span>
 <span class="sd">to be a contiguous prefix or substring of the full name, any sequence of</span>
 <span class="sd">characters that unanbiguously identifies one of the subcommands will work</span>
-<span class="sd">(it must be anchored at the beginning).</span>
+<span class="sd">(it must be anchored at the beginning, however).</span>
 
 <span class="sd">Command Line Utility Examples</span>
 <span class="sd">-----------------------------</span>
@@ -127,13 +127,13 @@
 
 <span class="sd">As a reminder, you could shorten the subcommand name and type just ``gh sta`` here.</span>
 
-<span class="sd">To check out a certain point in time in the past in all nested sandboxes, you could</span>
-<span class="sd">use the ``each`` subcommand, which runs a shell command in each working copy::</span>
+<span class="sd">To check out a certain point in time in the past in all nested working copies, you could</span>
+<span class="sd">use the ``each`` subcommand, which runs a shell command in each one::</span>
 
 <span class="sd">    $ gh each &quot;git checkout \$(git rev-list -n 1 --before=&#39;2012-01-01 00:00&#39; master)&quot;</span>
 
-<span class="sd">Another useful subcommand is &quot;branch&quot;, it gives a complete overview of the branch</span>
-<span class="sd">status of each subrepository::</span>
+<span class="sd">Another useful subcommand is ``branch``, it gives a complete overview of the branch</span>
+<span class="sd">status of each working copy::</span>
 
 <span class="sd">    $ gh b</span>
 <span class="sd">    branch</span>
@@ -1079,7 +1079,7 @@
 <span class="s">        </span>
 <span class="s">            $ git config githelper.copy-template-merge $&#39;- Code Reviewed By: </span><span class="se">\\</span><span class="s">n- Branch: {branch} ({commit})</span><span class="se">\\</span><span class="s">n- Repository: {repository}</span><span class="se">\\</span><span class="s">n- Testing Details: </span><span class="se">\\</span><span class="s">n&#39;</span>
 <span class="s">        </span>
-<span class="s">        This example also shows how to set multiline-templates with </span><span class="se">\n</span><span class="s"> sequences and the Bash $&#39;&#39; construct.</span>
+<span class="s">        This example also shows how to set multiline-templates with </span><span class="se">\\</span><span class="s">n sequences and the Bash $&#39;&#39; construct.</span>
 <span class="s">        </span>
 <span class="s">        &#39;&#39;&#39;</span><span class="p">)</span>
         <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;template&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="n">description</span><span class="p">)</span>

@@ -49,7 +49,7 @@
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
 <p>Githelper is both a module and a command line utility for working with <a class="reference external" href="http://git-scm.com">git</a> working copies.</p>
-<p>Githelper is maintained at <a class="reference external" href="https://github.com/liyanage/git-tools/tree/master/githelper">https://github.com/liyanage/git-tools/tree/master/githelper</a></p>
+<p>It is maintained at <a class="reference external" href="https://github.com/liyanage/git-tools/tree/master/githelper">https://github.com/liyanage/git-tools/tree/master/githelper</a></p>
 <p>The HTML version of this documentation is available at <a class="reference external" href="http://liyanage.github.com/git-tools/">http://liyanage.github.com/git-tools/</a></p>
 </div>
 <div class="section" id="installation">
@@ -78,7 +78,7 @@ subcommand in turn supports the -h flag:</p>
 <p>You can abbreviate the subcommand name. The abbreviation does not have
 to be a contiguous prefix or substring of the full name, any sequence of
 characters that unanbiguously identifies one of the subcommands will work
-(it must be anchored at the beginning).</p>
+(it must be anchored at the beginning, however).</p>
 <div class="section" id="command-line-utility-examples">
 <h3>Command Line Utility Examples<a class="headerlink" href="#command-line-utility-examples" title="Permalink to this headline">¶</a></h3>
 <p>Below are some command line usage examples. The examples assume a
@@ -110,13 +110,13 @@ The l indicates a local-only branch, i.e. one that&#8217;s not tracking a remote
 </div>
 <p>Only working copies that have any interesting status are listed.</p>
 <p>As a reminder, you could shorten the subcommand name and type just <tt class="docutils literal"><span class="pre">gh</span> <span class="pre">sta</span></tt> here.</p>
-<p>To check out a certain point in time in the past in all nested sandboxes, you could
-use the <tt class="docutils literal"><span class="pre">each</span></tt> subcommand, which runs a shell command in each working copy:</p>
+<p>To check out a certain point in time in the past in all nested working copies, you could
+use the <tt class="docutils literal"><span class="pre">each</span></tt> subcommand, which runs a shell command in each one:</p>
 <div class="highlight-python"><div class="highlight"><pre>$ gh each &quot;git checkout \$(git rev-list -n 1 --before=&#39;2012-01-01 00:00&#39; master)&quot;
 </pre></div>
 </div>
-<p>Another useful subcommand is &#8220;branch&#8221;, it gives a complete overview of the branch
-status of each subrepository:</p>
+<p>Another useful subcommand is <tt class="docutils literal"><span class="pre">branch</span></tt>, it gives a complete overview of the branch
+status of each working copy:</p>
 <div class="highlight-python"><div class="highlight"><pre>$ gh b
 branch
 &lt;/Users/liyanage/Projects/foo&gt;                               0↑ 0↓ master      4c3b6721  1h

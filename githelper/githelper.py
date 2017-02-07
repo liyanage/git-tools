@@ -7,7 +7,7 @@ Introduction
 
 Githelper is both a module and a command line utility for working with git_ working copies.
 
-Githelper is maintained at https://github.com/liyanage/git-tools/tree/master/githelper
+It is maintained at https://github.com/liyanage/git-tools/tree/master/githelper
 
 The HTML version of this documentation is available at http://liyanage.github.com/git-tools/
 
@@ -41,7 +41,7 @@ You can extend the set of subcommands by writing plug-in classes. See
 You can abbreviate the subcommand name. The abbreviation does not have
 to be a contiguous prefix or substring of the full name, any sequence of
 characters that unanbiguously identifies one of the subcommands will work
-(it must be anchored at the beginning).
+(it must be anchored at the beginning, however).
 
 Command Line Utility Examples
 -----------------------------
@@ -78,13 +78,13 @@ Only working copies that have any interesting status are listed.
 
 As a reminder, you could shorten the subcommand name and type just ``gh sta`` here.
 
-To check out a certain point in time in the past in all nested sandboxes, you could
-use the ``each`` subcommand, which runs a shell command in each working copy::
+To check out a certain point in time in the past in all nested working copies, you could
+use the ``each`` subcommand, which runs a shell command in each one::
 
     $ gh each "git checkout \$(git rev-list -n 1 --before='2012-01-01 00:00' master)"
 
-Another useful subcommand is "branch", it gives a complete overview of the branch
-status of each subrepository::
+Another useful subcommand is ``branch``, it gives a complete overview of the branch
+status of each working copy::
 
     $ gh b
     branch
@@ -1030,7 +1030,7 @@ class SubcommandCopyHeadCommitHash(AbstractSubcommand):
         
             $ git config githelper.copy-template-merge $'- Code Reviewed By: \\n- Branch: {branch} ({commit})\\n- Repository: {repository}\\n- Testing Details: \\n'
         
-        This example also shows how to set multiline-templates with \n sequences and the Bash $'' construct.
+        This example also shows how to set multiline-templates with \\n sequences and the Bash $'' construct.
         
         ''')
         parser.add_argument('template', nargs='?', default=None, help=description)
