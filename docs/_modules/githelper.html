@@ -137,15 +137,13 @@
 
 <span class="sd">    $ gh b</span>
 <span class="sd">    branch</span>
-<span class="sd">    &lt;/Users/liyanage/Projects/foo&gt;                               0↑ 0↓ master      4c3b6721</span>
-<span class="sd">    &lt;/Users/liyanage/Projects/foo/repositories/LibraryManager&gt;   0↑ 0↓ master      301105f7</span>
-<span class="sd">    &lt;/Users/liyanage/Projects/foo/repositories/Reports *&gt;        0↑ 0↓ master      7ffa7408</span>
-<span class="sd">    &lt;/Users/liyanage/Projects/foo/repositories/analyzer&gt;         0↑ 0↓ feature/xyz c2881596</span>
-<span class="sd">    &lt;/Users/liyanage/Projects/foo/repositories/common l&gt;         0↑ 0↓ master      f0a1ec75</span>
+<span class="sd">    &lt;/Users/liyanage/Projects/foo&gt;                               0↑ 0↓ master      4c3b6721  1h</span>
+<span class="sd">    &lt;/Users/liyanage/Projects/foo/repositories/LibraryManager&gt;   0↑ 0↓ master      301105f7  1h</span>
+<span class="sd">    &lt;/Users/liyanage/Projects/foo/repositories/Reports *&gt;        0↑ 0↓ master      7ffa7408  2h</span>
+<span class="sd">    &lt;/Users/liyanage/Projects/foo/repositories/analyzer&gt;         0↑ 0↓ feature/xyz c2881596  5h</span>
+<span class="sd">    &lt;/Users/liyanage/Projects/foo/repositories/common l&gt;         0↑ 0↓ master      f0a1ec75 34m</span>
 
-<span class="sd">In column order, it lists the path, commits to push, commits to pull, branch name, current commit.</span>
-<span class="sd">You need to run the ``fetch`` subcommand first for the commits to pull/push information to be</span>
-<span class="sd">up to date.</span>
+<span class="sd">See the subcommand&#39;s detailed help for an explanation of the columns.</span>
 
 <span class="sd">Many subcommands, ``fetch`` included, run the ``branch`` subcommand automatically after they finish.</span>
 
@@ -251,6 +249,7 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">getpass</span>
 <span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
 <span class="kn">import</span> <span class="nn">argparse</span>
 <span class="kn">import</span> <span class="nn">textwrap</span>
 <span class="kn">import</span> <span class="nn">StringIO</span>
@@ -567,6 +566,27 @@
 </div>
     <span class="k">def</span> <span class="nf">head_commit_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">([</span><span class="s">&#39;git&#39;</span><span class="p">,</span> <span class="s">&#39;rev-parse&#39;</span><span class="p">,</span> <span class="s">&#39;HEAD&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">][:</span><span class="mi">8</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">head_commit_age</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">head_commit_timestamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">([</span><span class="s">&#39;git&#39;</span><span class="p">,</span> <span class="s">&#39;show&#39;</span><span class="p">,</span> <span class="s">&#39;--format=</span><span class="si">%c</span><span class="s">I&#39;</span><span class="p">,</span> <span class="s">&#39;--no-patch&#39;</span><span class="p">,</span> <span class="s">&#39;HEAD&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">][:</span><span class="mi">19</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">head_commit_timestamp</span><span class="p">,</span> <span class="s">&quot;%Y-%m-</span><span class="si">%d</span><span class="s">T%H:%M:%S&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">head_commit_age_approximate_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">seconds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_commit_age</span><span class="p">()</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+
+        <span class="n">days</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">seconds</span> <span class="o">/</span> <span class="p">(</span><span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">24</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">days</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;{}d&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">days</span><span class="p">)</span>
+
+        <span class="n">hours</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">seconds</span> <span class="o">/</span> <span class="p">(</span><span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">hours</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;{}h&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hours</span><span class="p">)</span>
+        
+        <span class="n">minutes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">seconds</span> <span class="o">/</span> <span class="mi">60</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">minutes</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;{}m&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">minutes</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="s">&#39;{}s&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">seconds</span><span class="p">))</span>
 
 <div class="viewcode-block" id="GitWorkingCopy.current_repository"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.current_repository">[docs]</a>    <span class="k">def</span> <span class="nf">current_repository</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns the name of the current git repository.&quot;&quot;&quot;</span>
@@ -1309,6 +1329,7 @@
         <span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">rjust</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">unicode</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">commits_only_in_upstream</span><span class="p">()))</span> <span class="o">+</span> <span class="s">u&#39;↓&#39;</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">current_branch_has_upstream</span><span class="p">()</span> <span class="k">else</span> <span class="s">&#39;-&#39;</span><span class="p">),</span>
         <span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">ljust</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">current_branch</span><span class="p">()),</span>
         <span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">ljust</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">head_commit_hash</span><span class="p">()),</span>
+        <span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">rjust</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">head_commit_age_approximate_string</span><span class="p">())),</span>
     <span class="p">)</span>
     
     <span class="k">def</span> <span class="nf">column_count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1340,13 +1361,19 @@
 
 <span class="s">                $ gh b</span>
 <span class="s">                branch</span>
-<span class="s">                &lt;/Users/liyanage/Projects/foo&gt;                               0↑ 0↓ master      4c3b6721</span>
-<span class="s">                &lt;/Users/liyanage/Projects/foo/repositories/LibraryManager&gt;   0↑ 0↓ master      301105f7</span>
-<span class="s">                &lt;/Users/liyanage/Projects/foo/repositories/Reports *&gt;        0↑ 0↓ master      7ffa7408</span>
-<span class="s">                &lt;/Users/liyanage/Projects/foo/repositories/analyzer&gt;         0↑ 0↓ feature/xyz c2881596</span>
-<span class="s">                &lt;/Users/liyanage/Projects/foo/repositories/common l&gt;         0↑ 0↓ master      f0a1ec75</span>
+<span class="s">                &lt;/Users/liyanage/Projects/foo&gt;                               0↑ 0↓ master      4c3b6721  1h</span>
+<span class="s">                &lt;/Users/liyanage/Projects/foo/repositories/LibraryManager&gt;   0↑ 0↓ master      301105f7  1h</span>
+<span class="s">                &lt;/Users/liyanage/Projects/foo/repositories/Reports *&gt;        0↑ 0↓ master      7ffa7408  2h</span>
+<span class="s">                &lt;/Users/liyanage/Projects/foo/repositories/analyzer&gt;         0↑ 0↓ feature/xyz c2881596  5h</span>
+<span class="s">                &lt;/Users/liyanage/Projects/foo/repositories/common l&gt;         0↑ 0↓ master      f0a1ec75 34m</span>
 
-<span class="s">            In column order, it lists the path, commits to push, commits to pull, branch name, current commit.</span>
+<span class="s">            In column order, it lists:</span>
+<span class="s">            - the path to the working copy</span>
+<span class="s">            - the number of commits to push</span>
+<span class="s">            - the number of commits to pull</span>
+<span class="s">            - the branch name</span>
+<span class="s">            - the head commit ID</span>
+<span class="s">            - the age of the head commit</span>
 <span class="s">            </span>
 <span class="s">            For the &quot;commits to pull&quot; information to be up to date, you have to run the &quot;fetch&quot; subcommand first.</span>
 <span class="s">            </span>

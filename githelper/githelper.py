@@ -88,15 +88,13 @@ status of each subrepository::
 
     $ gh b
     branch
-    </Users/liyanage/Projects/foo>                               0↑ 0↓ master      4c3b6721
-    </Users/liyanage/Projects/foo/repositories/LibraryManager>   0↑ 0↓ master      301105f7
-    </Users/liyanage/Projects/foo/repositories/Reports *>        0↑ 0↓ master      7ffa7408
-    </Users/liyanage/Projects/foo/repositories/analyzer>         0↑ 0↓ feature/xyz c2881596
-    </Users/liyanage/Projects/foo/repositories/common l>         0↑ 0↓ master      f0a1ec75
+    </Users/liyanage/Projects/foo>                               0↑ 0↓ master      4c3b6721  1h
+    </Users/liyanage/Projects/foo/repositories/LibraryManager>   0↑ 0↓ master      301105f7  1h
+    </Users/liyanage/Projects/foo/repositories/Reports *>        0↑ 0↓ master      7ffa7408  2h
+    </Users/liyanage/Projects/foo/repositories/analyzer>         0↑ 0↓ feature/xyz c2881596  5h
+    </Users/liyanage/Projects/foo/repositories/common l>         0↑ 0↓ master      f0a1ec75 34m
 
-In column order, it lists the path, commits to push, commits to pull, branch name, current commit.
-You need to run the ``fetch`` subcommand first for the commits to pull/push information to be
-up to date.
+See the subcommand's detailed help for an explanation of the columns.
 
 Many subcommands, ``fetch`` included, run the ``branch`` subcommand automatically after they finish.
 
@@ -202,6 +200,7 @@ import string
 import logging
 import getpass
 import tempfile
+import datetime
 import argparse
 import textwrap
 import StringIO
@@ -518,6 +517,27 @@ class GitWorkingCopy(object):
 
     def head_commit_hash(self):
         return self.output_for_git_command(['git', 'rev-parse', 'HEAD'])[0][:8]
+
+    def head_commit_age(self):
+        head_commit_timestamp = self.output_for_git_command(['git', 'show', '--format=%cI', '--no-patch', 'HEAD'])[0][:19]
+        return datetime.datetime.now() - datetime.datetime.strptime(head_commit_timestamp, "%Y-%m-%dT%H:%M:%S")
+
+    def head_commit_age_approximate_string(self):
+        seconds = self.head_commit_age().total_seconds()
+
+        days = int(seconds / (60 * 60 * 24))
+        if days:
+            return '{}d'.format(days)
+
+        hours = int(seconds / (60 * 60))
+        if hours:
+            return '{}h'.format(hours)
+        
+        minutes = int(seconds / 60)
+        if minutes:
+            return '{}m'.format(minutes)
+        
+        return '{}s'.format(int(seconds))
 
     def current_repository(self):
         """Returns the name of the current git repository."""
@@ -1260,6 +1280,7 @@ class SubcommandBranch(AbstractSubcommand):
         (string.rjust, lambda x: unicode(len(x.commits_only_in_upstream())) + u'↓' if x.current_branch_has_upstream() else '-'),
         (string.ljust, lambda x: x.current_branch()),
         (string.ljust, lambda x: x.head_commit_hash()),
+        (string.rjust, lambda x: str(x.head_commit_age_approximate_string())),
     )
     
     def column_count(self):
@@ -1291,13 +1312,19 @@ class SubcommandBranch(AbstractSubcommand):
 
                 $ gh b
                 branch
-                </Users/liyanage/Projects/foo>                               0↑ 0↓ master      4c3b6721
-                </Users/liyanage/Projects/foo/repositories/LibraryManager>   0↑ 0↓ master      301105f7
-                </Users/liyanage/Projects/foo/repositories/Reports *>        0↑ 0↓ master      7ffa7408
-                </Users/liyanage/Projects/foo/repositories/analyzer>         0↑ 0↓ feature/xyz c2881596
-                </Users/liyanage/Projects/foo/repositories/common l>         0↑ 0↓ master      f0a1ec75
+                </Users/liyanage/Projects/foo>                               0↑ 0↓ master      4c3b6721  1h
+                </Users/liyanage/Projects/foo/repositories/LibraryManager>   0↑ 0↓ master      301105f7  1h
+                </Users/liyanage/Projects/foo/repositories/Reports *>        0↑ 0↓ master      7ffa7408  2h
+                </Users/liyanage/Projects/foo/repositories/analyzer>         0↑ 0↓ feature/xyz c2881596  5h
+                </Users/liyanage/Projects/foo/repositories/common l>         0↑ 0↓ master      f0a1ec75 34m
 
-            In column order, it lists the path, commits to push, commits to pull, branch name, current commit.
+            In column order, it lists:
+            - the path to the working copy
+            - the number of commits to push
+            - the number of commits to pull
+            - the branch name
+            - the head commit ID
+            - the age of the head commit
             
             For the "commits to pull" information to be up to date, you have to run the "fetch" subcommand first.
             
