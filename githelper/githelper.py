@@ -956,7 +956,7 @@ class SubcommandTree(AbstractSubcommand):
 
 
 class SubcommandStatus(AbstractSubcommand):
-    """Run git status in each working copy"""
+    """Run git status recursively, omitting output for any working copies without interesting status."""
 
     def __call__(self, wc):
         rules = (
@@ -968,7 +968,7 @@ class SubcommandStatus(AbstractSubcommand):
 
 
 class SubcommandCopyHeadCommitHash(AbstractSubcommand):
-    """Copy repository / branch / head hash to clipboard"""
+    """Copy repository / branch / head hash to clipboard, optionally with a custom template"""
 
     def __call__(self, wc):
         template_name = self.args.template
@@ -1246,7 +1246,7 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
 
 
 class SubcommandPull(WorkingCopyTreeStashingSubcommand):
-    """Check out a given branch if it exists"""
+    """Run git pull recursively, optionally stashing and unstashing uncommitted changes automatically."""
 
     def __call__(self, wc):
         stash_commit = None
@@ -1332,7 +1332,7 @@ class SubcommandBranch(AbstractSubcommand):
 
 
 class SubcommandFetch(AbstractSubcommand):
-    """Run git fetch"""
+    """Run git fetch recursively"""
 
     def __call__(self, wc):
         wc.run_shell_command('git fetch')
