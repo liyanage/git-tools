@@ -519,8 +519,8 @@ class GitWorkingCopy(object):
         return self.output_for_git_command(['git', 'rev-parse', 'HEAD'])[0][:8]
 
     def head_commit_age(self):
-        head_commit_timestamp = self.output_for_git_command(['git', 'show', '--format=%cI', '--no-patch', 'HEAD'])[0][:19]
-        return datetime.datetime.now() - datetime.datetime.strptime(head_commit_timestamp, "%Y-%m-%dT%H:%M:%S")
+        head_commit_timestamp = self.output_for_git_command(['git', 'show', '--format=%ct', '--no-patch', 'HEAD'])[0]
+        return datetime.datetime.now() - datetime.datetime.fromtimestamp(int(head_commit_timestamp))
 
     def head_commit_age_approximate_string(self):
         seconds = self.head_commit_age().total_seconds()
