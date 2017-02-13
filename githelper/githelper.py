@@ -506,8 +506,15 @@ class GitWorkingCopy(object):
             flags += '*'
         if flags:
             flags = ' ' + flags
-
-        return '<{0}{1}>'.format(self.path, flags)
+        
+        return '<{0}{1}>'.format(self.root_relative_path(), flags)
+    
+    def root_relative_path(self):
+        if self.is_root():
+            return os.path.basename(self.path)
+        else:
+            root_prefix = os.path.dirname(self.root_working_copy().path)
+            return self.path[len(root_prefix) + 1:]
 
     def current_branch(self):
         """Returns the name of the current git branch."""
