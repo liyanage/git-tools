@@ -1174,11 +1174,13 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
                 break
             
         if not target_branch:
-            print >> sys.stderr, 'No branch found matching any of "{0}" in {1}, staying on "{2}"'.format(', '.join(target_branch_candidates), wc, current_branch)
+            if len(target_branch_candidates) == 1:
+                print >> sys.stderr, 'No branch found matching "{0}" in {1}, staying on "{2}"'.format(target_branch_candidates[0], wc, current_branch)
+            else:
+                print >> sys.stderr, 'No branch found matching any of "{0}" in {1}, staying on "{2}"'.format(', '.join(target_branch_candidates), wc, current_branch)
             return
 
         if current_branch == target_branch:
-            print >> sys.stderr, '{0} is already on branch "{1}"'.format(wc, target_branch)
             return
 
         print ANSIColor.wrap(wc, color=ANSIColor.green)
@@ -1189,6 +1191,8 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
         try:
             rules = [
                 ('-', r'use "git pull"'),
+                ('-', r'Switched to branch'),
+                ('-', r'is up-to-date'),
             ]
             wc.run_shell_command('git checkout {0}'.format(target_branch), filter_rules=rules)
         finally:
@@ -1268,6 +1272,7 @@ class SubcommandPull(WorkingCopyTreeStashingSubcommand):
         try:
             rules = [
                 ('-', r'Rebasing'),
+                ('-', r'Successfully rebased'),
             ]
             wc.run_shell_command('git pull', filter_rules=rules)
         finally:
