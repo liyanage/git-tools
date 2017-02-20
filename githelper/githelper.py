@@ -195,6 +195,7 @@ import re
 import imp
 import sys
 import types
+import pickle
 import select
 import string
 import logging
@@ -522,6 +523,14 @@ class GitWorkingCopy(object):
         [branch] = [i[2:] for i in output if i.startswith('* ')]
         return branch
 
+    def tags_pointing_at(self, commit_reference):
+        """Returns a list of tags that point to the given commit"""
+        return self.output_for_git_command(['git', 'tag', '-l', '--points-at', commit_reference])
+
+    def tags_pointing_at_head_commit(self):
+        """Returns a list of tags that point to the head commit"""
+        return self.tags_pointing_at(self.head_commit_hash())
+
     def head_commit_hash(self):
         return self.output_for_git_command(['git', 'rev-parse', 'HEAD'])[0][:8]
 
@@ -746,20 +755,46 @@ class GitWorkingCopy(object):
 
     def children(self):
         if self.child_list is None:
-            self.child_list = []
-            for (dirpath, dirnames, filenames) in os.walk(self.path, followlinks=True):
-                if dirpath == self.path:
-                    continue
+            self.child_list = self.cached_child_list()
+            if self.child_list is None:
+                self.child_list = []
+                for (dirpath, dirnames, filenames) in os.walk(self.path, followlinks=True):
+                    if dirpath == self.path:
+                        continue
 
-                if not '.git' in dirnames:
-                    continue
+                    if not '.git' in dirnames:
+                        continue
 
-                del dirnames[:]
+                    del dirnames[:]
 
-                wc = GitWorkingCopy(dirpath, parent=self)
-                self.child_list.append(wc)
-
+                    wc = GitWorkingCopy(dirpath, parent=self)
+                    self.child_list.append(wc)
+                self.store_cached_child_list(self.child_list)
         return self.child_list
+
+    def cached_child_list(self):
+        cache_file_path = os.path.join(self.githelper_config_directory(), 'cached_child_list')
+        if os.path.exists(cache_file_path):
+            age = datetime.datetime.now() - datetime.datetime.fromtimestamp(os.stat(cache_file_path).st_mtime)
+            if age.total_seconds() > 24 * 60 * 60:
+                return None
+            with open(cache_file_path) as f:
+                return [GitWorkingCopy(dirpath, parent=self) for dirpath in pickle.load(f)]
+
+    def store_cached_child_list(self, child_list):
+        cache_file_path = os.path.join(self.githelper_config_directory(should_create=True), 'cached_child_list')
+        with open(cache_file_path, 'w') as f:
+            pickle.dump([wc.path for wc in child_list], f)
+    
+    def githelper_config_directory(self, should_create=False):
+        config_directory_path = os.path.join(self.git_directory(), 'githelper')
+        if should_create and not os.path.exists(config_directory_path):
+            os.mkdir(config_directory_path)
+        return config_directory_path
+    
+    def git_directory(self):
+        with self.chdir_to_path():
+            return os.path.abspath(self.output_for_git_command('git rev-parse --git-dir'.split())[0])
 
     def __iter__(self):
         """
@@ -989,7 +1024,7 @@ class SubcommandCopyHeadCommitHash(AbstractSubcommand):
             config_variable = 'githelper.copy-template'
             output = wc.output_for_git_command(['git', 'config', config_variable])
             if not output:
-                output = ['{repository} {branch} {commit}']
+                output = ['{repository} {branch} {commit} {tags}']
 
         output = self.interpolate_data_into_template_lines(wc, output)
         output_string = ''.join([l + '\n' for l in output])
@@ -1001,7 +1036,10 @@ class SubcommandCopyHeadCommitHash(AbstractSubcommand):
 
     def interpolate_data_into_template_lines(self, wc, template_lines):
         repository, branch, commit = wc.current_repository(), wc.current_branch(), wc.head_commit_hash()
-        data = dict(zip('repository branch commit'.split(), (repository, branch, commit)))
+        tags = ['tags/' + t for t in wc.tags_pointing_at_head_commit()]
+        if tags:
+            tags = '(' + ', '.join(tags) + ')'
+        data = dict(zip('repository branch commit tags'.split(), (repository, branch, commit, tags)))
         output = []
         for line in template_lines:
             for key, value in data.items():
@@ -1023,10 +1061,11 @@ class SubcommandCopyHeadCommitHash(AbstractSubcommand):
             {repository}      The last path element of the current repository's remote URL,
                               without any file extensions such as ".git"
             {commit}          The head commit ID, abbreviated
+            {tags}            a comma-separated, parenthesized list of tags that point to the head commit
 
         If you don't select a template with this option, the default template is used:
 
-            "{repository} {branch} {commit}"
+            "{repository} {branch} {commit} {tags}"
         
         You store a custom template with git config. To change the default, unnamed one:
         

@@ -244,6 +244,7 @@
 <span class="kn">import</span> <span class="nn">imp</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
 <span class="kn">import</span> <span class="nn">select</span>
 <span class="kn">import</span> <span class="nn">string</span>
 <span class="kn">import</span> <span class="nn">logging</span>
@@ -555,8 +556,15 @@
             <span class="n">flags</span> <span class="o">+=</span> <span class="s">&#39;*&#39;</span>
         <span class="k">if</span> <span class="n">flags</span><span class="p">:</span>
             <span class="n">flags</span> <span class="o">=</span> <span class="s">&#39; &#39;</span> <span class="o">+</span> <span class="n">flags</span>
-
-        <span class="k">return</span> <span class="s">&#39;&lt;{0}{1}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="s">&#39;&lt;{0}{1}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root_relative_path</span><span class="p">(),</span> <span class="n">flags</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">root_relative_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_root</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">root_prefix</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root_working_copy</span><span class="p">()</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">root_prefix</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span>
 
 <div class="viewcode-block" id="GitWorkingCopy.current_branch"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.current_branch">[docs]</a>    <span class="k">def</span> <span class="nf">current_branch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns the name of the current git branch.&quot;&quot;&quot;</span>
@@ -564,12 +572,20 @@
         <span class="p">[</span><span class="n">branch</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;* &#39;</span><span class="p">)]</span>
         <span class="k">return</span> <span class="n">branch</span>
 </div>
+<div class="viewcode-block" id="GitWorkingCopy.tags_pointing_at"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.tags_pointing_at">[docs]</a>    <span class="k">def</span> <span class="nf">tags_pointing_at</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">commit_reference</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a list of tags that point to the given commit&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">([</span><span class="s">&#39;git&#39;</span><span class="p">,</span> <span class="s">&#39;tag&#39;</span><span class="p">,</span> <span class="s">&#39;-l&#39;</span><span class="p">,</span> <span class="s">&#39;--points-at&#39;</span><span class="p">,</span> <span class="n">commit_reference</span><span class="p">])</span>
+</div>
+<div class="viewcode-block" id="GitWorkingCopy.tags_pointing_at_head_commit"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.tags_pointing_at_head_commit">[docs]</a>    <span class="k">def</span> <span class="nf">tags_pointing_at_head_commit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a list of tags that point to the head commit&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tags_pointing_at</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">head_commit_hash</span><span class="p">())</span>
+</div>
     <span class="k">def</span> <span class="nf">head_commit_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">([</span><span class="s">&#39;git&#39;</span><span class="p">,</span> <span class="s">&#39;rev-parse&#39;</span><span class="p">,</span> <span class="s">&#39;HEAD&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">][:</span><span class="mi">8</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">head_commit_age</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">head_commit_timestamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">([</span><span class="s">&#39;git&#39;</span><span class="p">,</span> <span class="s">&#39;show&#39;</span><span class="p">,</span> <span class="s">&#39;--format=</span><span class="si">%c</span><span class="s">I&#39;</span><span class="p">,</span> <span class="s">&#39;--no-patch&#39;</span><span class="p">,</span> <span class="s">&#39;HEAD&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">][:</span><span class="mi">19</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">head_commit_timestamp</span><span class="p">,</span> <span class="s">&quot;%Y-%m-</span><span class="si">%d</span><span class="s">T%H:%M:%S&quot;</span><span class="p">)</span>
+        <span class="n">head_commit_timestamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">([</span><span class="s">&#39;git&#39;</span><span class="p">,</span> <span class="s">&#39;show&#39;</span><span class="p">,</span> <span class="s">&#39;--format=</span><span class="si">%c</span><span class="s">t&#39;</span><span class="p">,</span> <span class="s">&#39;--no-patch&#39;</span><span class="p">,</span> <span class="s">&#39;HEAD&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">head_commit_timestamp</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">head_commit_age_approximate_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">seconds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_commit_age</span><span class="p">()</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
@@ -788,20 +804,46 @@
 
     <span class="k">def</span> <span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">child_list</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">child_list</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="p">(</span><span class="n">dirpath</span><span class="p">,</span> <span class="n">dirnames</span><span class="p">,</span> <span class="n">filenames</span><span class="p">)</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">followlinks</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">dirpath</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
-                    <span class="k">continue</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">child_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cached_child_list</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">child_list</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">child_list</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="p">(</span><span class="n">dirpath</span><span class="p">,</span> <span class="n">dirnames</span><span class="p">,</span> <span class="n">filenames</span><span class="p">)</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">followlinks</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">dirpath</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
+                        <span class="k">continue</span>
 
-                <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;.git&#39;</span> <span class="ow">in</span> <span class="n">dirnames</span><span class="p">:</span>
-                    <span class="k">continue</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;.git&#39;</span> <span class="ow">in</span> <span class="n">dirnames</span><span class="p">:</span>
+                        <span class="k">continue</span>
 
-                <span class="k">del</span> <span class="n">dirnames</span><span class="p">[:]</span>
+                    <span class="k">del</span> <span class="n">dirnames</span><span class="p">[:]</span>
 
-                <span class="n">wc</span> <span class="o">=</span> <span class="n">GitWorkingCopy</span><span class="p">(</span><span class="n">dirpath</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">child_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wc</span><span class="p">)</span>
-
+                    <span class="n">wc</span> <span class="o">=</span> <span class="n">GitWorkingCopy</span><span class="p">(</span><span class="n">dirpath</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">child_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wc</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">store_cached_child_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child_list</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">child_list</span>
+
+    <span class="k">def</span> <span class="nf">cached_child_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">cache_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">githelper_config_directory</span><span class="p">(),</span> <span class="s">&#39;cached_child_list&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cache_file_path</span><span class="p">):</span>
+            <span class="n">age</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">cache_file_path</span><span class="p">)</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">age</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">None</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">cache_file_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[</span><span class="n">GitWorkingCopy</span><span class="p">(</span><span class="n">dirpath</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span> <span class="k">for</span> <span class="n">dirpath</span> <span class="ow">in</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)]</span>
+
+    <span class="k">def</span> <span class="nf">store_cached_child_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child_list</span><span class="p">):</span>
+        <span class="n">cache_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">githelper_config_directory</span><span class="p">(</span><span class="n">should_create</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span> <span class="s">&#39;cached_child_list&#39;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">cache_file_path</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">([</span><span class="n">wc</span><span class="o">.</span><span class="n">path</span> <span class="k">for</span> <span class="n">wc</span> <span class="ow">in</span> <span class="n">child_list</span><span class="p">],</span> <span class="n">f</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">githelper_config_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">should_create</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="n">config_directory_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">git_directory</span><span class="p">(),</span> <span class="s">&#39;githelper&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">should_create</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">config_directory_path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">config_directory_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">config_directory_path</span>
+    
+    <span class="k">def</span> <span class="nf">git_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">chdir_to_path</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="s">&#39;git rev-parse --git-dir&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span>
 
 <div class="viewcode-block" id="GitWorkingCopy.__iter__"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.__iter__">[docs]</a>    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1005,7 +1047,7 @@
 
 
 <span class="k">class</span> <span class="nc">SubcommandStatus</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Run git status in each working copy&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Run git status recursively, omitting output for any working copies without interesting status.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
         <span class="n">rules</span> <span class="o">=</span> <span class="p">(</span>
@@ -1017,7 +1059,7 @@
 
 
 <span class="k">class</span> <span class="nc">SubcommandCopyHeadCommitHash</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Copy repository / branch / head hash to clipboard&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Copy repository / branch / head hash to clipboard, optionally with a custom template&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
         <span class="n">template_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">template</span>
@@ -1031,7 +1073,7 @@
             <span class="n">config_variable</span> <span class="o">=</span> <span class="s">&#39;githelper.copy-template&#39;</span>
             <span class="n">output</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">([</span><span class="s">&#39;git&#39;</span><span class="p">,</span> <span class="s">&#39;config&#39;</span><span class="p">,</span> <span class="n">config_variable</span><span class="p">])</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="p">:</span>
-                <span class="n">output</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;{repository} {branch} {commit}&#39;</span><span class="p">]</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;{repository} {branch} {commit} {tags}&#39;</span><span class="p">]</span>
 
         <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolate_data_into_template_lines</span><span class="p">(</span><span class="n">wc</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
         <span class="n">output_string</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">l</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">output</span><span class="p">])</span>
@@ -1043,7 +1085,10 @@
 
     <span class="k">def</span> <span class="nf">interpolate_data_into_template_lines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">,</span> <span class="n">template_lines</span><span class="p">):</span>
         <span class="n">repository</span><span class="p">,</span> <span class="n">branch</span><span class="p">,</span> <span class="n">commit</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">current_repository</span><span class="p">(),</span> <span class="n">wc</span><span class="o">.</span><span class="n">current_branch</span><span class="p">(),</span> <span class="n">wc</span><span class="o">.</span><span class="n">head_commit_hash</span><span class="p">()</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="s">&#39;repository branch commit&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">(),</span> <span class="p">(</span><span class="n">repository</span><span class="p">,</span> <span class="n">branch</span><span class="p">,</span> <span class="n">commit</span><span class="p">)))</span>
+        <span class="n">tags</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;tags/&#39;</span> <span class="o">+</span> <span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">wc</span><span class="o">.</span><span class="n">tags_pointing_at_head_commit</span><span class="p">()]</span>
+        <span class="k">if</span> <span class="n">tags</span><span class="p">:</span>
+            <span class="n">tags</span> <span class="o">=</span> <span class="s">&#39;(&#39;</span> <span class="o">+</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;)&#39;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="s">&#39;repository branch commit tags&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">(),</span> <span class="p">(</span><span class="n">repository</span><span class="p">,</span> <span class="n">branch</span><span class="p">,</span> <span class="n">commit</span><span class="p">,</span> <span class="n">tags</span><span class="p">)))</span>
         <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">template_lines</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -1065,10 +1110,11 @@
 <span class="s">            {repository}      The last path element of the current repository&#39;s remote URL,</span>
 <span class="s">                              without any file extensions such as &quot;.git&quot;</span>
 <span class="s">            {commit}          The head commit ID, abbreviated</span>
+<span class="s">            {tags}            a comma-separated, parenthesized list of tags that point to the head commit</span>
 
 <span class="s">        If you don&#39;t select a template with this option, the default template is used:</span>
 
-<span class="s">            &quot;{repository} {branch} {commit}&quot;</span>
+<span class="s">            &quot;{repository} {branch} {commit} {tags}&quot;</span>
 <span class="s">        </span>
 <span class="s">        You store a custom template with git config. To change the default, unnamed one:</span>
 <span class="s">        </span>
@@ -1216,11 +1262,13 @@
                 <span class="k">break</span>
             
         <span class="k">if</span> <span class="ow">not</span> <span class="n">target_branch</span><span class="p">:</span>
-            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;No branch found matching any of &quot;{0}&quot; in {1}, staying on &quot;{2}&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">target_branch_candidates</span><span class="p">),</span> <span class="n">wc</span><span class="p">,</span> <span class="n">current_branch</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_branch_candidates</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;No branch found matching &quot;{0}&quot; in {1}, staying on &quot;{2}&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">target_branch_candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">wc</span><span class="p">,</span> <span class="n">current_branch</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;No branch found matching any of &quot;{0}&quot; in {1}, staying on &quot;{2}&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">target_branch_candidates</span><span class="p">),</span> <span class="n">wc</span><span class="p">,</span> <span class="n">current_branch</span><span class="p">)</span>
             <span class="k">return</span>
 
         <span class="k">if</span> <span class="n">current_branch</span> <span class="o">==</span> <span class="n">target_branch</span><span class="p">:</span>
-            <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;{0} is already on branch &quot;{1}&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wc</span><span class="p">,</span> <span class="n">target_branch</span><span class="p">)</span>
             <span class="k">return</span>
 
         <span class="k">print</span> <span class="n">ANSIColor</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">wc</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ANSIColor</span><span class="o">.</span><span class="n">green</span><span class="p">)</span>
@@ -1231,6 +1279,8 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="n">rules</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="p">(</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="s">r&#39;use &quot;git pull&quot;&#39;</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="s">r&#39;Switched to branch&#39;</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="s">r&#39;is up-to-date&#39;</span><span class="p">),</span>
             <span class="p">]</span>
             <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="s">&#39;git checkout {0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">target_branch</span><span class="p">),</span> <span class="n">filter_rules</span><span class="o">=</span><span class="n">rules</span><span class="p">)</span>
         <span class="k">finally</span><span class="p">:</span>
@@ -1295,7 +1345,7 @@
 
 
 <span class="k">class</span> <span class="nc">SubcommandPull</span><span class="p">(</span><span class="n">WorkingCopyTreeStashingSubcommand</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Check out a given branch if it exists&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Run git pull recursively, optionally stashing and unstashing uncommitted changes automatically.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
         <span class="n">stash_commit</span> <span class="o">=</span> <span class="bp">None</span>
@@ -1310,6 +1360,7 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="n">rules</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="p">(</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="s">r&#39;Rebasing&#39;</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="s">r&#39;Successfully rebased&#39;</span><span class="p">),</span>
             <span class="p">]</span>
             <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="s">&#39;git pull&#39;</span><span class="p">,</span> <span class="n">filter_rules</span><span class="o">=</span><span class="n">rules</span><span class="p">)</span>
         <span class="k">finally</span><span class="p">:</span>
@@ -1381,7 +1432,7 @@
 
 
 <span class="k">class</span> <span class="nc">SubcommandFetch</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Run git fetch&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Run git fetch recursively&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
         <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="s">&#39;git fetch&#39;</span><span class="p">)</span>
