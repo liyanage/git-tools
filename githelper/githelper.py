@@ -1039,13 +1039,15 @@ class SubcommandCopyHeadCommitHash(AbstractSubcommand):
         tags = ['tags/' + t for t in wc.tags_pointing_at_head_commit()]
         if tags:
             tags = '(' + ', '.join(tags) + ')'
+        else:
+            tags = None
         data = dict(zip('repository branch commit tags'.split(), (repository, branch, commit, tags)))
         output = []
         for line in template_lines:
             for key, value in data.items():
                 token = '{' + key + '}'
                 if token in line:
-                    line = line.replace(token, value)
+                    line = line.replace(token, value if value else '')
             output.append(line)
         return output
 
@@ -1125,6 +1127,7 @@ class SubcommandCheckoutBugfixBranch(AbstractSubcommand):
 
         return GitWorkingCopy.STOP_TRAVERSAL
 
+
 class SubcommandDropBugfixBranch(AbstractSubcommand):
     """Delete a bugfix branch locally and remotely. The branch must be prefixed with "user/" """
 
@@ -1134,18 +1137,22 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
         current_branch_ref = output[0]
         if not local_branch_ref:
             local_branch_ref = current_branch_ref
-            
-        if not local_branch_ref.startswith('user/'):
-            print >> sys.stderr, 'Branch name does not start with "user/", please delete manually'
-            return GitWorkingCopy.STOP_TRAVERSAL
 
+        if self.args.template:
+            self.print_manual_help('Git commands template', ['remote_name'], 'branch_name')
+            return GitWorkingCopy.STOP_TRAVERSAL
+            
         remote_names = wc.output_for_git_command('git remote'.split())
         if len(remote_names) > 1:
-            print >> sys.stderr, 'More or less than one remote: "{}", please delete manually'.format(', '.join(remote_names))
+            self.print_manual_help('More than one remote: "{}", please delete manually'.format(', '.join(remote_names)), remote_names, local_branch_ref)
             return GitWorkingCopy.STOP_TRAVERSAL
         remote_name = None 
         if remote_names:
             remote_name = remote_names[0]
+
+        if not local_branch_ref.startswith('user/'):
+            self.print_manual_help('Branch name does not start with "user/"', remote_names, local_branch_ref)
+            return GitWorkingCopy.STOP_TRAVERSAL
 
         remote_branch_ref = None
         if remote_name:
@@ -1153,7 +1160,7 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
             if output:
                 remote_branch_ref = output[0][len(remote_name) + 1:]
                 if not remote_branch_ref.startswith('user/'):
-                    print >> sys.stderr, 'Remote branch name does not start with "user/", please delete manually'
+                    self.print_manual_help('Remote branch name does not start with "user/", please delete manually', remote_names, local_branch_ref)
                     return GitWorkingCopy.STOP_TRAVERSAL
             else:
                 print >> sys.stderr, 'No upstream branch configured, will delete only local branch'
@@ -1168,7 +1175,7 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
         if current_branch_ref == local_branch_ref:
             output = wc.output_for_git_command('git rev-parse --abbrev-ref --symbolic-full-name @{-1}'.split())
             if not output:
-                print >> sys.stderr, 'Current branch is branch to be deleted, but previous branch is unknown, please delete manually'
+                self.print_manual_help('Current branch is branch to be deleted, but previous branch is unknown, please delete manually', remote_names, local_branch_ref)
                 return GitWorkingCopy.STOP_TRAVERSAL
             wc.run_shell_command('git checkout @{-1}'.split())
 
@@ -1177,11 +1184,22 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
             wc.run_shell_command('git push -d'.split() + [remote_name, remote_branch_ref])
 
         return GitWorkingCopy.STOP_TRAVERSAL
-
+    
+    def print_manual_help(self, reason, remotes=None, branch='<branch-name>'):
+        print >> sys.stderr, reason + ', please delete manually:'
+        print >> sys.stderr, 'git branch -D {}'.format(branch)
+        if remotes:
+            if len(remotes) > 1:
+                remotes = '(' + '|'.join(remotes), + ')'
+            else:
+                remotes = remotes[0]
+            print >> sys.stderr, 'git push -d {} {}'.format(remotes, branch)
+        
     @classmethod
     def configure_argument_parser(cls, parser):
         parser.add_argument('branch', nargs='?', default=None, help='The name of the branch that should be deleted, defaults to the currently checked out branch')
         parser.add_argument('-n', '--no-prompt', action='store_true', help="Don't prompt for confirmation")
+        parser.add_argument('-t', '--template', action='store_true', help='Just print the git command template')
 
 
 class WorkingCopyTreeStashingSubcommand(AbstractSubcommand):
