@@ -659,7 +659,11 @@ class GitWorkingCopy(object):
     def is_root(self):
         """Returns True if the receiver does not have a parent working copy."""
         return self.parent is None
-
+    
+    def has_autostash_enabled(self):
+        output = self.output_for_git_command('git config rebase.autoStash'.split())
+        return output and output[0] == 'true'
+        
     def ancestors(self):
         """
         Returns a list of parent working copies.
@@ -773,11 +777,14 @@ class GitWorkingCopy(object):
         return self.child_list
 
     def cached_child_list(self):
+        if not self.is_root():
+            return None
         cache_file_path = os.path.join(self.githelper_config_directory(), 'cached_child_list')
         if os.path.exists(cache_file_path):
             age = datetime.datetime.now() - datetime.datetime.fromtimestamp(os.stat(cache_file_path).st_mtime)
             if age.total_seconds() > 24 * 60 * 60:
                 return None
+            print 'Using cached subrepository list from {}'.format(cache_file_path)
             with open(cache_file_path) as f:
                 return [GitWorkingCopy(dirpath, parent=self) for dirpath in pickle.load(f)]
 
@@ -1206,8 +1213,14 @@ class WorkingCopyTreeStashingSubcommand(AbstractSubcommand):
 
     def prepare_for_root(self, root_wc):
         dirty_working_copies = root_wc.self_or_descendants_dirty_working_copies()
-        if dirty_working_copies and not self.args.stash_pop:
-            print >> sys.stderr, ANSIColor.wrap('Dirty working copies found, please commit or stash first, or use the -s/--stash-pop option\n', color=ANSIColor.red)
+        if dirty_working_copies:
+            if self.args.stash_pop:
+                return
+            dirty_wcs_without_autostash = [wc for wc in dirty_working_copies if not wc.has_autostash_enabled()]
+            if not dirty_wcs_without_autostash:
+                print >> sys.stderr, 'Proceeding with dirty working copies because rebase.autoStash is set\n'
+                return
+            print >> sys.stderr, ANSIColor.wrap('Dirty working copies found, please either 1.) commit or stash first, 2.) use git\'s rebase.autoStash configuration option, or 3.) use the -s/--stash-pop option\n', color=ANSIColor.red)
             self.format_and_print_dirty_working_copy_list(dirty_working_copies)
             return GitWorkingCopy.STOP_TRAVERSAL
     
@@ -1319,7 +1332,7 @@ class SubcommandPull(WorkingCopyTreeStashingSubcommand):
     def __call__(self, wc):
         stash_commit = None
         print ANSIColor.wrap(wc, color=ANSIColor.green)
-        if wc.is_dirty():
+        if wc.is_dirty() and not wc.has_autostash_enabled():
             stash_commit = wc.create_stash_and_reset_hard()
 
         if not wc.current_branch_has_upstream():
