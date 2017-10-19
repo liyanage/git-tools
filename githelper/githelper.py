@@ -490,10 +490,13 @@ class GitWorkingCopy(object):
     STOP_TRAVERSAL = False
     """returned from a :py:meth:`~AbstractSubcommand.__call__` implementation to stop further recursion by :py:meth:`traverse`."""
 
-    def __init__(self, path, parent=None):
+    DID_LOG_ABOUT_CACHED_CHILD_LIST = False
+
+    def __init__(self, path, parent=None, verbose=False):
         self.path = os.path.abspath(path)
         self.parent = parent
         self.child_list = None
+        self.verbose = verbose
 
         status = subprocess.call('git status 1>/dev/null 2>/dev/null', shell=True, cwd=self.path)
         if status:
@@ -771,7 +774,7 @@ class GitWorkingCopy(object):
 
                     del dirnames[:]
 
-                    wc = GitWorkingCopy(dirpath, parent=self)
+                    wc = GitWorkingCopy(dirpath, parent=self, verbose=self.verbose)
                     self.child_list.append(wc)
                 self.store_cached_child_list(self.child_list)
         return self.child_list
@@ -784,9 +787,17 @@ class GitWorkingCopy(object):
             age = datetime.datetime.now() - datetime.datetime.fromtimestamp(os.stat(cache_file_path).st_mtime)
             if age.total_seconds() > 24 * 60 * 60:
                 return None
-            print 'Using cached subrepository list from {}'.format(cache_file_path)
+            if self.verbose:
+                self.print_cache_message(cache_file_path)
             with open(cache_file_path) as f:
-                return [GitWorkingCopy(dirpath, parent=self) for dirpath in pickle.load(f)]
+                return [GitWorkingCopy(dirpath, parent=self, verbose=self.verbose) for dirpath in pickle.load(f)]
+
+    @classmethod
+    def print_cache_message(cls, cache_file_path):
+        if cls.DID_LOG_ABOUT_CACHED_CHILD_LIST:
+            return
+        cls.DID_LOG_ABOUT_CACHED_CHILD_LIST = True
+        print 'Using cached subrepository list from {}'.format(cache_file_path)
 
     def store_cached_child_list(self, child_list):
         cache_file_path = os.path.join(self.githelper_config_directory(should_create=True), 'cached_child_list')
@@ -1167,7 +1178,7 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
             if output:
                 remote_branch_ref = output[0][len(remote_name) + 1:]
                 if not remote_branch_ref.startswith('user/'):
-                    self.print_manual_help('Remote branch name does not start with "user/", please delete manually', remote_names, local_branch_ref)
+                    self.print_manual_help('Remote branch name "{}" does not start with "user/", please delete manually'.format(remote_branch_ref), remote_names, local_branch_ref)
                     return GitWorkingCopy.STOP_TRAVERSAL
             else:
                 print >> sys.stderr, 'No upstream branch configured, will delete only local branch'
@@ -1263,6 +1274,7 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
                 ('-', r'use "git pull"'),
                 ('-', r'Switched to branch'),
                 ('-', r'is up-to-date'),
+                ('-', r'Your branch is behind'),
             ]
             wc.run_shell_command('git checkout {0}'.format(target_branch), filter_rules=rules)
         finally:
@@ -1292,7 +1304,7 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
                 return TargetBranchResult(local_branch_candidates[0], False, False)
 
         def find_remote_substring_match():
-            if remote_branch_candidates in remote_branch_candidates:
+            if target_branch_candidate in remote_branch_candidates:
                 remote_branch_candidates.remove(target_branch_candidate) # remove exact remote match whose checkout user must have declined
             count = len(remote_branch_candidates)
             if count > 1:
@@ -1511,7 +1523,7 @@ class GitHelperCommandLineDriver(object):
     
         parser = argparse.ArgumentParser(description='Git helper')
         parser.add_argument('--root_path', help='Path to root working copy', default=os.getcwd())
-        parser.add_argument('--verbose', action='store_true', help='Enable verbose debug logging')
+        parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose debug logging')
         subparsers = parser.add_subparsers(title='Subcommands', dest='subcommand_name')
         for subcommand_name, subcommand_class in subcommand_map.items():
             subparser = subparsers.add_parser(subcommand_name, help=subcommand_class.__doc__)
@@ -1519,14 +1531,14 @@ class GitHelperCommandLineDriver(object):
 
         args = parser.parse_args()
         if args.verbose:
-            logging.basicConfig(level=logging.DEBUG)
+            logging.basicConfig(level=logging.INFO)
 
         subcommand_class = subcommand_map[args.subcommand_name]
         subcommand = subcommand_class(args)
 
         if subcommand_class.wants_working_copy():
             while subcommand:
-                wc = GitWorkingCopy(args.root_path)
+                wc = GitWorkingCopy(args.root_path, verbose=args.verbose)
                 wc.traverse(subcommand)
                 subcommand = subcommand.chained_post_traversal_subcommand_for_root_working_copy(wc)
         else:

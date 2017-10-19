@@ -1,32 +1,31 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>Welcome to githelper’s documentation! &mdash; githelper 1.0 documentation</title>
-    
-    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <title>Welcome to githelper’s documentation! &#8212; githelper 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
         VERSION:     '1.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="githelper 1.0 documentation" href="#" /> 
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
   </head>
   <body>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -35,17 +34,17 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="#">githelper 1.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="#">githelper 1.0 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="module-githelper">
-<span id="welcome-to-githelper-s-documentation"></span><h1>Welcome to githelper&#8217;s documentation!<a class="headerlink" href="#module-githelper" title="Permalink to this headline">¶</a></h1>
+<span id="welcome-to-githelper-s-documentation"></span><h1>Welcome to githelper’s documentation!<a class="headerlink" href="#module-githelper" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
 <p>Githelper is both a module and a command line utility for working with <a class="reference external" href="http://git-scm.com">git</a> working copies.</p>
@@ -55,8 +54,8 @@
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <p>You can install githelper directly from github like this:</p>
-<div class="highlight-python"><div class="highlight"><pre>sudo curl -o /usr/local/bin/githelper.py -L https://github.com/liyanage/git-tools/raw/master/githelper/githelper.py
-sudo chmod 755 /usr/local/bin/githelper.py
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">curl</span> <span class="o">-</span><span class="n">o</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">githelper</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">L</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">liyanage</span><span class="o">/</span><span class="n">git</span><span class="o">-</span><span class="n">tools</span><span class="o">/</span><span class="n">raw</span><span class="o">/</span><span class="n">master</span><span class="o">/</span><span class="n">githelper</span><span class="o">/</span><span class="n">githelper</span><span class="o">.</span><span class="n">py</span>
+<span class="n">sudo</span> <span class="n">chmod</span> <span class="mi">755</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">githelper</span><span class="o">.</span><span class="n">py</span>
 </pre></div>
 </div>
 </div>
@@ -64,13 +63,13 @@ sudo chmod 755 /usr/local/bin/githelper.py
 <h2>Command Line Utility<a class="headerlink" href="#command-line-utility" title="Permalink to this headline">¶</a></h2>
 <p>This documentation does not cover the command line utility usage
 in detail because you can get that with the help option:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">githelper</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">h</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">githelper</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">h</span>
 </pre></div>
 </div>
 <p>The utility is subcommand-based, and each subcommand has its own options.
 You can get a list of subcommands with the -h option shown above, and each
 subcommand in turn supports the -h flag:</p>
-<div class="highlight-python"><div class="highlight"><pre>githelper.py some_subcommand -h
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">githelper</span><span class="o">.</span><span class="n">py</span> <span class="n">some_subcommand</span> <span class="o">-</span><span class="n">h</span>
 </pre></div>
 </div>
 <p>You can extend the set of subcommands by writing plug-in classes. See
@@ -82,12 +81,12 @@ characters that unanbiguously identifies one of the subcommands will work
 <div class="section" id="command-line-utility-examples">
 <h3>Command Line Utility Examples<a class="headerlink" href="#command-line-utility-examples" title="Permalink to this headline">¶</a></h3>
 <p>Below are some command line usage examples. The examples assume a
-<tt class="docutils literal"><span class="pre">gh</span></tt> shell alias for githelper defined as follows:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ alias gh githelper.py
+<code class="docutils literal"><span class="pre">gh</span></code> shell alias for githelper defined as follows:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ alias gh githelper.py
 </pre></div>
 </div>
-<p>To get an overview of the nested working copies, use the <tt class="docutils literal"><span class="pre">tree</span></tt> subcommand:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ gh tree
+<p>To get an overview of the nested working copies, use the <code class="docutils literal"><span class="pre">tree</span></code> subcommand:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ gh tree
 |&lt;Working copy /path/to/my-great-project&gt;
 |--&lt;Working copy /path/to/my-great-project/Foo *&gt;
 |----&lt;Working copy /path/to/my-great-project/Foo/subexternal l*&gt;
@@ -99,9 +98,9 @@ characters that unanbiguously identifies one of the subcommands will work
 </pre></div>
 </div>
 <p>The * indicates a working copy with uncommited changes.
-The l indicates a local-only branch, i.e. one that&#8217;s not tracking a remote branch</p>
-<p>To get a combined git status view, use <tt class="docutils literal"><span class="pre">status</span></tt>:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ gh status
+The l indicates a local-only branch, i.e. one that’s not tracking a remote branch</p>
+<p>To get a combined git status view, use <code class="docutils literal"><span class="pre">status</span></code>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ gh status
 &lt;Working copy /path/to/my-great-project/Foo *&gt;
  M data.txt
 &lt;Working copy /path/to/my-great-project/Subproject *&gt;
@@ -109,15 +108,15 @@ The l indicates a local-only branch, i.e. one that&#8217;s not tracking a remote
 </pre></div>
 </div>
 <p>Only working copies that have any interesting status are listed.</p>
-<p>As a reminder, you could shorten the subcommand name and type just <tt class="docutils literal"><span class="pre">gh</span> <span class="pre">sta</span></tt> here.</p>
+<p>As a reminder, you could shorten the subcommand name and type just <code class="docutils literal"><span class="pre">gh</span> <span class="pre">sta</span></code> here.</p>
 <p>To check out a certain point in time in the past in all nested working copies, you could
-use the <tt class="docutils literal"><span class="pre">each</span></tt> subcommand, which runs a shell command in each one:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ gh each &quot;git checkout \$(git rev-list -n 1 --before=&#39;2012-01-01 00:00&#39; master)&quot;
+use the <code class="docutils literal"><span class="pre">each</span></code> subcommand, which runs a shell command in each one:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ gh each &quot;git checkout \$(git rev-list -n 1 --before=&#39;2012-01-01 00:00&#39; master)&quot;
 </pre></div>
 </div>
-<p>Another useful subcommand is <tt class="docutils literal"><span class="pre">branch</span></tt>, it gives a complete overview of the branch
+<p>Another useful subcommand is <code class="docutils literal"><span class="pre">branch</span></code>, it gives a complete overview of the branch
 status of each working copy:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ gh b
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ gh b
 branch
 &lt;/Users/liyanage/Projects/foo&gt;                               0↑ 0↓ master      4c3b6721  1h
 &lt;/Users/liyanage/Projects/foo/repositories/LibraryManager&gt;   0↑ 0↓ master      301105f7  1h
@@ -126,83 +125,83 @@ branch
 &lt;/Users/liyanage/Projects/foo/repositories/common l&gt;         0↑ 0↓ master      f0a1ec75 34m
 </pre></div>
 </div>
-<p>See the subcommand&#8217;s detailed help for an explanation of the columns.</p>
-<p>Many subcommands, <tt class="docutils literal"><span class="pre">fetch</span></tt> included, run the <tt class="docutils literal"><span class="pre">branch</span></tt> subcommand automatically after they finish.</p>
+<p>See the subcommand’s detailed help for an explanation of the columns.</p>
+<p>Many subcommands, <code class="docutils literal"><span class="pre">fetch</span></code> included, run the <code class="docutils literal"><span class="pre">branch</span></code> subcommand automatically after they finish.</p>
 <p>These are just a few examples, see the command line help for the remaining subcommands.</p>
 </div>
 </div>
 <div class="section" id="usage-as-toolkit-module">
 <h2>Usage as Toolkit Module<a class="headerlink" href="#usage-as-toolkit-module" title="Permalink to this headline">¶</a></h2>
 <p>If the utility does not provide what you need, you can write your own script
-based on githelper as a module. The rest of this document explains the module&#8217;s API.</p>
-<p>The main entry point is the <a class="reference internal" href="#githelper.GitWorkingCopy" title="githelper.GitWorkingCopy"><tt class="xref py py-class docutils literal"><span class="pre">GitWorkingCopy</span></tt></a> class. You instantiate it
+based on githelper as a module. The rest of this document explains the module’s API.</p>
+<p>The main entry point is the <a class="reference internal" href="#githelper.GitWorkingCopy" title="githelper.GitWorkingCopy"><code class="xref py py-class docutils literal"><span class="pre">GitWorkingCopy</span></code></a> class. You instantiate it
 with the path to a git working copy (which possibly has nested sub-working copies).</p>
 <p id="iteration-example">You can then traverse the tree of nested working copies by iterating over the
 GitWorkingCopy instance:</p>
-<div class="highlight-python"><div class="highlight"><pre>#!/usr/bin/env python
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
 
-import githelper
-import os
-import sys
+<span class="kn">import</span> <span class="nn">githelper</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-root_wc = githelper.GitWorkingCopy(sys.argv[1])
+<span class="n">root_wc</span> <span class="o">=</span> <span class="n">githelper</span><span class="o">.</span><span class="n">GitWorkingCopy</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 
-for wc in root_wc:
-    # Gets called once for root_wc and all sub-working copies.
-    # Do something interesting with wc using its API here...
+<span class="k">for</span> <span class="n">wc</span> <span class="ow">in</span> <span class="n">root_wc</span><span class="p">:</span>
+    <span class="c1"># Gets called once for root_wc and all sub-working copies.</span>
+    <span class="c1"># Do something interesting with wc using its API here...</span>
 </pre></div>
 </div>
-<p>The <a class="reference internal" href="#githelper.GitWorkingCopy.traverse" title="githelper.GitWorkingCopy.traverse"><tt class="xref py py-meth docutils literal"><span class="pre">traverse()</span></tt></a> method provides another way to do this,
+<p>The <a class="reference internal" href="#githelper.GitWorkingCopy.traverse" title="githelper.GitWorkingCopy.traverse"><code class="xref py py-meth docutils literal"><span class="pre">traverse()</span></code></a> method provides another way to do this,
 it takes a callable, in the following example a function:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">process_working_copy</span><span class="p">(</span><span class="n">wc</span><span class="p">):</span>
-    <span class="k">print</span> <span class="n">wc</span><span class="o">.</span><span class="n">current_branch</span><span class="p">()</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">process_working_copy</span><span class="p">(</span><span class="n">wc</span><span class="p">):</span>
+    <span class="nb">print</span> <span class="n">wc</span><span class="o">.</span><span class="n">current_branch</span><span class="p">()</span>
 
 <span class="n">root_wc</span> <span class="o">=</span> <span class="n">githelper</span><span class="o">.</span><span class="n">GitWorkingCopy</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 <span class="n">root_wc</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">process_working_copy</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Any callable object works, in the following example an instance of a class that implements <a class="reference external" href="http://docs.python.org/reference/datamodel.html#object.__call__" title="(in Python v2.7)"><tt class="xref py py-meth docutils literal"><span class="pre">__call__()</span></tt></a>:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Foo</span><span class="p">:</span>
+<p>Any callable object works, in the following example an instance of a class that implements <a class="reference external" href="https://docs.python.org/2/reference/datamodel.html#object.__call__" title="(in Python v2.7)"><code class="xref py py-meth docutils literal"><span class="pre">__call__()</span></code></a>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Foo</span><span class="p">:</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">some_state</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">some_state</span> <span class="o">=</span> <span class="n">some_state</span>
 
     <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
-        <span class="c"># possibly use self.some_state</span>
-        <span class="k">print</span> <span class="n">wc</span><span class="o">.</span><span class="n">current_branch</span><span class="p">()</span>
+        <span class="c1"># possibly use self.some_state</span>
+        <span class="nb">print</span> <span class="n">wc</span><span class="o">.</span><span class="n">current_branch</span><span class="p">()</span>
 
 <span class="n">root_wc</span> <span class="o">=</span> <span class="n">githelper</span><span class="o">.</span><span class="n">GitWorkingCopy</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-<span class="n">iterator</span> <span class="o">=</span> <span class="n">Foo</span><span class="p">(</span><span class="s">&#39;bar&#39;</span><span class="p">)</span>
+<span class="n">iterator</span> <span class="o">=</span> <span class="n">Foo</span><span class="p">(</span><span class="s1">&#39;bar&#39;</span><span class="p">)</span>
 <span class="n">root_wc</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">iterator</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>You can take a look at the various <tt class="docutils literal"><span class="pre">Subcommand...</span></tt> classes in the <a class="reference external" href="https://github.com/liyanage/git-tools/blob/master/githelper/githelper.py">module&#8217;s
+<p>You can take a look at the various <code class="docutils literal"><span class="pre">Subcommand...</span></code> classes in the <a class="reference external" href="https://github.com/liyanage/git-tools/blob/master/githelper/githelper.py">module’s
 source code</a> to see examples of the API usage. These classes implement the various
 subcommands provided by the command line utility front end and they exercise most of
-the <a class="reference internal" href="#githelper.GitWorkingCopy" title="githelper.GitWorkingCopy"><tt class="xref py py-class docutils literal"><span class="pre">GitWorkingCopy</span></tt></a> API.</p>
+the <a class="reference internal" href="#githelper.GitWorkingCopy" title="githelper.GitWorkingCopy"><code class="xref py py-class docutils literal"><span class="pre">GitWorkingCopy</span></code></a> API.</p>
 </div>
 <div class="section" id="extending-with-plug-in-classes">
 <h2>Extending with Plug-In Classes<a class="headerlink" href="#extending-with-plug-in-classes" title="Permalink to this headline">¶</a></h2>
 <p>To extend the command line utility with additional custom subcommands, create a
-file called <tt class="file docutils literal"><span class="pre">githelper_local.py</span></tt> and store it somewhere in your <span class="target" id="index-0"></span><tt class="xref std std-envvar docutils literal"><span class="pre">PATH</span></tt>.
+file called <code class="file docutils literal"><span class="pre">githelper_local.py</span></code> and store it somewhere in your <span class="target" id="index-0"></span><code class="xref std std-envvar docutils literal"><span class="pre">PATH</span></code>.
 The file must contain one class per subcommand. Each class name must start with
-<tt class="docutils literal"><span class="pre">Subcommand</span></tt>, anything after that part is used as the actual subcommand name
+<code class="docutils literal"><span class="pre">Subcommand</span></code>, anything after that part is used as the actual subcommand name
 that you pass on the command line to invoke it.</p>
-<p>Here is an example <tt class="file docutils literal"><span class="pre">githelper_local.py</span></tt> with one subcommand named <tt class="docutils literal"><span class="pre">foo</span></tt>:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">githelper</span> <span class="kn">import</span> <span class="n">AbstractSubcommand</span><span class="p">,</span> <span class="n">GitWorkingCopy</span>
+<p>Here is an example <code class="file docutils literal"><span class="pre">githelper_local.py</span></code> with one subcommand named <code class="docutils literal"><span class="pre">foo</span></code>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">githelper</span> <span class="k">import</span> <span class="n">AbstractSubcommand</span><span class="p">,</span> <span class="n">GitWorkingCopy</span>
 
 <span class="k">class</span> <span class="nc">SubcommandFoo</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
-    <span class="c"># The class-level doc comment is reused for the command-line usage help string.</span>
+    <span class="c1"># The class-level doc comment is reused for the command-line usage help string.</span>
     <span class="sd">&quot;&quot;&quot;Provide a useful description of this subcommand here&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
-        <span class="k">print</span> <span class="n">wc</span>
+        <span class="nb">print</span> <span class="n">wc</span>
         <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">configure_argument_parser</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
-        <span class="c"># Add any command line options here. If you don&#39;t need any, just add a &quot;pass&quot; statement instead.</span>
-        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-b&#39;</span><span class="p">,</span> <span class="s">&#39;--bar&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Provide a useful description of this option here&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">configure_argument_parser</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+        <span class="c1"># Add any command line options here. If you don&#39;t need any, just add a &quot;pass&quot; statement instead.</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-b&#39;</span><span class="p">,</span> <span class="s1">&#39;--bar&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Provide a useful description of this option here&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -210,15 +209,15 @@ that you pass on the command line to invoke it.</p>
 <h2>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="githelper.GitWorkingCopy">
-<em class="property">class </em><tt class="descclassname">githelper.</tt><tt class="descname">GitWorkingCopy</tt><big>(</big><em>path</em>, <em>parent=None</em><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">githelper.</code><code class="descname">GitWorkingCopy</code><span class="sig-paren">(</span><em>path</em>, <em>parent=None</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy" title="Permalink to this definition">¶</a></dt>
 <dd><p>A class to represent a git working copy.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>path</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The file system path to the working copy.</li>
-<li><strong>parent</strong> (<a class="reference internal" href="#githelper.GitWorkingCopy" title="githelper.GitWorkingCopy"><em>githelper.GitWorkingCopy</em></a>) &#8211; A parent instance, you don&#8217;t usually use this yourself.</li>
+<li><strong>path</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – The file system path to the working copy.</li>
+<li><strong>parent</strong> (<a class="reference internal" href="#githelper.GitWorkingCopy" title="githelper.GitWorkingCopy"><em>githelper.GitWorkingCopy</em></a>) – A parent instance, you don’t usually use this yourself.</li>
 </ul>
 </td>
 </tr>
@@ -226,120 +225,120 @@ that you pass on the command line to invoke it.</p>
 </table>
 <dl class="attribute">
 <dt id="githelper.GitWorkingCopy.STOP_TRAVERSAL">
-<tt class="descname">STOP_TRAVERSAL</tt><em class="property"> = False</em><a class="headerlink" href="#githelper.GitWorkingCopy.STOP_TRAVERSAL" title="Permalink to this definition">¶</a></dt>
-<dd><p>returned from a <a class="reference internal" href="#githelper.AbstractSubcommand.__call__" title="githelper.AbstractSubcommand.__call__"><tt class="xref py py-meth docutils literal"><span class="pre">__call__()</span></tt></a> implementation to stop further recursion by <a class="reference internal" href="#githelper.GitWorkingCopy.traverse" title="githelper.GitWorkingCopy.traverse"><tt class="xref py py-meth docutils literal"><span class="pre">traverse()</span></tt></a>.</p>
+<code class="descname">STOP_TRAVERSAL</code><em class="property"> = False</em><a class="headerlink" href="#githelper.GitWorkingCopy.STOP_TRAVERSAL" title="Permalink to this definition">¶</a></dt>
+<dd><p>returned from a <a class="reference internal" href="#githelper.AbstractSubcommand.__call__" title="githelper.AbstractSubcommand.__call__"><code class="xref py py-meth docutils literal"><span class="pre">__call__()</span></code></a> implementation to stop further recursion by <a class="reference internal" href="#githelper.GitWorkingCopy.traverse" title="githelper.GitWorkingCopy.traverse"><code class="xref py py-meth docutils literal"><span class="pre">traverse()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.__iter__">
-<tt class="descname">__iter__</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.__iter__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.__iter__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an iterator over <tt class="docutils literal"><span class="pre">self</span></tt> and all of its nested git working copies.</p>
-<p>See the <a class="reference internal" href="#iteration-example"><em>example above</em></a>.</p>
+<code class="descname">__iter__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.__iter__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.__iter__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an iterator over <code class="docutils literal"><span class="pre">self</span></code> and all of its nested git working copies.</p>
+<p>See the <a class="reference internal" href="#iteration-example"><span class="std std-ref">example above</span></a>.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.ancestors">
-<tt class="descname">ancestors</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.ancestors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.ancestors" title="Permalink to this definition">¶</a></dt>
+<code class="descname">ancestors</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.ancestors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.ancestors" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list of parent working copies.</p>
 <p>If the receiver is the root working copy, this returns an empty list.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.branch_names">
-<tt class="descname">branch_names</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.branch_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.branch_names" title="Permalink to this definition">¶</a></dt>
+<code class="descname">branch_names</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.branch_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.branch_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list of git branch names.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.chdir_to_path">
-<tt class="descname">chdir_to_path</tt><big>(</big><em>*args</em>, <em>**kwds</em><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.chdir_to_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.chdir_to_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>A <a class="reference external" href="http://docs.python.org/reference/datamodel.html#context-managers" title="(in Python v2.7)"><em class="xref std std-ref">context manager</em></a> for the <a class="reference external" href="http://docs.python.org/reference/compound_stmts.html#with" title="(in Python v2.7)"><tt class="xref std std-keyword docutils literal"><span class="pre">with</span></tt></a> statement
-that temporarily switches the current working directory to the receiver&#8217;s working
+<code class="descname">chdir_to_path</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.chdir_to_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.chdir_to_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <a class="reference external" href="https://docs.python.org/2/reference/datamodel.html#context-managers" title="(in Python v2.7)"><span class="xref std std-ref">context manager</span></a> for the <a class="reference external" href="https://docs.python.org/2/reference/compound_stmts.html#with" title="(in Python v2.7)"><code class="xref std std-keyword docutils literal"><span class="pre">with</span></code></a> statement
+that temporarily switches the current working directory to the receiver’s working
 copy directory:</p>
-<div class="highlight-python"><div class="highlight"><pre>with wc.chdir_to_path():
-    # do something useful here inside the working copy directory.
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">wc</span><span class="o">.</span><span class="n">chdir_to_path</span><span class="p">():</span>
+    <span class="c1"># do something useful here inside the working copy directory.</span>
 </pre></div>
 </div>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.commits_not_in_upstream">
-<tt class="descname">commits_not_in_upstream</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.commits_not_in_upstream"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.commits_not_in_upstream" title="Permalink to this definition">¶</a></dt>
+<code class="descname">commits_not_in_upstream</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.commits_not_in_upstream"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.commits_not_in_upstream" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list of git commits that have not yet been pushed to upstream.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.commits_only_in_upstream">
-<tt class="descname">commits_only_in_upstream</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.commits_only_in_upstream"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.commits_only_in_upstream" title="Permalink to this definition">¶</a></dt>
+<code class="descname">commits_only_in_upstream</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.commits_only_in_upstream"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.commits_only_in_upstream" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list of git commits that are only in upstream but not in the local tracking branch.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.create_stash_and_reset_hard">
-<tt class="descname">create_stash_and_reset_hard</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.create_stash_and_reset_hard"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.create_stash_and_reset_hard" title="Permalink to this definition">¶</a></dt>
-<dd><p>Stashes the uncommitted changes in the working copy using &#8220;stash create&#8221;, i.e. without
-updating the &#8220;stash&#8221; reference, and runs &#8220;git reset &#8211;hard&#8221;. Prints and returns the
+<code class="descname">create_stash_and_reset_hard</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.create_stash_and_reset_hard"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.create_stash_and_reset_hard" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stashes the uncommitted changes in the working copy using “stash create”, i.e. without
+updating the “stash” reference, and runs “git reset –hard”. Prints and returns the
 commit id if anything was stashed, None otherwise.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.current_branch">
-<tt class="descname">current_branch</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.current_branch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.current_branch" title="Permalink to this definition">¶</a></dt>
+<code class="descname">current_branch</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.current_branch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.current_branch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the name of the current git branch.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.current_repository">
-<tt class="descname">current_repository</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.current_repository"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.current_repository" title="Permalink to this definition">¶</a></dt>
+<code class="descname">current_repository</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.current_repository"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.current_repository" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the name of the current git repository.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.dirty_file_lines">
-<tt class="descname">dirty_file_lines</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.dirty_file_lines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.dirty_file_lines" title="Permalink to this definition">¶</a></dt>
+<code class="descname">dirty_file_lines</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.dirty_file_lines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.dirty_file_lines" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the output of git status for the files marked as modified, renamed etc.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.hard_reset_current_branch">
-<tt class="descname">hard_reset_current_branch</tt><big>(</big><em>target</em><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.hard_reset_current_branch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.hard_reset_current_branch" title="Permalink to this definition">¶</a></dt>
+<code class="descname">hard_reset_current_branch</code><span class="sig-paren">(</span><em>target</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.hard_reset_current_branch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.hard_reset_current_branch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Hard-resets the current branch to the given ref</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.has_branch">
-<tt class="descname">has_branch</tt><big>(</big><em>branch_name</em><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.has_branch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.has_branch" title="Permalink to this definition">¶</a></dt>
+<code class="descname">has_branch</code><span class="sig-paren">(</span><em>branch_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.has_branch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.has_branch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns True if the working copy has a git branch with the given name</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.is_dirty">
-<tt class="descname">is_dirty</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.is_dirty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.is_dirty" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns True if the receiver&#8217;s working copy has uncommitted modifications.</p>
+<code class="descname">is_dirty</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.is_dirty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.is_dirty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the receiver’s working copy has uncommitted modifications.</p>
 <p>Many operations depend on a clean state.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.is_root">
-<tt class="descname">is_root</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.is_root"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.is_root" title="Permalink to this definition">¶</a></dt>
+<code class="descname">is_root</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.is_root"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.is_root" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns True if the receiver does not have a parent working copy.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.local_branch_names">
-<tt class="descname">local_branch_names</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.local_branch_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.local_branch_names" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a list of git branch names not starting with <tt class="docutils literal"><span class="pre">remote/</span></tt>.</p>
+<code class="descname">local_branch_names</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.local_branch_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.local_branch_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of git branch names not starting with <code class="docutils literal"><span class="pre">remote/</span></code>.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.output_for_git_command">
-<tt class="descname">output_for_git_command</tt><big>(</big><em>command</em>, <em>shell=False</em>, <em>filter_rules=None</em>, <em>header=None</em>, <em>check_returncode=None</em><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.output_for_git_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.output_for_git_command" title="Permalink to this definition">¶</a></dt>
-<dd><p>Runs the given shell command (array or string) in the receiver&#8217;s working directory and returns the output.</p>
+<code class="descname">output_for_git_command</code><span class="sig-paren">(</span><em>command</em>, <em>shell=False</em>, <em>filter_rules=None</em>, <em>header=None</em>, <em>check_returncode=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.output_for_git_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.output_for_git_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the given shell command (array or string) in the receiver’s working directory and returns the output.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>shell</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If <tt class="docutils literal"><span class="pre">True</span></tt>, runs the command through the shell. See the <a class="reference external" href="http://docs.python.org/library/subprocess.html#module-subprocess" title="(in Python v2.7)"><tt class="xref py py-mod docutils literal"><span class="pre">subprocess</span></tt></a> library module documentation for details.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>shell</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – If <code class="docutils literal"><span class="pre">True</span></code>, runs the command through the shell. See the <a class="reference external" href="https://docs.python.org/2/library/subprocess.html#module-subprocess" title="(in Python v2.7)"><code class="xref py py-mod docutils literal"><span class="pre">subprocess</span></code></a> library module documentation for details.</td>
 </tr>
 </tbody>
 </table>
@@ -347,15 +346,15 @@ commit id if anything was stashed, None otherwise.</p>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.remote_branch_name_for_name_list">
-<tt class="descname">remote_branch_name_for_name_list</tt><big>(</big><em>name_list</em><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.remote_branch_name_for_name_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.remote_branch_name_for_name_list" title="Permalink to this definition">¶</a></dt>
+<code class="descname">remote_branch_name_for_name_list</code><span class="sig-paren">(</span><em>name_list</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.remote_branch_name_for_name_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.remote_branch_name_for_name_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a remote branch name matching a list of candidate strings.</p>
 <p>Tries to find a remote branch names using all possible combinations
 of the names in the list. For example, given:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="s">&#39;foo&#39;</span><span class="p">,</span> <span class="s">&#39;bar&#39;</span><span class="p">]</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span> <span class="s1">&#39;bar&#39;</span><span class="p">]</span>
 </pre></div>
 </div>
-<p>as <tt class="docutils literal"><span class="pre">name_list</span></tt>, it would find any of these:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">remotes</span><span class="o">/</span><span class="n">foo</span>
+<p>as <code class="docutils literal"><span class="pre">name_list</span></code>, it would find any of these:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">remotes</span><span class="o">/</span><span class="n">foo</span>
 <span class="n">remotes</span><span class="o">/</span><span class="n">Foo</span>
 <span class="n">remotes</span><span class="o">/</span><span class="n">bar</span>
 <span class="n">remotes</span><span class="o">/</span><span class="n">Bar</span>
@@ -365,35 +364,35 @@ of the names in the list. For example, given:</p>
 <span class="n">remotes</span><span class="o">/</span><span class="n">bar</span><span class="o">-</span><span class="n">foo</span>
 </pre></div>
 </div>
-<p>etc. and return the part after <tt class="docutils literal"><span class="pre">remotes/</span></tt> of the first match.</p>
+<p>etc. and return the part after <code class="docutils literal"><span class="pre">remotes/</span></code> of the first match.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.remote_branch_names">
-<tt class="descname">remote_branch_names</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.remote_branch_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.remote_branch_names" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a list of git branch names starting with <tt class="docutils literal"><span class="pre">remote/</span></tt>.</p>
-<p>The leading <tt class="docutils literal"><span class="pre">remote/</span></tt> part will be removed.</p>
+<code class="descname">remote_branch_names</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.remote_branch_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.remote_branch_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of git branch names starting with <code class="docutils literal"><span class="pre">remote/</span></code>.</p>
+<p>The leading <code class="docutils literal"><span class="pre">remote/</span></code> part will be removed.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.root_working_copy">
-<tt class="descname">root_working_copy</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.root_working_copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.root_working_copy" title="Permalink to this definition">¶</a></dt>
+<code class="descname">root_working_copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.root_working_copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.root_working_copy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the root working copy, which could be self.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.run_shell_command">
-<tt class="descname">run_shell_command</tt><big>(</big><em>command</em>, <em>filter_rules=None</em>, <em>shell=None</em>, <em>header=None</em>, <em>check_returncode=True</em><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.run_shell_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.run_shell_command" title="Permalink to this definition">¶</a></dt>
-<dd><p>Runs the given shell command (array or string) in the receiver&#8217;s working directory using <a class="reference internal" href="#githelper.FilteringPopen" title="githelper.FilteringPopen"><tt class="xref py py-class docutils literal"><span class="pre">FilteringPopen</span></tt></a>.</p>
+<code class="descname">run_shell_command</code><span class="sig-paren">(</span><em>command</em>, <em>filter_rules=None</em>, <em>shell=None</em>, <em>header=None</em>, <em>check_returncode=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.run_shell_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.run_shell_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the given shell command (array or string) in the receiver’s working directory using <a class="reference internal" href="#githelper.FilteringPopen" title="githelper.FilteringPopen"><code class="xref py py-class docutils literal"><span class="pre">FilteringPopen</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>command</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Passed to <a class="reference internal" href="#githelper.FilteringPopen" title="githelper.FilteringPopen"><tt class="xref py py-class docutils literal"><span class="pre">FilteringPopen</span></tt></a>&#8216;s constructor. Can also be an array.</li>
-<li><strong>filter_rules</strong> (<a class="reference external" href="http://docs.python.org/library/array.html#module-array" title="(in Python v2.7)"><em>array</em></a>) &#8211; Passed to <a class="reference internal" href="#githelper.FilteringPopen" title="githelper.FilteringPopen"><tt class="xref py py-class docutils literal"><span class="pre">FilteringPopen</span></tt></a>&#8216;s constructor.</li>
-<li><strong>shell</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Passed to <a class="reference internal" href="#githelper.FilteringPopen" title="githelper.FilteringPopen"><tt class="xref py py-class docutils literal"><span class="pre">FilteringPopen</span></tt></a>&#8216;s constructor.</li>
-<li><strong>header</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><em>object</em></a>) &#8211; Passed to <a class="reference internal" href="#githelper.FilteringPopen.run" title="githelper.FilteringPopen.run"><tt class="xref py py-class docutils literal"><span class="pre">FilteringPopen.run</span></tt></a>.</li>
+<li><strong>command</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) – Passed to <a class="reference internal" href="#githelper.FilteringPopen" title="githelper.FilteringPopen"><code class="xref py py-class docutils literal"><span class="pre">FilteringPopen</span></code></a>’s constructor. Can also be an array.</li>
+<li><strong>filter_rules</strong> (<a class="reference external" href="https://docs.python.org/2/library/array.html#module-array" title="(in Python v2.7)"><em>array</em></a>) – Passed to <a class="reference internal" href="#githelper.FilteringPopen" title="githelper.FilteringPopen"><code class="xref py py-class docutils literal"><span class="pre">FilteringPopen</span></code></a>’s constructor.</li>
+<li><strong>shell</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – Passed to <a class="reference internal" href="#githelper.FilteringPopen" title="githelper.FilteringPopen"><code class="xref py py-class docutils literal"><span class="pre">FilteringPopen</span></code></a>’s constructor.</li>
+<li><strong>header</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#object" title="(in Python v2.7)"><em>object</em></a>) – Passed to <a class="reference internal" href="#githelper.FilteringPopen.run" title="githelper.FilteringPopen.run"><code class="xref py py-class docutils literal"><span class="pre">FilteringPopen.run</span></code></a>.</li>
 </ul>
 </td>
 </tr>
@@ -403,13 +402,13 @@ of the names in the list. For example, given:</p>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.self_or_descendants_dirty_working_copies">
-<tt class="descname">self_or_descendants_dirty_working_copies</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.self_or_descendants_dirty_working_copies"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.self_or_descendants_dirty_working_copies" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns True if the receiver&#8217;s or one of its nested working copies are dirty.</p>
+<code class="descname">self_or_descendants_dirty_working_copies</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.self_or_descendants_dirty_working_copies"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.self_or_descendants_dirty_working_copies" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the receiver’s or one of its nested working copies are dirty.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>list_dirty</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If <tt class="docutils literal"><span class="pre">True</span></tt>, prints the working copy path and the list of dirty files.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>list_dirty</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – If <code class="docutils literal"><span class="pre">True</span></code>, prints the working copy path and the list of dirty files.</td>
 </tr>
 </tbody>
 </table>
@@ -417,64 +416,64 @@ of the names in the list. For example, given:</p>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.switch_to_branch">
-<tt class="descname">switch_to_branch</tt><big>(</big><em>branch_name</em><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.switch_to_branch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.switch_to_branch" title="Permalink to this definition">¶</a></dt>
+<code class="descname">switch_to_branch</code><span class="sig-paren">(</span><em>branch_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.switch_to_branch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.switch_to_branch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks out the given git branch</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.switched_to_branch">
-<tt class="descname">switched_to_branch</tt><big>(</big><em>*args</em>, <em>**kwds</em><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.switched_to_branch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.switched_to_branch" title="Permalink to this definition">¶</a></dt>
-<dd><p>A <a class="reference external" href="http://docs.python.org/reference/datamodel.html#context-managers" title="(in Python v2.7)"><em class="xref std std-ref">context manager</em></a> for the <a class="reference external" href="http://docs.python.org/reference/compound_stmts.html#with" title="(in Python v2.7)"><tt class="xref std std-keyword docutils literal"><span class="pre">with</span></tt></a> statement
+<code class="descname">switched_to_branch</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.switched_to_branch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.switched_to_branch" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <a class="reference external" href="https://docs.python.org/2/reference/datamodel.html#context-managers" title="(in Python v2.7)"><span class="xref std std-ref">context manager</span></a> for the <a class="reference external" href="https://docs.python.org/2/reference/compound_stmts.html#with" title="(in Python v2.7)"><code class="xref std std-keyword docutils literal"><span class="pre">with</span></code></a> statement
 that temporarily switches the current git branch to another one and afterwards
 restores the original one.</p>
 <p>Example:</p>
-<div class="highlight-python"><div class="highlight"><pre>with wc.switched_to_branch(&#39;master&#39;):
-    # do something useful here on the &#39;master&#39; branch.
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">wc</span><span class="o">.</span><span class="n">switched_to_branch</span><span class="p">(</span><span class="s1">&#39;master&#39;</span><span class="p">):</span>
+    <span class="c1"># do something useful here on the &#39;master&#39; branch.</span>
 </pre></div>
 </div>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.tags_pointing_at">
-<tt class="descname">tags_pointing_at</tt><big>(</big><em>commit_reference</em><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.tags_pointing_at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.tags_pointing_at" title="Permalink to this definition">¶</a></dt>
+<code class="descname">tags_pointing_at</code><span class="sig-paren">(</span><em>commit_reference</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.tags_pointing_at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.tags_pointing_at" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list of tags that point to the given commit</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.tags_pointing_at_head_commit">
-<tt class="descname">tags_pointing_at_head_commit</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.tags_pointing_at_head_commit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.tags_pointing_at_head_commit" title="Permalink to this definition">¶</a></dt>
+<code class="descname">tags_pointing_at_head_commit</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.tags_pointing_at_head_commit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.tags_pointing_at_head_commit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list of tags that point to the head commit</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.GitWorkingCopy.traverse">
-<tt class="descname">traverse</tt><big>(</big><em>iterator</em><big>)</big><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.traverse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.traverse" title="Permalink to this definition">¶</a></dt>
-<dd><p>Runs the given callable <tt class="docutils literal"><span class="pre">iterator</span></tt> on the receiver and all of its
+<code class="descname">traverse</code><span class="sig-paren">(</span><em>iterator</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#GitWorkingCopy.traverse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.GitWorkingCopy.traverse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the given callable <code class="docutils literal"><span class="pre">iterator</span></code> on the receiver and all of its
 nested sub-working copies.</p>
 <p>Before each call to iterator for a given working copy, the current directory is first
-set to that working copy&#8217;s path.</p>
-<p>See the <a class="reference internal" href="#iteration-example"><em>example above</em></a>.</p>
+set to that working copy’s path.</p>
+<p>See the <a class="reference internal" href="#iteration-example"><span class="std std-ref">example above</span></a>.</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="githelper.FilteringPopen">
-<em class="property">class </em><tt class="descclassname">githelper.</tt><tt class="descname">FilteringPopen</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/githelper.html#FilteringPopen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.FilteringPopen" title="Permalink to this definition">¶</a></dt>
-<dd><p>A wrapper around <a class="reference external" href="http://docs.python.org/library/subprocess.html#subprocess.Popen" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">subprocess.Popen</span></tt></a> that filters the subprocess&#8217;s output.</p>
-<p>The constructor&#8217;s parameters are forwarded mostly unchanged to <a class="reference external" href="http://docs.python.org/library/subprocess.html#subprocess.Popen" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">Popen's</span> <span class="pre">constructor</span></tt></a>.
-Exceptions are <tt class="docutils literal"><span class="pre">bufsize</span></tt>, which is set to <tt class="docutils literal"><span class="pre">1</span></tt> for line-buffered output, and <tt class="docutils literal"><span class="pre">stdout</span></tt>, and <tt class="docutils literal"><span class="pre">stderr</span></tt>,
-which are both set to <a class="reference external" href="http://docs.python.org/library/subprocess.html#subprocess.PIPE" title="(in Python v2.7)"><tt class="xref py py-data docutils literal"><span class="pre">subprocess.PIPE</span></tt></a>.</p>
-<p>This method sets up the Popen instance but does not run it. See <a class="reference internal" href="#githelper.FilteringPopen.run" title="githelper.FilteringPopen.run"><tt class="xref py py-meth docutils literal"><span class="pre">run()</span></tt></a> for that.</p>
+<em class="property">class </em><code class="descclassname">githelper.</code><code class="descname">FilteringPopen</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#FilteringPopen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.FilteringPopen" title="Permalink to this definition">¶</a></dt>
+<dd><p>A wrapper around <a class="reference external" href="https://docs.python.org/2/library/subprocess.html#subprocess.Popen" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">subprocess.Popen</span></code></a> that filters the subprocess’s output.</p>
+<p>The constructor’s parameters are forwarded mostly unchanged to <a class="reference external" href="https://docs.python.org/2/library/subprocess.html#subprocess.Popen" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">Popen's</span> <span class="pre">constructor</span></code></a>.
+Exceptions are <code class="docutils literal"><span class="pre">bufsize</span></code>, which is set to <code class="docutils literal"><span class="pre">1</span></code> for line-buffered output, and <code class="docutils literal"><span class="pre">stdout</span></code>, and <code class="docutils literal"><span class="pre">stderr</span></code>,
+which are both set to <a class="reference external" href="https://docs.python.org/2/library/subprocess.html#subprocess.PIPE" title="(in Python v2.7)"><code class="xref py py-data docutils literal"><span class="pre">subprocess.PIPE</span></code></a>.</p>
+<p>This method sets up the Popen instance but does not run it. See <a class="reference internal" href="#githelper.FilteringPopen.run" title="githelper.FilteringPopen.run"><code class="xref py py-meth docutils literal"><span class="pre">run()</span></code></a> for that.</p>
 <dl class="method">
 <dt id="githelper.FilteringPopen.returncode">
-<tt class="descname">returncode</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#FilteringPopen.returncode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.FilteringPopen.returncode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the command&#8217;s exit code.</p>
+<code class="descname">returncode</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#FilteringPopen.returncode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.FilteringPopen.returncode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the command’s exit code.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)">int</a></td>
 </tr>
 </tbody>
 </table>
@@ -482,21 +481,21 @@ which are both set to <a class="reference external" href="http://docs.python.org
 
 <dl class="method">
 <dt id="githelper.FilteringPopen.run">
-<tt class="descname">run</tt><big>(</big><em>filter=None</em>, <em>filter_rules=None</em>, <em>store_stdout=True</em>, <em>store_stderr=True</em>, <em>echo_stdout=True</em>, <em>echo_stderr=True</em>, <em>check_returncode=True</em>, <em>header=None</em><big>)</big><a class="reference internal" href="_modules/githelper.html#FilteringPopen.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.FilteringPopen.run" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run the command and capture its (potentially filtered) output, similar to <a class="reference external" href="http://docs.python.org/library/subprocess.html#subprocess.Popen.communicate" title="(in Python v2.7)"><tt class="xref py py-meth docutils literal"><span class="pre">subprocess.Popen.communicate()</span></tt></a>.</p>
+<code class="descname">run</code><span class="sig-paren">(</span><em>filter=None</em>, <em>filter_rules=None</em>, <em>store_stdout=True</em>, <em>store_stderr=True</em>, <em>echo_stdout=True</em>, <em>echo_stderr=True</em>, <em>check_returncode=True</em>, <em>header=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#FilteringPopen.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.FilteringPopen.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the command and capture its (potentially filtered) output, similar to <a class="reference external" href="https://docs.python.org/2/library/subprocess.html#subprocess.Popen.communicate" title="(in Python v2.7)"><code class="xref py py-meth docutils literal"><span class="pre">subprocess.Popen.communicate()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>filter</strong> (<a class="reference internal" href="#githelper.PopenOutputFilter" title="githelper.PopenOutputFilter"><em>githelper.PopenOutputFilter</em></a>) &#8211; An optional filter for stderr and stdout.</li>
-<li><strong>filter_rules</strong> (<a class="reference external" href="http://docs.python.org/library/array.html#module-array" title="(in Python v2.7)"><em>array</em></a>) &#8211; Instead of a <a class="reference internal" href="#githelper.PopenOutputFilter" title="githelper.PopenOutputFilter"><tt class="xref py py-class docutils literal"><span class="pre">PopenOutputFilter</span></tt></a> instance, you can also pass a rule set directly.</li>
-<li><strong>store_stdout</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If <tt class="docutils literal"><span class="pre">False</span></tt>, the command&#8217;s output will not be stored for later retrieval. If set to <tt class="docutils literal"><span class="pre">True</span></tt>, the output can be retrieved through the <a class="reference internal" href="#githelper.FilteringPopen.stdoutlines" title="githelper.FilteringPopen.stdoutlines"><tt class="xref py py-meth docutils literal"><span class="pre">stdoutlines()</span></tt></a> method after it has finished executing.</li>
-<li><strong>store_stderr</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If <tt class="docutils literal"><span class="pre">False</span></tt>, the command&#8217;s output will not be stored for later retrieval. If set to <tt class="docutils literal"><span class="pre">True</span></tt>, the output can be retrieved through the <a class="reference internal" href="#githelper.FilteringPopen.stderrlines" title="githelper.FilteringPopen.stderrlines"><tt class="xref py py-meth docutils literal"><span class="pre">stderrlines()</span></tt></a> method after it has finished executing.</li>
-<li><strong>echo_stdout</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If <tt class="docutils literal"><span class="pre">False</span></tt>, the command&#8217;s output will not be printed to stdout.</li>
-<li><strong>echo_stderr</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If <tt class="docutils literal"><span class="pre">False</span></tt>, the command&#8217;s output will not be printed to stderr.</li>
-<li><strong>check_returncode</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If <tt class="docutils literal"><span class="pre">True</span></tt>, the method raises an exception if the command terminates with a non-zero exit code.</li>
-<li><strong>header</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><em>object</em></a>) &#8211; This value will be printed to the console exactly once if the subcommand produces any output that does not get filtered out.
+<li><strong>filter</strong> (<a class="reference internal" href="#githelper.PopenOutputFilter" title="githelper.PopenOutputFilter"><em>githelper.PopenOutputFilter</em></a>) – An optional filter for stderr and stdout.</li>
+<li><strong>filter_rules</strong> (<a class="reference external" href="https://docs.python.org/2/library/array.html#module-array" title="(in Python v2.7)"><em>array</em></a>) – Instead of a <a class="reference internal" href="#githelper.PopenOutputFilter" title="githelper.PopenOutputFilter"><code class="xref py py-class docutils literal"><span class="pre">PopenOutputFilter</span></code></a> instance, you can also pass a rule set directly.</li>
+<li><strong>store_stdout</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – If <code class="docutils literal"><span class="pre">False</span></code>, the command’s output will not be stored for later retrieval. If set to <code class="docutils literal"><span class="pre">True</span></code>, the output can be retrieved through the <a class="reference internal" href="#githelper.FilteringPopen.stdoutlines" title="githelper.FilteringPopen.stdoutlines"><code class="xref py py-meth docutils literal"><span class="pre">stdoutlines()</span></code></a> method after it has finished executing.</li>
+<li><strong>store_stderr</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – If <code class="docutils literal"><span class="pre">False</span></code>, the command’s output will not be stored for later retrieval. If set to <code class="docutils literal"><span class="pre">True</span></code>, the output can be retrieved through the <a class="reference internal" href="#githelper.FilteringPopen.stderrlines" title="githelper.FilteringPopen.stderrlines"><code class="xref py py-meth docutils literal"><span class="pre">stderrlines()</span></code></a> method after it has finished executing.</li>
+<li><strong>echo_stdout</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – If <code class="docutils literal"><span class="pre">False</span></code>, the command’s output will not be printed to stdout.</li>
+<li><strong>echo_stderr</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – If <code class="docutils literal"><span class="pre">False</span></code>, the command’s output will not be printed to stderr.</li>
+<li><strong>check_returncode</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) – If <code class="docutils literal"><span class="pre">True</span></code>, the method raises an exception if the command terminates with a non-zero exit code.</li>
+<li><strong>header</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#object" title="(in Python v2.7)"><em>object</em></a>) – This value will be printed to the console exactly once if the subcommand produces any output that does not get filtered out.
 This is useful if you want to print something, but not if the command would not produce any output anyway.</li>
 </ul>
 </td>
@@ -507,13 +506,13 @@ This is useful if you want to print something, but not if the command would not 
 
 <dl class="method">
 <dt id="githelper.FilteringPopen.stderrlines">
-<tt class="descname">stderrlines</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#FilteringPopen.stderrlines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.FilteringPopen.stderrlines" title="Permalink to this definition">¶</a></dt>
+<code class="descname">stderrlines</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#FilteringPopen.stderrlines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.FilteringPopen.stderrlines" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an array of the stderr lines that were not filtered, with trailing newlines removed.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="githelper.FilteringPopen.stdoutlines">
-<tt class="descname">stdoutlines</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#FilteringPopen.stdoutlines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.FilteringPopen.stdoutlines" title="Permalink to this definition">¶</a></dt>
+<code class="descname">stdoutlines</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#FilteringPopen.stdoutlines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.FilteringPopen.stdoutlines" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an array of the stdout lines that were not filtered, with trailing newlines removed.</p>
 </dd></dl>
 
@@ -521,39 +520,39 @@ This is useful if you want to print something, but not if the command would not 
 
 <dl class="class">
 <dt id="githelper.PopenOutputFilter">
-<em class="property">class </em><tt class="descclassname">githelper.</tt><tt class="descname">PopenOutputFilter</tt><big>(</big><em>stdout_rules</em>, <em>stderr_rules=None</em><big>)</big><a class="reference internal" href="_modules/githelper.html#PopenOutputFilter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.PopenOutputFilter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Represents a set of inclusion/exclusion rules to filter the output of <a class="reference internal" href="#githelper.FilteringPopen" title="githelper.FilteringPopen"><tt class="xref py py-class docutils literal"><span class="pre">FilteringPopen</span></tt></a>.
-You create instance of this class to pass to <a class="reference internal" href="#githelper.FilteringPopen.run" title="githelper.FilteringPopen.run"><tt class="xref py py-meth docutils literal"><span class="pre">FilteringPopen.run()</span></tt></a> (but see <tt class="docutils literal"><span class="pre">run()</span></tt>&#8216;s
-<tt class="docutils literal"><span class="pre">filter_rules</span></tt> parameter for a convenience shortcut).</p>
-<p>There are two independent rule sets to filter stdout and stderr individually. If you don&#8217;t
+<em class="property">class </em><code class="descclassname">githelper.</code><code class="descname">PopenOutputFilter</code><span class="sig-paren">(</span><em>stdout_rules</em>, <em>stderr_rules=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#PopenOutputFilter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.PopenOutputFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents a set of inclusion/exclusion rules to filter the output of <a class="reference internal" href="#githelper.FilteringPopen" title="githelper.FilteringPopen"><code class="xref py py-class docutils literal"><span class="pre">FilteringPopen</span></code></a>.
+You create instance of this class to pass to <a class="reference internal" href="#githelper.FilteringPopen.run" title="githelper.FilteringPopen.run"><code class="xref py py-meth docutils literal"><span class="pre">FilteringPopen.run()</span></code></a> (but see <code class="docutils literal"><span class="pre">run()</span></code>’s
+<code class="docutils literal"><span class="pre">filter_rules</span></code> parameter for a convenience shortcut).</p>
+<p>There are two independent rule sets to filter stdout and stderr individually. If you don’t
 supply the (optional) rule set for stderr, the (mandatory) one for stdout is reused.</p>
 <p>Rule sets are lists of lists of this form:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">rules</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">(</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="s">r&#39;^foo&#39;</span><span class="p">),</span>
-    <span class="p">(</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="s">r&#39;bar$&#39;</span><span class="p">),</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">rules</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;^foo&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;bar$&#39;</span><span class="p">),</span>
     <span class="o">...</span>
 <span class="p">]</span>
 </pre></div>
 </div>
-<p>Each rule is a two-element list where the first element is either the string &#8220;-&#8221; or &#8220;+&#8221;
+<p>Each rule is a two-element list where the first element is either the string “-” or “+”
 representing the actions for exclusion and inclusion, and the second element is a
 regular expression.</p>
 <p>Each line of stdout or stderr output is matched against each regular expression. If one
-of them matches, the line is filtered out if the action element is &#8220;-&#8221; or included if
-the action is &#8220;+&#8221;. After the first rule matches, no further rules are evaluated.</p>
+of them matches, the line is filtered out if the action element is “-” or included if
+the action is “+”. After the first rule matches, no further rules are evaluated.</p>
 <p>If no rule matches a given line, the line is included (not filtered out), i.e. there is
 an implicit last rule like this:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="p">(</span><span class="s">&#39;+&#39;</span><span class="p">,</span> <span class="s">&#39;.*&#39;</span><span class="p">)</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">(</span><span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="s1">&#39;.*&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>In the example given above, all lines beginning with <tt class="docutils literal"><span class="pre">foo</span></tt> or ending with <tt class="docutils literal"><span class="pre">bar</span></tt>
+<p>In the example given above, all lines beginning with <code class="docutils literal"><span class="pre">foo</span></code> or ending with <code class="docutils literal"><span class="pre">bar</span></code>
 are filtered out.</p>
 <p>In the following example, only lines containing foo or bar are included, everything else
 is filtered out:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">rules</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">(</span><span class="s">&#39;+&#39;</span><span class="p">,</span> <span class="s">r&#39;foo&#39;</span><span class="p">),</span>
-    <span class="p">(</span><span class="s">&#39;+&#39;</span><span class="p">,</span> <span class="s">r&#39;bar&#39;</span><span class="p">),</span>
-    <span class="p">(</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="s">&#39;.*&#39;</span><span class="p">)</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">rules</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;foo&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;bar&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;.*&#39;</span><span class="p">)</span>
 <span class="p">]</span>
 </pre></div>
 </div>
@@ -561,9 +560,9 @@ is filtered out:</p>
 
 <dl class="class">
 <dt id="githelper.AbstractSubcommand">
-<em class="property">class </em><tt class="descclassname">githelper.</tt><tt class="descname">AbstractSubcommand</tt><big>(</big><em>arguments</em><big>)</big><a class="reference internal" href="_modules/githelper.html#AbstractSubcommand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.AbstractSubcommand" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">githelper.</code><code class="descname">AbstractSubcommand</code><span class="sig-paren">(</span><em>arguments</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#AbstractSubcommand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.AbstractSubcommand" title="Permalink to this definition">¶</a></dt>
 <dd><p>A base class for custom subcommand plug-in classes.</p>
-<p>You can, but don&#8217;t have to, derive from this class for
+<p>You can, but don’t have to, derive from this class for
 your custom subcommand extension classes. It also documents
 the interface you are expected to implement in your class
 and it provides some convenience methods.</p>
@@ -571,23 +570,23 @@ and it provides some convenience methods.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>arguments</strong> (<a class="reference external" href="http://docs.python.org/library/argparse.html#argparse.Namespace" title="(in Python v2.7)"><em>argparse.Namespace</em></a>) &#8211; The command-line options passed to your subcommand
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>arguments</strong> (<a class="reference external" href="https://docs.python.org/2/library/argparse.html#argparse.Namespace" title="(in Python v2.7)"><em>argparse.Namespace</em></a>) – The command-line options passed to your subcommand
 in the form of a namespace instance as returned by
-<a class="reference external" href="http://docs.python.org/library/argparse.html#argparse.ArgumentParser.parse_args" title="(in Python v2.7)"><tt class="xref py py-meth docutils literal"><span class="pre">argparse.ArgumentParser.parse_args()</span></tt></a>.</td>
+<a class="reference external" href="https://docs.python.org/2/library/argparse.html#argparse.ArgumentParser.parse_args" title="(in Python v2.7)"><code class="xref py py-meth docutils literal"><span class="pre">argparse.ArgumentParser.parse_args()</span></code></a>.</td>
 </tr>
 </tbody>
 </table>
 <dl class="method">
 <dt id="githelper.AbstractSubcommand.__call__">
-<tt class="descname">__call__</tt><big>(</big><em>wc=None</em><big>)</big><a class="reference internal" href="_modules/githelper.html#AbstractSubcommand.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.AbstractSubcommand.__call__" title="Permalink to this definition">¶</a></dt>
-<dd><p>This gets called once per working copy to perform the subcommand&#8217;s task.</p>
+<code class="descname">__call__</code><span class="sig-paren">(</span><em>wc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#AbstractSubcommand.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.AbstractSubcommand.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>This gets called once per working copy to perform the subcommand’s task.</p>
 <p>If you are only interested in the root-level working copy, you can stop
-the traversal by returning <a class="reference internal" href="#githelper.GitWorkingCopy.STOP_TRAVERSAL" title="githelper.GitWorkingCopy.STOP_TRAVERSAL"><tt class="xref py py-data docutils literal"><span class="pre">githelper.GitWorkingCopy.STOP_TRAVERSAL</span></tt></a>.</p>
+the traversal by returning <a class="reference internal" href="#githelper.GitWorkingCopy.STOP_TRAVERSAL" title="githelper.GitWorkingCopy.STOP_TRAVERSAL"><code class="xref py py-data docutils literal"><span class="pre">githelper.GitWorkingCopy.STOP_TRAVERSAL</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>wc</strong> (<a class="reference internal" href="#githelper.GitWorkingCopy" title="githelper.GitWorkingCopy"><em>githelper.GitWorkingCopy</em></a>) &#8211; The working copy to process.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>wc</strong> (<a class="reference internal" href="#githelper.GitWorkingCopy" title="githelper.GitWorkingCopy"><em>githelper.GitWorkingCopy</em></a>) – The working copy to process.</td>
 </tr>
 </tbody>
 </table>
@@ -595,7 +594,7 @@ the traversal by returning <a class="reference internal" href="#githelper.GitWor
 
 <dl class="method">
 <dt id="githelper.AbstractSubcommand.chained_post_traversal_subcommand_for_root_working_copy">
-<tt class="descname">chained_post_traversal_subcommand_for_root_working_copy</tt><big>(</big><em>root_wc</em><big>)</big><a class="reference internal" href="_modules/githelper.html#AbstractSubcommand.chained_post_traversal_subcommand_for_root_working_copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.AbstractSubcommand.chained_post_traversal_subcommand_for_root_working_copy" title="Permalink to this definition">¶</a></dt>
+<code class="descname">chained_post_traversal_subcommand_for_root_working_copy</code><span class="sig-paren">(</span><em>root_wc</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#AbstractSubcommand.chained_post_traversal_subcommand_for_root_working_copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.AbstractSubcommand.chained_post_traversal_subcommand_for_root_working_copy" title="Permalink to this definition">¶</a></dt>
 <dd><p>This method gets called on the root working copy after the traversal
 of a tree has finished. The subcommand class can return another subcommand
 instance that will be run next.</p>
@@ -603,7 +602,7 @@ instance that will be run next.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>root_wc</strong> (<a class="reference internal" href="#githelper.GitWorkingCopy" title="githelper.GitWorkingCopy"><em>githelper.GitWorkingCopy</em></a>) &#8211; The working copy to process.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>root_wc</strong> (<a class="reference internal" href="#githelper.GitWorkingCopy" title="githelper.GitWorkingCopy"><em>githelper.GitWorkingCopy</em></a>) – The working copy to process.</td>
 </tr>
 </tbody>
 </table>
@@ -611,14 +610,14 @@ instance that will be run next.</p>
 
 <dl class="classmethod">
 <dt id="githelper.AbstractSubcommand.configure_argument_parser">
-<em class="property">classmethod </em><tt class="descname">configure_argument_parser</tt><big>(</big><em>parser</em><big>)</big><a class="reference internal" href="_modules/githelper.html#AbstractSubcommand.configure_argument_parser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.AbstractSubcommand.configure_argument_parser" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">configure_argument_parser</code><span class="sig-paren">(</span><em>parser</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#AbstractSubcommand.configure_argument_parser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.AbstractSubcommand.configure_argument_parser" title="Permalink to this definition">¶</a></dt>
 <dd><p>If you override this in your subclass, you can configure additional command line arguments
-for your subcommand&#8217;s arguments parser.</p>
+for your subcommand’s arguments parser.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>parser</strong> (<a class="reference external" href="http://docs.python.org/library/argparse.html#argparse.ArgumentParser" title="(in Python v2.7)"><em>argparse.ArgumentParser</em></a>) &#8211; The argument parser that you can configure.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>parser</strong> (<a class="reference external" href="https://docs.python.org/2/library/argparse.html#argparse.ArgumentParser" title="(in Python v2.7)"><em>argparse.ArgumentParser</em></a>) – The argument parser that you can configure.</td>
 </tr>
 </tbody>
 </table>
@@ -626,7 +625,7 @@ for your subcommand&#8217;s arguments parser.</p>
 
 <dl class="method">
 <dt id="githelper.AbstractSubcommand.prepare_for_root">
-<tt class="descname">prepare_for_root</tt><big>(</big><em>root_wc</em><big>)</big><a class="reference internal" href="_modules/githelper.html#AbstractSubcommand.prepare_for_root"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.AbstractSubcommand.prepare_for_root" title="Permalink to this definition">¶</a></dt>
+<code class="descname">prepare_for_root</code><span class="sig-paren">(</span><em>root_wc</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#AbstractSubcommand.prepare_for_root"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.AbstractSubcommand.prepare_for_root" title="Permalink to this definition">¶</a></dt>
 <dd><p>This method gets called on the root working copy only and lets you
 perform preparation steps that you want to do only once for the entire
 tree.</p>
@@ -634,7 +633,7 @@ tree.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>root_wc</strong> (<a class="reference internal" href="#githelper.GitWorkingCopy" title="githelper.GitWorkingCopy"><em>githelper.GitWorkingCopy</em></a>) &#8211; The working copy to check.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>root_wc</strong> (<a class="reference internal" href="#githelper.GitWorkingCopy" title="githelper.GitWorkingCopy"><em>githelper.GitWorkingCopy</em></a>) – The working copy to check.</td>
 </tr>
 </tbody>
 </table>
@@ -642,8 +641,8 @@ tree.</p>
 
 <dl class="classmethod">
 <dt id="githelper.AbstractSubcommand.wants_working_copy">
-<em class="property">classmethod </em><tt class="descname">wants_working_copy</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/githelper.html#AbstractSubcommand.wants_working_copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.AbstractSubcommand.wants_working_copy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return <tt class="docutils literal"><span class="pre">False</span></tt> to allow usage of your subcommand without a git working copy. The default is <tt class="docutils literal"><span class="pre">True</span></tt>.</p>
+<em class="property">classmethod </em><code class="descname">wants_working_copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/githelper.html#AbstractSubcommand.wants_working_copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#githelper.AbstractSubcommand.wants_working_copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return <code class="docutils literal"><span class="pre">False</span></code> to allow usage of your subcommand without a git working copy. The default is <code class="docutils literal"><span class="pre">True</span></code>.</p>
 </dd></dl>
 
 </dd></dl>
@@ -653,9 +652,9 @@ tree.</p>
 <div class="section" id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
-<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
-<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
-<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
 </ul>
 </div>
 
@@ -663,11 +662,11 @@ tree.</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h3><a href="#">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Welcome to githelper&#8217;s documentation!</a><ul>
+<li><a class="reference internal" href="#">Welcome to githelper’s documentation!</a><ul>
 <li><a class="reference internal" href="#introduction">Introduction</a></li>
 <li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#command-line-utility">Command Line Utility</a><ul>
@@ -682,29 +681,28 @@ tree.</p>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 
-  <h3>This Page</h3>
-  <ul class="this-page-menu">
-    <li><a href="_sources/index.txt"
-           rel="nofollow">Show Source</a></li>
-  </ul>
-<div id="searchbox" style="display: none">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
-    <p class="searchtip" style="font-size: 90%">
-    Enter search terms or a module, class or function name.
-    </p>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -713,12 +711,12 @@ tree.</p>
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="#">githelper 1.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="#">githelper 1.0 documentation</a> &#187;</li> 
       </ul>
     </div>
-    <div class="footer">
-        &copy; Copyright 2012, Marc Liyanage.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2012, Marc Liyanage.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.4.
     </div>
   </body>
 </html>
