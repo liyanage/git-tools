@@ -446,7 +446,7 @@ class ANSIColor(object):
     def clear(cls):
         for stream in [sys.stdout, sys.stderr]:
             stream.write(cls.clear_sequence())
-    
+
     @classmethod
     def start_sequence(cls, color=red):
         return "\x1b[3{0}m".format(color)
@@ -465,7 +465,7 @@ class GitRevision(object):
     def __init__(self, revision, message):
         self.revision = revision
         self.message = message
-    
+
     @classmethod
     def parse_log_line_oneline(cls, log_line):
         match = re.match(r'^([0-9a-f]+)\s+(.*)', log_line)
@@ -510,9 +510,9 @@ class GitWorkingCopy(object):
             flags += '*'
         if flags:
             flags = ' ' + flags
-        
+
         return '<{0}{1}>'.format(self.root_relative_path(), flags)
-    
+
     def root_relative_path(self):
         if self.is_root():
             return os.path.basename(self.path)
@@ -551,11 +551,11 @@ class GitWorkingCopy(object):
         hours = int(seconds / (60 * 60))
         if hours:
             return '{}h'.format(hours)
-        
+
         minutes = int(seconds / 60)
         if minutes:
             return '{}m'.format(minutes)
-        
+
         return '{}s'.format(int(seconds))
 
     def current_repository(self):
@@ -662,11 +662,11 @@ class GitWorkingCopy(object):
     def is_root(self):
         """Returns True if the receiver does not have a parent working copy."""
         return self.parent is None
-    
+
     def has_autostash_enabled(self):
         output = self.output_for_git_command('git config rebase.autoStash'.split())
         return output and output[0] == 'true'
-        
+
     def ancestors(self):
         """
         Returns a list of parent working copies.
@@ -683,7 +683,7 @@ class GitWorkingCopy(object):
     def current_branch_upstream(self):
         output = self.output_for_git_command('git rev-parse --abbrev-ref --symbolic-full-name @{u}'.split(), filter_rules=[('-', r'fatal')])
         return output
-    
+
     def current_branch_has_upstream(self):
         return bool(self.current_branch_upstream())
 
@@ -729,7 +729,7 @@ class GitWorkingCopy(object):
         """
         if not self.is_dirty():
             return None
-        
+
         stash_commit = None
         output = self.output_for_git_command('git stash create'.split())
         if len(output):
@@ -737,7 +737,7 @@ class GitWorkingCopy(object):
             print 'Stashed changes, restore with "git stash apply {0}"'.format(stash_commit)
             output = self.output_for_git_command('git reset --hard'.split())
             #print '\n'.join(output)
-        
+
         return stash_commit
 
     def apply_stash_commit(self, stash_commit):
@@ -803,13 +803,13 @@ class GitWorkingCopy(object):
         cache_file_path = os.path.join(self.githelper_config_directory(should_create=True), 'cached_child_list')
         with open(cache_file_path, 'w') as f:
             pickle.dump([wc.path for wc in child_list], f)
-    
+
     def githelper_config_directory(self, should_create=False):
         config_directory_path = os.path.join(self.git_directory(), 'githelper')
         if should_create and not os.path.exists(config_directory_path):
             os.mkdir(config_directory_path)
         return config_directory_path
-    
+
     def git_directory(self):
         with self.chdir_to_path():
             return os.path.abspath(self.output_for_git_command('git rev-parse --git-dir'.split())[0])
@@ -837,7 +837,7 @@ class GitWorkingCopy(object):
         for item in self:
             if item.is_dirty():
                 dirty_working_copies.append(item)
-        
+
         return dirty_working_copies
 
     def traverse(self, iterator):
@@ -944,7 +944,7 @@ class AbstractSubcommand(object):
 
         """
         pass
-    
+
     def chained_post_traversal_subcommand_for_root_working_copy(self, root_wc):
         """
         This method gets called on the root working copy after the traversal
@@ -1046,10 +1046,10 @@ class SubcommandCopyHeadCommitHash(AbstractSubcommand):
 
         output = self.interpolate_data_into_template_lines(wc, output)
         output_string = ''.join([l + '\n' for l in output])
-  
+
         self.write_string_to_clipboard(output_string)
         print output_string,
-        
+
         return GitWorkingCopy.STOP_TRAVERSAL
 
     def interpolate_data_into_template_lines(self, wc, template_lines):
@@ -1076,7 +1076,7 @@ class SubcommandCopyHeadCommitHash(AbstractSubcommand):
 
         Templates are snippets of text into which the commit information is interpolated.
         The following replacement tokens are available:
-        
+
             {branch}          The current branch name
             {repository}      The last path element of the current repository's remote URL,
                               without any file extensions such as ".git"
@@ -1086,18 +1086,18 @@ class SubcommandCopyHeadCommitHash(AbstractSubcommand):
         If you don't select a template with this option, the default template is used:
 
             "{repository} {branch} {commit} {tags}"
-        
+
         You store a custom template with git config. To change the default, unnamed one:
-        
+
             $ git config githelper.copy-template 'Repository: {repository} - Branch: {branch} - Commit: {commit}'
 
         To set any named template, add a dash and the name to the git configuration variable,
         in this example "merge":
-        
+
             $ git config githelper.copy-template-merge $'- Code Reviewed By: \\n- Branch: {branch} ({commit})\\n- Repository: {repository}\\n- Testing Details: \\n'
-        
+
         This example also shows how to set multiline-templates with \\n sequences and the Bash $'' construct.
-        
+
         ''')
         parser.add_argument('template', nargs='?', default=None, help=description)
 
@@ -1159,12 +1159,12 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
         if self.args.template:
             self.print_manual_help('Git commands template', ['remote_name'], 'branch_name')
             return GitWorkingCopy.STOP_TRAVERSAL
-            
+
         remote_names = wc.output_for_git_command('git remote'.split())
         if len(remote_names) > 1:
             self.print_manual_help('More than one remote: "{}", please delete manually'.format(', '.join(remote_names)), remote_names, local_branch_ref)
             return GitWorkingCopy.STOP_TRAVERSAL
-        remote_name = None 
+        remote_name = None
         if remote_names:
             remote_name = remote_names[0]
 
@@ -1189,7 +1189,7 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
                 prompt += ' and remote branch "{}:{}"'.format(remote_name, remote_branch_ref)
             if not self.affirmative_answer_for_prompt(prompt + '?'):
                 return GitWorkingCopy.STOP_TRAVERSAL
-    
+
         if current_branch_ref == local_branch_ref:
             output = wc.output_for_git_command('git rev-parse --abbrev-ref --symbolic-full-name @{-1}'.split())
             if not output:
@@ -1202,7 +1202,7 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
             wc.run_shell_command('git push -d'.split() + [remote_name, remote_branch_ref])
 
         return GitWorkingCopy.STOP_TRAVERSAL
-    
+
     def print_manual_help(self, reason, remotes=None, branch='<branch-name>'):
         print >> sys.stderr, reason + ', please delete manually:'
         print >> sys.stderr, 'git branch -D {}'.format(branch)
@@ -1212,7 +1212,7 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
             else:
                 remotes = remotes[0]
             print >> sys.stderr, 'git push -d {} {}'.format(remotes, branch)
-        
+
     @classmethod
     def configure_argument_parser(cls, parser):
         parser.add_argument('branch', nargs='?', default=None, help='The name of the branch that should be deleted, defaults to the currently checked out branch')
@@ -1234,7 +1234,7 @@ class WorkingCopyTreeStashingSubcommand(AbstractSubcommand):
             print >> sys.stderr, ANSIColor.wrap('Dirty working copies found, please either 1.) commit or stash first, 2.) use git\'s rebase.autoStash configuration option, or 3.) use the -s/--stash-pop option\n', color=ANSIColor.red)
             self.format_and_print_dirty_working_copy_list(dirty_working_copies)
             return GitWorkingCopy.STOP_TRAVERSAL
-    
+
     @classmethod
     def configure_argument_parser(cls, parser):
         parser.add_argument('-s', '--stash-pop', action='store_true', help='Allow dirty working copy. Stash before checkout and pop afterwards.')
@@ -1246,14 +1246,14 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
     def __call__(self, wc):
         target_branch_candidates = self.args.branch
         current_branch = wc.current_branch()
-        
+
         target_branch = None
 
         for target_branch_candidate in target_branch_candidates:
             target_branch = self.target_branch_for_branch_name(target_branch_candidate, wc)
             if target_branch:
                 break
-            
+
         if not target_branch:
             if len(target_branch_candidates) == 1:
                 print >> sys.stderr, 'No branch found matching "{0}" in {1}, staying on "{2}"'.format(target_branch_candidates[0], wc, current_branch)
@@ -1284,13 +1284,13 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
     def target_branch_for_branch_name(self, target_branch_candidate, wc):
         local_branch_candidates = [i for i in wc.local_branch_names() if target_branch_candidate in i]
         remote_branch_candidates = [re.sub(r'^[^/]+/', '', i) for i in wc.remote_branch_names() if target_branch_candidate in i]
-        
+
         TargetBranchResult = collections.namedtuple('TargetBranchResult', ['name', 'needs_remote_checkout', 'should_abort'])
 
         def find_exact_local_match():
             if target_branch_candidate in local_branch_candidates:
                 return TargetBranchResult(target_branch_candidate, False, False)
-        
+
         def find_exact_remote_match():
             if target_branch_candidate in remote_branch_candidates:
                 return TargetBranchResult(target_branch_candidate, True, False)
@@ -1376,7 +1376,7 @@ class SubcommandBranch(AbstractSubcommand):
         (string.ljust, lambda x: x.head_commit_hash()),
         (string.rjust, lambda x: str(x.head_commit_age_approximate_string())),
     )
-    
+
     def column_count(self):
         return len(SubcommandBranch.column_justifiers_and_accessors)
 
@@ -1419,9 +1419,9 @@ class SubcommandBranch(AbstractSubcommand):
             - the branch name
             - the head commit ID
             - the age of the head commit
-            
+
             For the "commits to pull" information to be up to date, you have to run the "fetch" subcommand first.
-            
+
             Many subcommands (among them "fetch") automatically run the branch subcommand afterwards.''')
 
 
@@ -1433,7 +1433,7 @@ class SubcommandFetch(AbstractSubcommand):
 
     def chained_post_traversal_subcommand_for_root_working_copy(self, root_wc):
         return SubcommandBranch(self.args)
-        
+
 
 class SubcommandEach(AbstractSubcommand):
     """Run a shell command in each working copy"""
@@ -1481,7 +1481,7 @@ class GitHelperCommandLineDriver(object):
         subcommand = non_option_arguments[0]
         if subcommand in subcommand_map.keys():
             return True
-        
+
         # converts a string like 'abc' to a regex like '(a).*?(b).*?(c)'
         regex = re.compile('.*?'.join(['(' + char + ')' for char in subcommand]))
         subcommand_candidates = []
@@ -1490,7 +1490,7 @@ class GitHelperCommandLineDriver(object):
             if not match:
                 continue
             subcommand_candidates.append(cls.subcommand_candidate_for_abbreviation_match(subcommand_name, match))
-            
+
         if not subcommand_candidates:
             return True
 
