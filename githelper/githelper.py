@@ -648,7 +648,7 @@ class GitWorkingCopy(object):
         popen = FilteringPopen(command, cwd=self.path, shell=shell)
         popen.run(filter_rules=filter_rules, store_stdout=False, store_stderr=False, header=header, check_returncode=check_returncode)
 
-    def output_for_git_command(self, command, shell=False, filter_rules=None, header=None, check_returncode=None):
+    def output_for_git_command(self, command, shell=False, filter_rules=None, header=None, check_returncode=None, echo_stderr=True):
         """
         Runs the given shell command (array or string) in the receiver's working directory and returns the output.
 
@@ -656,7 +656,7 @@ class GitWorkingCopy(object):
 
         """
         popen = FilteringPopen(command, cwd=self.path, shell=shell)
-        popen.run(filter_rules=filter_rules, echo_stdout=False, header=header, check_returncode=check_returncode)
+        popen.run(filter_rules=filter_rules, echo_stdout=False, echo_stderr=echo_stderr, header=header, check_returncode=check_returncode)
         return popen.stdoutlines()
 
     def is_root(self):
@@ -1174,8 +1174,10 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
 
         remote_branch_ref = None
         if remote_name:
-            output = wc.output_for_git_command(['git', 'rev-parse', '--abbrev-ref', '--symbolic-full-name', local_branch_ref + '@{u}'], filter_rules=[('-', r'fatal')], check_returncode=False)
-            if output:
+            remote_branch_symbolic_ref = local_branch_ref + '@{u}'
+            output = wc.output_for_git_command(['git', 'rev-parse', '--abbrev-ref', '--symbolic-full-name', remote_branch_symbolic_ref], filter_rules=[('-', r'fatal')], check_returncode=False, echo_stderr=False)
+
+            if output and output != [remote_branch_symbolic_ref]:
                 remote_branch_ref = output[0][len(remote_name) + 1:]
                 if not remote_branch_ref.startswith('user/'):
                     self.print_manual_help('Remote branch name "{}" does not start with "user/", please delete manually'.format(remote_branch_ref), remote_names, local_branch_ref)
