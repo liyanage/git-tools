@@ -1208,7 +1208,7 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
         print >> sys.stderr, 'git branch -D {}'.format(branch)
         if remotes:
             if len(remotes) > 1:
-                remotes = '(' + '|'.join(remotes), + ')'
+                remotes = '(' + '|'.join(remotes) + ')'
             else:
                 remotes = remotes[0]
             print >> sys.stderr, 'git push -d {} {}'.format(remotes, branch)
@@ -1498,7 +1498,7 @@ class GitHelperCommandLineDriver(object):
             print >> sys.stderr, subcommand_candidates[0].decorated_name
             sys.argv[sys.argv.index(subcommand)] = subcommand_candidates[0].name
             return True
-        
+
         print >> sys.stderr, 'Ambiguous subcommand "{}": {}'.format(subcommand, ', '.join([i.decorated_name for i in subcommand_candidates]))
         return False
 
@@ -1520,7 +1520,7 @@ class GitHelperCommandLineDriver(object):
         subcommand_map = cls.subcommand_map()
         if not cls.resolve_subcommand_abbreviation(subcommand_map):
             exit(1)
-    
+
         parser = argparse.ArgumentParser(description='Git helper')
         parser.add_argument('--root_path', help='Path to root working copy', default=os.getcwd())
         parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose debug logging')
