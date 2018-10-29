@@ -562,10 +562,18 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">root_prefix</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span>
 
 <div class="viewcode-block" id="GitWorkingCopy.current_branch"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.current_branch">[docs]</a>    <span class="k">def</span> <span class="nf">current_branch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Returns the name of the current git branch.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Returns the name of the current git branch&quot;&quot;&quot;</span>
         <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="s1">&#39;git branch -a&#39;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
         <span class="p">[</span><span class="n">branch</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;* &#39;</span><span class="p">)]</span>
         <span class="k">return</span> <span class="n">branch</span></div>
+
+<div class="viewcode-block" id="GitWorkingCopy.fork_point_commit_id_for_branch"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.fork_point_commit_id_for_branch">[docs]</a>    <span class="k">def</span> <span class="nf">fork_point_commit_id_for_branch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other_branch</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the fork point with another branch&quot;&quot;&quot;</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;git&#39;</span><span class="p">,</span> <span class="s1">&#39;merge-base&#39;</span><span class="p">,</span> <span class="s1">&#39;--fork-point&#39;</span><span class="p">,</span> <span class="n">other_branch</span><span class="p">]</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="GitWorkingCopy.tags_pointing_at"><a class="viewcode-back" href="../index.html#githelper.GitWorkingCopy.tags_pointing_at">[docs]</a>    <span class="k">def</span> <span class="nf">tags_pointing_at</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">commit_reference</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a list of tags that point to the given commit&quot;&quot;&quot;</span>
@@ -998,6 +1006,10 @@
         <span class="k">return</span> <span class="kc">None</span></div>
 
     <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">print_dirty_working_copies_error_message</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="n">ANSIColor</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="s1">&#39;Dirty working copies found, please either 1.) commit or stash first, 2.) use git</span><span class="se">\&#39;</span><span class="s1">s rebase.autoStash configuration option, or 3.) use the -s/--stash-pop option</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ANSIColor</span><span class="o">.</span><span class="n">red</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">affirmative_answer_for_prompt</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">prompt_string</span><span class="p">):</span>
         <span class="n">prompt_input</span> <span class="o">=</span> <span class="n">raw_input</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> [Y/n] &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prompt_string</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">prompt_input</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span> <span class="ow">or</span> <span class="n">prompt_input</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
@@ -1274,7 +1286,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">dirty_wcs_without_autostash</span><span class="p">:</span>
                 <span class="nb">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s1">&#39;Proceeding with dirty working copies because rebase.autoStash is set</span><span class="se">\n</span><span class="s1">&#39;</span>
                 <span class="k">return</span>
-            <span class="nb">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="n">ANSIColor</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="s1">&#39;Dirty working copies found, please either 1.) commit or stash first, 2.) use git</span><span class="se">\&#39;</span><span class="s1">s rebase.autoStash configuration option, or 3.) use the -s/--stash-pop option</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ANSIColor</span><span class="o">.</span><span class="n">red</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">print_dirty_working_copies_error_message</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">format_and_print_dirty_working_copy_list</span><span class="p">(</span><span class="n">dirty_working_copies</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
 
@@ -1408,13 +1420,85 @@
         <span class="k">return</span> <span class="n">SubcommandBranch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">SubcommandBitBucket</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Atlassian Bitbucket Integration&quot;&quot;&quot;</span>
+<span class="k">class</span> <span class="nc">SubcommandForkPoint</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
 
+    <span class="sd">&quot;&quot;&quot;Print the fork point of the current branch and another branch&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
+        <span class="n">fork_point_commit</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">fork_point_commit_id_for_branch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">target_branch</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fork_point_commit</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Fork-point between &quot;head&quot; (</span><span class="si">{}</span><span class="s1">) and &quot;</span><span class="si">{}</span><span class="s1">&quot;:&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wc</span><span class="o">.</span><span class="n">current_branch</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">target_branch</span><span class="p">)</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;git&#39;</span><span class="p">,</span> <span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="s1">&#39;-1&#39;</span><span class="p">,</span> <span class="s1">&#39;--pretty=format:%h  </span><span class="si">%c</span><span class="s1">d  </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">fork_point_commit</span><span class="p">]</span>
+            <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">other_branch</span> <span class="ow">in</span> <span class="s1">&#39;head&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">target_branch</span><span class="p">:</span>
+                <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;git&#39;</span><span class="p">,</span> <span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="s1">&#39;--pretty=format:%h  </span><span class="si">%c</span><span class="s1">d  </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">other_branch</span><span class="p">,</span> <span class="s1">&#39;^&#39;</span> <span class="o">+</span> <span class="n">fork_point_commit</span><span class="p">]</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+                <span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="si">{}</span><span class="s1"> commits in &quot;</span><span class="si">{}</span><span class="s1">&quot; but not in fork-point </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">),</span> <span class="n">other_branch</span><span class="p">,</span> <span class="n">fork_point_commit</span><span class="p">[:</span><span class="mi">12</span><span class="p">])</span>
+                <span class="nb">print</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">line</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">output</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s1">&#39;Unable to find fork point between &quot;</span><span class="si">{}</span><span class="s1">&quot; and &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wc</span><span class="o">.</span><span class="n">current_branch</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">target_branch</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">configure_argument_parser</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
-        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;action&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;pullrequest&#39;</span><span class="p">],</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;target_branch&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;The target branch for the current branch for which we want to find the fork point&#39;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">SubcommandSquashToForkPoint</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find the fork point of the current branch and squash multiple commits between that and head into one&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wc</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">wc</span><span class="o">.</span><span class="n">is_dirty</span><span class="p">():</span>
+            <span class="nb">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="n">ANSIColor</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="s1">&#39;Dirty working copies found, please commit or stash first&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ANSIColor</span><span class="o">.</span><span class="n">red</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">format_and_print_dirty_working_copy_list</span><span class="p">([</span><span class="n">wc</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+
+        <span class="n">fork_point_commit</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">fork_point_commit_id_for_branch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">target_branch</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">fork_point_commit</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s1">&#39;Unable to find fork point between &quot;</span><span class="si">{}</span><span class="s1">&quot; and &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wc</span><span class="o">.</span><span class="n">current_branch</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">target_branch</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+
+        <span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Fork-point between &quot;head&quot; (</span><span class="si">{}</span><span class="s1">) and &quot;</span><span class="si">{}</span><span class="s1">&quot;:&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wc</span><span class="o">.</span><span class="n">current_branch</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">target_branch</span><span class="p">)</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;git&#39;</span><span class="p">,</span> <span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="s1">&#39;-1&#39;</span><span class="p">,</span> <span class="s1">&#39;--pretty=format:%h  </span><span class="si">%c</span><span class="s1">d  </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">fork_point_commit</span><span class="p">]</span>
+        <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;git&#39;</span><span class="p">,</span> <span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="s1">&#39;--pretty=format:%h  </span><span class="si">%c</span><span class="s1">d  </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;head&#39;</span><span class="p">,</span> <span class="s1">&#39;^&#39;</span> <span class="o">+</span> <span class="n">fork_point_commit</span><span class="p">]</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="n">commit_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="si">{}</span><span class="s1"> commits in head but not in fork-point </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">commit_count</span><span class="p">,</span> <span class="n">fork_point_commit</span><span class="p">[:</span><span class="mi">12</span><span class="p">])</span>
+        <span class="nb">print</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">) </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">number</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span> <span class="k">for</span> <span class="n">number</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">)])</span>
+
+        <span class="k">if</span> <span class="n">commit_count</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s1">&#39;Fewer than two commits, nothing to squash&#39;</span>
+            <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+
+        <span class="n">prompt_input</span> <span class="o">=</span> <span class="n">raw_input</span><span class="p">(</span><span class="s1">&#39;Pick commit subject to reuse for squashed commit (1-</span><span class="si">{}</span><span class="s1">, anything else to cancel) &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">commit_count</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">prompt_input</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="n">commit_count</span><span class="p">:</span>
+                <span class="n">selected_commit_id</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="n">value</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;git&#39;</span><span class="p">,</span> <span class="s1">&#39;show&#39;</span><span class="p">,</span> <span class="s1">&#39;-s&#39;</span><span class="p">,</span> <span class="s2">&quot;--format=</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">selected_commit_id</span><span class="p">]</span>
+            <span class="n">subject</span> <span class="o">=</span> <span class="n">wc</span><span class="o">.</span><span class="n">output_for_git_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">subject</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">pass</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">subject</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+
+        <span class="nb">print</span> <span class="s1">&#39;Squashing with the following commands, head before squash is </span><span class="si">{}</span><span class="s1">:&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wc</span><span class="o">.</span><span class="n">head_commit_hash</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="p">([</span><span class="s1">&#39;git&#39;</span><span class="p">,</span> <span class="s1">&#39;reset&#39;</span><span class="p">,</span> <span class="s1">&#39;--soft&#39;</span><span class="p">,</span> <span class="n">fork_point_commit</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;git&#39;</span><span class="p">,</span> <span class="s1">&#39;commit&#39;</span><span class="p">,</span> <span class="s1">&#39;-m&#39;</span><span class="p">,</span> <span class="n">subject</span><span class="p">]):</span>
+            <span class="nb">print</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">dry_run</span><span class="p">:</span>
+                <span class="n">wc</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">GitWorkingCopy</span><span class="o">.</span><span class="n">STOP_TRAVERSAL</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">configure_argument_parser</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;target_branch&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;The target branch for the current branch, which is assumed to be a feature branch with multiple commits that need to be squashed.&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--dry-run&#39;</span><span class="p">,</span> <span class="s1">&#39;-n&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Don&#39;t make any changes, just print the git commands&quot;</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">SubcommandBranch</span><span class="p">(</span><span class="n">AbstractSubcommand</span><span class="p">):</span>
@@ -1547,7 +1631,7 @@
             <span class="k">return</span> <span class="kc">True</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">subcommand_candidates</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="nb">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="n">subcommand_candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">decorated_name</span>
+<span class="c1">#            print &gt;&gt; sys.stderr, subcommand_candidates[0].decorated_name</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">subcommand</span><span class="p">)]</span> <span class="o">=</span> <span class="n">subcommand_candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
             <span class="k">return</span> <span class="kc">True</span>
 
@@ -1588,8 +1672,6 @@
         <span class="n">subcommand_class</span> <span class="o">=</span> <span class="n">subcommand_map</span><span class="p">[</span><span class="n">args</span><span class="o">.</span><span class="n">subcommand_name</span><span class="p">]</span>
         <span class="n">subcommand</span> <span class="o">=</span> <span class="n">subcommand_class</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
 
-        <span class="n">t1</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-
         <span class="k">if</span> <span class="n">subcommand_class</span><span class="o">.</span><span class="n">wants_working_copy</span><span class="p">():</span>
             <span class="k">while</span> <span class="n">subcommand</span><span class="p">:</span>
                 <span class="n">wc</span> <span class="o">=</span> <span class="n">GitWorkingCopy</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">root_path</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">verbose</span><span class="p">)</span>
@@ -1597,10 +1679,6 @@
                 <span class="n">subcommand</span> <span class="o">=</span> <span class="n">subcommand</span><span class="o">.</span><span class="n">chained_post_traversal_subcommand_for_root_working_copy</span><span class="p">(</span><span class="n">wc</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">subcommand</span><span class="p">()</span>
-
-        <span class="n">t2</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-        <span class="nb">print</span> <span class="s1">&#39;</span><span class="si">{:0.1f}</span><span class="s1">s&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">((</span><span class="n">t2</span> <span class="o">-</span> <span class="n">t1</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
-
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
     <span class="n">GitHelperCommandLineDriver</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>

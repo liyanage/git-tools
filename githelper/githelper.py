@@ -521,10 +521,18 @@ class GitWorkingCopy(object):
             return self.path[len(root_prefix) + 1:]
 
     def current_branch(self):
-        """Returns the name of the current git branch."""
+        """Returns the name of the current git branch"""
         output = self.output_for_git_command('git branch -a'.split())
         [branch] = [i[2:] for i in output if i.startswith('* ')]
         return branch
+
+    def fork_point_commit_id_for_branch(self, other_branch):
+        """Returns the fork point with another branch"""
+        cmd = ['git', 'merge-base', '--fork-point', other_branch]
+        output = self.output_for_git_command(cmd)
+        if len(output) != 1:
+            return None
+        return output[0].strip()
 
     def tags_pointing_at(self, commit_reference):
         """Returns a list of tags that point to the given commit"""
@@ -957,6 +965,10 @@ class AbstractSubcommand(object):
         return None
 
     @classmethod
+    def print_dirty_working_copies_error_message(cls):
+        print >> sys.stderr, ANSIColor.wrap('Dirty working copies found, please either 1.) commit or stash first, 2.) use git\'s rebase.autoStash configuration option, or 3.) use the -s/--stash-pop option\n', color=ANSIColor.red)
+
+    @classmethod
     def affirmative_answer_for_prompt(cls, prompt_string):
         prompt_input = raw_input('{} [Y/n] '.format(prompt_string))
         return prompt_input == '' or prompt_input.lower().startswith('y')
@@ -1233,7 +1245,7 @@ class WorkingCopyTreeStashingSubcommand(AbstractSubcommand):
             if not dirty_wcs_without_autostash:
                 print >> sys.stderr, 'Proceeding with dirty working copies because rebase.autoStash is set\n'
                 return
-            print >> sys.stderr, ANSIColor.wrap('Dirty working copies found, please either 1.) commit or stash first, 2.) use git\'s rebase.autoStash configuration option, or 3.) use the -s/--stash-pop option\n', color=ANSIColor.red)
+            self.print_dirty_working_copies_error_message()
             self.format_and_print_dirty_working_copy_list(dirty_working_copies)
             return GitWorkingCopy.STOP_TRAVERSAL
 
@@ -1367,6 +1379,87 @@ class SubcommandPull(WorkingCopyTreeStashingSubcommand):
         return SubcommandBranch(self.args)
 
 
+class SubcommandForkPoint(AbstractSubcommand):
+
+    """Print the fork point of the current branch and another branch"""
+
+    def __call__(self, wc):
+        fork_point_commit = wc.fork_point_commit_id_for_branch(self.args.target_branch)
+        if fork_point_commit:
+            print '\nFork-point between "head" ({}) and "{}":'.format(wc.current_branch(), self.args.target_branch)
+            cmd = ['git', 'log', '-1', '--pretty=format:%h  %cd  %s', fork_point_commit]
+            wc.run_shell_command(cmd)
+
+            for other_branch in 'head', self.args.target_branch:
+                cmd = ['git', 'log', '--pretty=format:%h  %cd  %s', other_branch, '^' + fork_point_commit]
+                output = wc.output_for_git_command(cmd)
+                print '\n{} commits in "{}" but not in fork-point {}'.format(len(output), other_branch, fork_point_commit[:12])
+                print ''.join([line + '\n' for line in output])
+        else:
+            print 'Unable to find fork point between "{}" and "{}"'.format(wc.current_branch(), self.args.target_branch)
+        return GitWorkingCopy.STOP_TRAVERSAL
+
+    @classmethod
+    def configure_argument_parser(cls, parser):
+        parser.add_argument('target_branch', help='The target branch for the current branch for which we want to find the fork point')
+
+
+class SubcommandSquashToForkPoint(AbstractSubcommand):
+    """Find the fork point of the current branch and squash multiple commits between that and head into one"""
+
+    def __call__(self, wc):
+        if wc.is_dirty():
+            print >> sys.stderr, ANSIColor.wrap('Dirty working copies found, please commit or stash first', color=ANSIColor.red)
+            self.format_and_print_dirty_working_copy_list([wc])
+            return GitWorkingCopy.STOP_TRAVERSAL
+
+        fork_point_commit = wc.fork_point_commit_id_for_branch(self.args.target_branch)
+        if not fork_point_commit:
+            print 'Unable to find fork point between "{}" and "{}"'.format(wc.current_branch(), self.args.target_branch)
+            return GitWorkingCopy.STOP_TRAVERSAL
+
+        print '\nFork-point between "head" ({}) and "{}":'.format(wc.current_branch(), self.args.target_branch)
+        cmd = ['git', 'log', '-1', '--pretty=format:%h  %cd  %s', fork_point_commit]
+        wc.run_shell_command(cmd)
+
+        cmd = ['git', 'log', '--pretty=format:%h  %cd  %s', 'head', '^' + fork_point_commit]
+        output = wc.output_for_git_command(cmd)
+        commit_count = len(output)
+        print '\n{} commits in head but not in fork-point {}'.format(commit_count, fork_point_commit[:12])
+        print ''.join(['{}) {}\n'.format(number, line) for number, line in enumerate(output, start=1)])
+
+        if commit_count < 2:
+            print 'Fewer than two commits, nothing to squash'
+            return GitWorkingCopy.STOP_TRAVERSAL
+
+        prompt_input = raw_input('Pick commit subject to reuse for squashed commit (1-{}, anything else to cancel) '.format(commit_count))
+        try:
+            value = int(prompt_input)
+            if value >= 1 and value <= commit_count:
+                selected_commit_id = output[value - 1].split()[0]
+            cmd = ['git', 'show', '-s', "--format=%s", selected_commit_id]
+            subject = wc.output_for_git_command(cmd)[0]
+        except ValueError as e:
+            subject = None
+            pass
+
+        if not subject:
+            return GitWorkingCopy.STOP_TRAVERSAL
+
+        print 'Squashing with the following commands, head before squash is {}:'.format(wc.head_commit_hash())
+        for cmd in (['git', 'reset', '--soft', fork_point_commit], ['git', 'commit', '-m', subject]):
+            print ' '.join(cmd)
+            if not self.args.dry_run:
+                wc.run_shell_command(cmd)
+
+        return GitWorkingCopy.STOP_TRAVERSAL
+
+    @classmethod
+    def configure_argument_parser(cls, parser):
+        parser.add_argument('target_branch', help='The target branch for the current branch, which is assumed to be a feature branch with multiple commits that need to be squashed.')
+        parser.add_argument('--dry-run', '-n', action='store_true', help="Don't make any changes, just print the git commands")
+
+
 class SubcommandBranch(AbstractSubcommand):
     """Show checked out branch and other status information of each working copy"""
 
@@ -1497,7 +1590,7 @@ class GitHelperCommandLineDriver(object):
             return True
 
         if len(subcommand_candidates) == 1:
-            print >> sys.stderr, subcommand_candidates[0].decorated_name
+#            print >> sys.stderr, subcommand_candidates[0].decorated_name
             sys.argv[sys.argv.index(subcommand)] = subcommand_candidates[0].name
             return True
 
