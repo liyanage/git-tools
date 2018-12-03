@@ -1387,13 +1387,14 @@ class SubcommandForkPoint(AbstractSubcommand):
         fork_point_commit = wc.fork_point_commit_id_for_branch(self.args.target_branch)
         if fork_point_commit:
             print '\nFork-point between "head" ({}) and "{}":'.format(wc.current_branch(), self.args.target_branch)
-            cmd = ['git', 'log', '-1', '--pretty=format:%h  %cd  %s', fork_point_commit]
+            cmd = ['git', 'log', '-1', '--pretty=format:%h  %ad  %s', fork_point_commit]
             wc.run_shell_command(cmd)
 
+            print
             for other_branch in 'head', self.args.target_branch:
-                cmd = ['git', 'log', '--pretty=format:%h  %cd  %s', other_branch, '^' + fork_point_commit]
+                cmd = ['git', 'log', '--pretty=format:%h  %ad  %s', other_branch, '^' + fork_point_commit]
                 output = wc.output_for_git_command(cmd)
-                print '\n{} commits in "{}" but not in fork-point {}'.format(len(output), other_branch, fork_point_commit[:12])
+                print '{} commits in "{}" but not in fork-point {}'.format(len(output), other_branch, fork_point_commit[:12])
                 print ''.join([line + '\n' for line in output])
         else:
             print 'Unable to find fork point between "{}" and "{}"'.format(wc.current_branch(), self.args.target_branch)
@@ -1419,35 +1420,33 @@ class SubcommandSquashToForkPoint(AbstractSubcommand):
             return GitWorkingCopy.STOP_TRAVERSAL
 
         print '\nFork-point between "head" ({}) and "{}":'.format(wc.current_branch(), self.args.target_branch)
-        cmd = ['git', 'log', '-1', '--pretty=format:%h  %cd  %s', fork_point_commit]
+        cmd = ['git', 'log', '-1', '--pretty=format:%h  %ad  %s', fork_point_commit]
         wc.run_shell_command(cmd)
 
-        cmd = ['git', 'log', '--pretty=format:%h  %cd  %s', 'head', '^' + fork_point_commit]
+        cmd = ['git', 'log', '--pretty=format:%h  %ad  %s', 'head', '^' + fork_point_commit]
         output = wc.output_for_git_command(cmd)
         commit_count = len(output)
         print '\n{} commits in head but not in fork-point {}'.format(commit_count, fork_point_commit[:12])
-        print ''.join(['{}) {}\n'.format(number, line) for number, line in enumerate(output, start=1)])
+        print ''.join(['{}) {}\n'.format(commit_count - number, line) for number, line in enumerate(output)])
 
         if commit_count < 2:
             print 'Fewer than two commits, nothing to squash'
             return GitWorkingCopy.STOP_TRAVERSAL
 
-        prompt_input = raw_input('Pick commit subject to reuse for squashed commit (1-{}, anything else to cancel) '.format(commit_count))
+        prompt_input = raw_input('Pick commit from which to reuse subject/author/date for squashed commit (1-{}, anything else to cancel) '.format(commit_count))
+        authorship_commit = None
         try:
             value = int(prompt_input)
             if value >= 1 and value <= commit_count:
-                selected_commit_id = output[value - 1].split()[0]
-            cmd = ['git', 'show', '-s', "--format=%s", selected_commit_id]
-            subject = wc.output_for_git_command(cmd)[0]
+                authorship_commit = output[value - 1].split()[0]
         except ValueError as e:
-            subject = None
             pass
 
-        if not subject:
+        if not authorship_commit:
             return GitWorkingCopy.STOP_TRAVERSAL
 
         print 'Squashing with the following commands, head before squash is {}:'.format(wc.head_commit_hash())
-        for cmd in (['git', 'reset', '--soft', fork_point_commit], ['git', 'commit', '-m', subject]):
+        for cmd in (['git', 'reset', '--soft', fork_point_commit], ['git', 'commit', '-C', authorship_commit]):
             print ' '.join(cmd)
             if not self.args.dry_run:
                 wc.run_shell_command(cmd)
