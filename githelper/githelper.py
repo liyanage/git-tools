@@ -1438,7 +1438,7 @@ class SubcommandSquashToForkPoint(AbstractSubcommand):
         try:
             value = int(prompt_input)
             if value >= 1 and value <= commit_count:
-                authorship_commit = output[value - 1].split()[0]
+                authorship_commit = output[commit_count - value].split()[0]
         except ValueError as e:
             pass
 
