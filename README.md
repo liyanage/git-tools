@@ -5,3 +5,4 @@ Some Git helper tools.
 * ``git-checkout-by-date.sh`` lets you do exactly that
 * ``git-working-copy-check.py`` performs some sanity checks on git working copies, recursively if requested
 * ``template/hooks`` contains git hooks, for example a ``prepare-commit-msg`` hook to prepare informative merge commit messages
+* ''.gitignore'' Remove accidentally added binary
