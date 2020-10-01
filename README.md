@@ -1,5 +1,5 @@
 
-Some Git helper tools.
+Some best Git helper tools.
 
 * ``githelper`` is a subcommand-based multi-purpose git tool and Python library, currently with a focus on git-svn working copies. It has its own [documentation page](http://liyanage.github.io/git-tools/)
 * ``git-checkout-by-date.sh`` lets you do exactly that
