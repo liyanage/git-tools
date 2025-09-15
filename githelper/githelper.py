@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding=utf-8
 
 """
@@ -81,7 +81,7 @@ As a reminder, you could shorten the subcommand name and type just ``gh sta`` he
 To check out a certain point in time in the past in all nested working copies, you could
 use the ``each`` subcommand, which runs a shell command in each one::
 
-    $ gh each "git checkout \$(git rev-list -n 1 --before='2012-01-01 00:00' master)"
+    $ gh each 'git checkout $(git rev-list -n 1 --before="2012-01-01 00:00" master)'
 
 Another useful subcommand is ``branch``, it gives a complete overview of the branch
 status of each working copy::
@@ -192,24 +192,17 @@ API Documentation
 
 import os
 import re
-import imp
 import sys
-import types
 import pickle
 import select
-import string
 import logging
-import getpass
-import tempfile
 import datetime
 import argparse
 import textwrap
-import StringIO
 import itertools
 import subprocess
 import contextlib
 import collections
-import xml.etree.ElementTree
 
 class PopenOutputFilter:
     """
@@ -382,7 +375,7 @@ class FilteringPopen(object):
                     if self.echo_stdout:
                         self.print_header_once()
                         with ANSIColor.terminal_color(ANSIColor.blue, ANSIColor.blue):
-                            print >> sys.stderr, line
+                            print(line, file=sys.stderr)
                 elif handle == self.popen.stderr:
                     if self.filter and not self.filter.keep_stderrline(line):
                         continue
@@ -391,14 +384,14 @@ class FilteringPopen(object):
                     if self.echo_stderr:
                         self.print_header_once()
                         with ANSIColor.terminal_color(ANSIColor.blue, ANSIColor.blue):
-                            print >> sys.stdout, line
+                            print(line, file=sys.stdout)
 
     def print_header_once(self):
         if self.did_print_header or not self.header:
             return
 
         self.did_print_header = True
-        print self.header
+        print(self.header)
 
     def stdoutlines(self):
         """Returns an array of the stdout lines that were not filtered, with trailing newlines removed."""
@@ -457,7 +450,7 @@ class ANSIColor(object):
 
     @classmethod
     def wrap(cls, value, color=red):
-        return u'{}{}{}'.format(cls.start_sequence(color), value, cls.clear_sequence())
+        return '{}{}{}'.format(cls.start_sequence(color), value, cls.clear_sequence())
 
 
 class GitRevision(object):
@@ -470,7 +463,7 @@ class GitRevision(object):
     def parse_log_line_oneline(cls, log_line):
         match = re.match(r'^([0-9a-f]+)\s+(.*)', log_line)
         if not match:
-            print >> sys.stderr, 'Unable to parse git log line "{}":'.format(log_line)
+            print('Unable to parse git log line "{}":'.format(log_line), file=sys.stderr)
             return None
         return GitRevision(match.group(1), match.group(2))
 
@@ -648,12 +641,12 @@ class GitWorkingCopy(object):
 
         """
         if shell is None:
-            if isinstance(command, types.StringTypes):
+            if isinstance(command, (str,)):
                 shell = True
             else:
                 shell = False
 
-        popen = FilteringPopen(command, cwd=self.path, shell=shell)
+        popen = FilteringPopen(command, cwd=self.path, shell=shell, text=True)
         popen.run(filter_rules=filter_rules, store_stdout=False, store_stderr=False, header=header, check_returncode=check_returncode)
 
     def output_for_git_command(self, command, shell=False, filter_rules=None, header=None, check_returncode=None, echo_stderr=True):
@@ -663,7 +656,7 @@ class GitWorkingCopy(object):
         :param bool shell: If ``True``, runs the command through the shell. See the :py:mod:`subprocess` library module documentation for details.
 
         """
-        popen = FilteringPopen(command, cwd=self.path, shell=shell)
+        popen = FilteringPopen(command, cwd=self.path, shell=shell, text=True)
         popen.run(filter_rules=filter_rules, echo_stdout=False, echo_stderr=echo_stderr, header=header, check_returncode=check_returncode)
         return popen.stdoutlines()
 
@@ -716,7 +709,7 @@ class GitWorkingCopy(object):
         try:
             return subprocess.check_output(command, cwd=self.path)
         except:
-            print >> sys.stderr, 'Error running shell command in "{}":'.format(self.path)
+            print('Error running shell command in "{}":'.format(self.path), file=sys.stderr)
             raise
 
     def is_dirty(self):
@@ -742,7 +735,7 @@ class GitWorkingCopy(object):
         output = self.output_for_git_command('git stash create'.split())
         if len(output):
             stash_commit = output[0]
-            print 'Stashed changes, restore with "git stash apply {0}"'.format(stash_commit)
+            print('Stashed changes, restore with "git stash apply {0}"'.format(stash_commit))
             output = self.output_for_git_command('git reset --hard'.split())
             #print '\n'.join(output)
 
@@ -805,7 +798,7 @@ class GitWorkingCopy(object):
         if cls.DID_LOG_ABOUT_CACHED_CHILD_LIST:
             return
         cls.DID_LOG_ABOUT_CACHED_CHILD_LIST = True
-        print 'Using cached subrepository list from {}'.format(cache_file_path)
+        print('Using cached subrepository list from {}'.format(cache_file_path))
 
     def store_cached_child_list(self, child_list):
         cache_file_path = os.path.join(self.githelper_config_directory(should_create=True), 'cached_child_list')
@@ -902,13 +895,13 @@ class GitWorkingCopy(object):
         old_branch = self.current_branch()
         different_branch = old_branch != branch_name
         if different_branch:
-            print >> sys.stderr, 'Temporarily switching {0} from branch {1} to {2}'.format(self, old_branch, branch_name)
+            print('Temporarily switching {0} from branch {1} to {2}'.format(self, old_branch, branch_name), file=sys.stderr)
             self.switch_to_branch(branch_name)
 
         yield
 
         if different_branch:
-            print >> sys.stderr, 'Switching {0} back to branch {1}'.format(self, old_branch)
+            print('Switching {0} back to branch {1}'.format(self, old_branch), file=sys.stderr)
             self.switch_to_branch(old_branch)
 
 
@@ -966,11 +959,11 @@ class AbstractSubcommand(object):
 
     @classmethod
     def print_dirty_working_copies_error_message(cls):
-        print >> sys.stderr, ANSIColor.wrap('Dirty working copies found, please either 1.) commit or stash first, 2.) use git\'s rebase.autoStash configuration option, or 3.) use the -s/--stash-pop option\n', color=ANSIColor.red)
+        print(ANSIColor.wrap('Dirty working copies found, please either 1.) commit or stash first, 2.) use git\'s rebase.autoStash configuration option, or 3.) use the -s/--stash-pop option\n', color=ANSIColor.red), file=sys.stderr)
 
     @classmethod
     def affirmative_answer_for_prompt(cls, prompt_string):
-        prompt_input = raw_input('{} [Y/n] '.format(prompt_string))
+        prompt_input = input('{} [Y/n] '.format(prompt_string))
         return prompt_input == '' or prompt_input.lower().startswith('y')
 
     @classmethod
@@ -986,27 +979,20 @@ class AbstractSubcommand(object):
 
     @classmethod
     def read_string_from_clipboard(cls):
-        string = None
         if sys.platform == 'darwin':
-            import AppKit
-            pb = AppKit.NSPasteboard.generalPasteboard()
-            string = pb.stringForType_('public.utf8-plain-text')
-        return string
+            return subprocess.check_output(['pbpaste'], text=True).strip()
 
     @classmethod
     def write_string_to_clipboard(cls, string):
         if sys.platform == 'darwin':
-            import AppKit
-            pb = AppKit.NSPasteboard.generalPasteboard()
-            pb.clearContents()
-            pb.writeObjects_(AppKit.NSArray.arrayWithObject_(string))
+            subprocess.run(['pbcopy'], text=True, input=string)
 
     @classmethod
     def format_and_print_dirty_working_copy_list(cls, dirty_working_copies):
         for wc in dirty_working_copies:
-            print >> sys.stderr, wc
+            print(wc, file=sys.stderr)
             with ANSIColor.terminal_color(ANSIColor.red, ANSIColor.red):
-                print >> sys.stderr, ''.join([i + '\n' for i in wc.dirty_file_lines()])
+                print(''.join([i + '\n' for i in wc.dirty_file_lines()]), file=sys.stderr)
 
     @classmethod
     def wants_working_copy(cls):
@@ -1024,7 +1010,7 @@ class SubcommandTree(AbstractSubcommand):
     """List the tree of nested working copies"""
 
     def __call__(self, wc):
-        print '|{0}{1}'.format(len(wc.ancestors()) * '--', wc)
+        print('|{0}{1}'.format(len(wc.ancestors()) * '--', wc))
 
 
 class SubcommandStatus(AbstractSubcommand):
@@ -1048,7 +1034,7 @@ class SubcommandCopyHeadCommitHash(AbstractSubcommand):
             config_variable = 'githelper.copy-template-' + template_name
             output = wc.output_for_git_command(['git', 'config', config_variable])
             if not output:
-                print >> sys.stderr, 'No template found for git configuration variable "{}"'.format(config_variable)
+                print('No template found for git configuration variable "{}"'.format(config_variable), file=sys.stderr)
                 return GitWorkingCopy.STOP_TRAVERSAL
         else:
             config_variable = 'githelper.copy-template'
@@ -1060,7 +1046,7 @@ class SubcommandCopyHeadCommitHash(AbstractSubcommand):
         output_string = ''.join([l + '\n' for l in output])
 
         self.write_string_to_clipboard(output_string)
-        print output_string,
+        print(output_string, end=' ')
 
         return GitWorkingCopy.STOP_TRAVERSAL
 
@@ -1071,10 +1057,10 @@ class SubcommandCopyHeadCommitHash(AbstractSubcommand):
             tags = '(' + ', '.join(tags) + ')'
         else:
             tags = None
-        data = dict(zip('repository branch commit tags'.split(), (repository, branch, commit, tags)))
+        data = dict(list(zip('repository branch commit tags'.split(), (repository, branch, commit, tags))))
         output = []
         for line in template_lines:
-            for key, value in data.items():
+            for key, value in list(data.items()):
                 token = '{' + key + '}'
                 if token in line:
                     line = line.replace(token, value if value else '')
@@ -1135,15 +1121,15 @@ class SubcommandCheckoutBugfixBranch(AbstractSubcommand):
                 branch_name_suggestion = 'user/{}/{}'.format(os.environ['USER'], '-'.join([number] + words)).lower()
 
         if branch_name_suggestion:
-            prompt = 'Type branch name or hit return to accept "{}"\n'.format(branch_name_suggestion)
+            branch_name = branch_name_suggestion
             self.write_string_to_clipboard(branch_name_suggestion_raw)
         else:
             prompt = 'Type branch name\n'
+            branch_name = input(prompt)
 
-        branch_name = raw_input(prompt)
         if not len(branch_name):
             if not branch_name_suggestion:
-                print >> sys.stderr, 'No suitable branch name'
+                print('No suitable branch name', file=sys.stderr)
                 return GitWorkingCopy.STOP_TRAVERSAL
             branch_name = branch_name_suggestion
 
@@ -1154,6 +1140,8 @@ class SubcommandCheckoutBugfixBranch(AbstractSubcommand):
         staged = [l for l in output if l.startswith('M')]
         if staged:
             wc.run_shell_command(['git', 'commit', '-m', clipboard_string])
+
+        wc.run_shell_command(['git', 'push', '-u', 'origin', 'head'])
 
         return GitWorkingCopy.STOP_TRAVERSAL
 
@@ -1195,7 +1183,7 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
                     self.print_manual_help('Remote branch name "{}" does not start with "user/", please delete manually'.format(remote_branch_ref), remote_names, local_branch_ref)
                     return GitWorkingCopy.STOP_TRAVERSAL
             else:
-                print >> sys.stderr, 'No upstream branch configured, will delete only local branch'
+                print('No upstream branch configured, will delete only local branch', file=sys.stderr)
 
         if not self.args.no_prompt:
             prompt = 'Delete local branch "{}"'.format(local_branch_ref)
@@ -1218,14 +1206,14 @@ class SubcommandDropBugfixBranch(AbstractSubcommand):
         return GitWorkingCopy.STOP_TRAVERSAL
 
     def print_manual_help(self, reason, remotes=None, branch='<branch-name>'):
-        print >> sys.stderr, reason + ', please delete manually:'
-        print >> sys.stderr, 'git branch -D {}'.format(branch)
+        print(reason + ', please delete manually:', file=sys.stderr)
+        print('git branch -D {}'.format(branch), file=sys.stderr)
         if remotes:
             if len(remotes) > 1:
                 remotes = '(' + '|'.join(remotes) + ')'
             else:
                 remotes = remotes[0]
-            print >> sys.stderr, 'git push -d {} {}'.format(remotes, branch)
+            print('git push -d {} {}'.format(remotes, branch), file=sys.stderr)
 
     @classmethod
     def configure_argument_parser(cls, parser):
@@ -1243,7 +1231,7 @@ class WorkingCopyTreeStashingSubcommand(AbstractSubcommand):
                 return
             dirty_wcs_without_autostash = [wc for wc in dirty_working_copies if not wc.has_autostash_enabled()]
             if not dirty_wcs_without_autostash:
-                print >> sys.stderr, 'Proceeding with dirty working copies because rebase.autoStash is set\n'
+                print('Proceeding with dirty working copies because rebase.autoStash is set\n', file=sys.stderr)
                 return
             self.print_dirty_working_copies_error_message()
             self.format_and_print_dirty_working_copy_list(dirty_working_copies)
@@ -1270,15 +1258,15 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
 
         if not target_branch:
             if len(target_branch_candidates) == 1:
-                print >> sys.stderr, 'No branch found matching "{0}" in {1}, staying on "{2}"'.format(target_branch_candidates[0], wc, current_branch)
+                print('No branch found matching "{0}" in {1}, staying on "{2}"'.format(target_branch_candidates[0], wc, current_branch), file=sys.stderr)
             else:
-                print >> sys.stderr, 'No branch found matching any of "{0}" in {1}, staying on "{2}"'.format(', '.join(target_branch_candidates), wc, current_branch)
+                print('No branch found matching any of "{0}" in {1}, staying on "{2}"'.format(', '.join(target_branch_candidates), wc, current_branch), file=sys.stderr)
             return
 
         if current_branch == target_branch:
             return
 
-        print ANSIColor.wrap(wc, color=ANSIColor.green)
+        print(ANSIColor.wrap(wc, color=ANSIColor.green))
         stash_commit = None
         if wc.is_dirty():
             stash_commit = wc.create_stash_and_reset_hard()
@@ -1312,7 +1300,7 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
         def find_local_substring_match():
             count = len(local_branch_candidates)
             if count > 1:
-                print >> sys.stderr, 'Branch name "{}" is ambiguous in {}: {}'.format(target_branch_candidate, wc, ', '.join(local_branch_candidates))
+                print('Branch name "{}" is ambiguous in {}: {}'.format(target_branch_candidate, wc, ', '.join(local_branch_candidates)), file=sys.stderr)
                 return TargetBranchResult(None, False, True)
             elif count == 1:
                 return TargetBranchResult(local_branch_candidates[0], False, False)
@@ -1322,7 +1310,7 @@ class SubcommandCheckout(WorkingCopyTreeStashingSubcommand):
                 remote_branch_candidates.remove(target_branch_candidate) # remove exact remote match whose checkout user must have declined
             count = len(remote_branch_candidates)
             if count > 1:
-                print >> sys.stderr, 'Branch name "{}" is ambiguous for remote branches in {}: {}'.format(target_branch_candidate, wc, ', '.join(remote_branch_candidates))
+                print('Branch name "{}" is ambiguous for remote branches in {}: {}'.format(target_branch_candidate, wc, ', '.join(remote_branch_candidates)), file=sys.stderr)
                 return TargetBranchResult(None, False, True)
             elif count == 1:
                 return TargetBranchResult(remote_branch_candidates[0], True, False)
@@ -1357,12 +1345,12 @@ class SubcommandPull(WorkingCopyTreeStashingSubcommand):
 
     def __call__(self, wc):
         stash_commit = None
-        print ANSIColor.wrap(wc, color=ANSIColor.green)
+        print(ANSIColor.wrap(wc, color=ANSIColor.green))
         if wc.is_dirty() and not wc.has_autostash_enabled():
             stash_commit = wc.create_stash_and_reset_hard()
 
         if not wc.current_branch_has_upstream():
-            print 'Current branch {} has no upstream branch to pull from'.format(wc.current_branch())
+            print('Current branch {} has no upstream branch to pull from'.format(wc.current_branch()))
             return
 
         try:
@@ -1386,18 +1374,18 @@ class SubcommandForkPoint(AbstractSubcommand):
     def __call__(self, wc):
         fork_point_commit = wc.fork_point_commit_id_for_branch(self.args.target_branch)
         if fork_point_commit:
-            print '\nFork-point between "head" ({}) and "{}":'.format(wc.current_branch(), self.args.target_branch)
+            print('\nFork-point between "head" ({}) and "{}":'.format(wc.current_branch(), self.args.target_branch))
             cmd = ['git', 'log', '-1', '--pretty=format:%h  %ad  %s', fork_point_commit]
             wc.run_shell_command(cmd)
 
-            print
+            print()
             for other_branch in 'head', self.args.target_branch:
                 cmd = ['git', 'log', '--pretty=format:%h  %ad  %s', other_branch, '^' + fork_point_commit]
                 output = wc.output_for_git_command(cmd)
-                print '{} commits in "{}" but not in fork-point {}'.format(len(output), other_branch, fork_point_commit[:12])
-                print ''.join([line + '\n' for line in output])
+                print('{} commits in "{}" but not in fork-point {}'.format(len(output), other_branch, fork_point_commit[:12]))
+                print(''.join([line + '\n' for line in output]))
         else:
-            print 'Unable to find fork point between "{}" and "{}"'.format(wc.current_branch(), self.args.target_branch)
+            print('Unable to find fork point between "{}" and "{}"'.format(wc.current_branch(), self.args.target_branch))
         return GitWorkingCopy.STOP_TRAVERSAL
 
     @classmethod
@@ -1410,30 +1398,30 @@ class SubcommandSquashToForkPoint(AbstractSubcommand):
 
     def __call__(self, wc):
         if wc.is_dirty():
-            print >> sys.stderr, ANSIColor.wrap('Dirty working copies found, please commit or stash first', color=ANSIColor.red)
+            print(ANSIColor.wrap('Dirty working copies found, please commit or stash first', color=ANSIColor.red), file=sys.stderr)
             self.format_and_print_dirty_working_copy_list([wc])
             return GitWorkingCopy.STOP_TRAVERSAL
 
         fork_point_commit = wc.fork_point_commit_id_for_branch(self.args.target_branch)
         if not fork_point_commit:
-            print 'Unable to find fork point between "{}" and "{}"'.format(wc.current_branch(), self.args.target_branch)
+            print('Unable to find fork point between "{}" and "{}"'.format(wc.current_branch(), self.args.target_branch))
             return GitWorkingCopy.STOP_TRAVERSAL
 
-        print '\nFork-point between "head" ({}) and "{}":'.format(wc.current_branch(), self.args.target_branch)
+        print('\nFork-point between "head" ({}) and "{}":'.format(wc.current_branch(), self.args.target_branch))
         cmd = ['git', 'log', '-1', '--pretty=format:%h  %ad  %s', fork_point_commit]
         wc.run_shell_command(cmd)
 
         cmd = ['git', 'log', '--pretty=format:%h  %ad  %s', 'head', '^' + fork_point_commit]
         output = wc.output_for_git_command(cmd)
         commit_count = len(output)
-        print '\n{} commits in head but not in fork-point {}'.format(commit_count, fork_point_commit[:12])
-        print ''.join(['{}) {}\n'.format(commit_count - number, line) for number, line in enumerate(output)])
+        print('\n{} commits in head but not in fork-point {}'.format(commit_count, fork_point_commit[:12]))
+        print(''.join(['{}) {}\n'.format(commit_count - number, line) for number, line in enumerate(output)]))
 
         if commit_count < 2:
-            print 'Fewer than two commits, nothing to squash'
+            print('Fewer than two commits, nothing to squash')
             return GitWorkingCopy.STOP_TRAVERSAL
 
-        prompt_input = raw_input('Pick commit from which to reuse subject/author/date for squashed commit (1-{}, anything else to cancel) '.format(commit_count))
+        prompt_input = input('Pick commit from which to reuse subject/author/date for squashed commit (1-{}, anything else to cancel) '.format(commit_count))
         authorship_commit = None
         try:
             value = int(prompt_input)
@@ -1445,9 +1433,9 @@ class SubcommandSquashToForkPoint(AbstractSubcommand):
         if not authorship_commit:
             return GitWorkingCopy.STOP_TRAVERSAL
 
-        print 'Squashing with the following commands, head before squash is {}:'.format(wc.head_commit_hash())
+        print('Squashing with the following commands, head before squash is {}:'.format(wc.head_commit_hash()))
         for cmd in (['git', 'reset', '--soft', fork_point_commit], ['git', 'commit', '-C', authorship_commit]):
-            print ' '.join(cmd)
+            print(' '.join(cmd))
             if not self.args.dry_run:
                 wc.run_shell_command(cmd)
 
@@ -1463,12 +1451,12 @@ class SubcommandBranch(AbstractSubcommand):
     """Show checked out branch and other status information of each working copy"""
 
     column_justifiers_and_accessors = (
-        (string.ljust, lambda x: unicode(x)),
-        (string.rjust, lambda x: unicode(len(x.commits_not_in_upstream())) + u'↑' if x.current_branch_has_upstream() else '-'),
-        (string.rjust, lambda x: unicode(len(x.commits_only_in_upstream())) + u'↓' if x.current_branch_has_upstream() else '-'),
-        (string.ljust, lambda x: x.current_branch()),
-        (string.ljust, lambda x: x.head_commit_hash()),
-        (string.rjust, lambda x: str(x.head_commit_age_approximate_string())),
+        (str.ljust, lambda x: str(x)),
+        (str.rjust, lambda x: str(len(x.commits_not_in_upstream())) + '↑' if x.current_branch_has_upstream() else '-'),
+        (str.rjust, lambda x: str(len(x.commits_only_in_upstream())) + '↓' if x.current_branch_has_upstream() else '-'),
+        (str.ljust, lambda x: x.current_branch()),
+        (str.ljust, lambda x: x.head_commit_hash()),
+        (str.rjust, lambda x: str(x.head_commit_age_approximate_string())),
     )
 
     def column_count(self):
@@ -1487,9 +1475,9 @@ class SubcommandBranch(AbstractSubcommand):
         def justify(index, string, length):
             return self.column_justifiers_and_accessors[index][0](string, length)
 
-        format = ' '.join(['{' + unicode(i) + '}' for i in range(self.column_count())])
-        output = format.format(*[justify(i, access(i, wc), self.maxlen[i]) for i in xrange(self.column_count())])
-        print output
+        format = ' '.join(['{' + str(i) + '}' for i in range(self.column_count())])
+        output = format.format(*[justify(i, access(i, wc), self.maxlen[i]) for i in range(self.column_count())])
+        print(output)
 
     @classmethod
     def configure_argument_parser(cls, parser):
@@ -1552,7 +1540,7 @@ class GitHelperCommandLineDriver(object):
         except ImportError:
             pass
         except Exception as e:
-            print >> sys.stderr, 'Unable to import githelper_local extension module:'
+            print('Unable to import githelper_local extension module:', file=sys.stderr)
             raise
 
         namespaces = globals()
@@ -1560,7 +1548,7 @@ class GitHelperCommandLineDriver(object):
         if githelper_local:
             namespaces.update({k : getattr(githelper_local, k) for k in dir(githelper_local)})
 
-        for k, v in namespaces.items():
+        for k, v in list(namespaces.items()):
             if k.startswith('Subcommand') and callable(getattr(v, 'subcommand_name', None)):
                 subcommand_map[v.subcommand_name()] = v
 
@@ -1573,13 +1561,13 @@ class GitHelperCommandLineDriver(object):
             return True
 
         subcommand = non_option_arguments[0]
-        if subcommand in subcommand_map.keys():
+        if subcommand in list(subcommand_map.keys()):
             return True
 
         # converts a string like 'abc' to a regex like '(a).*?(b).*?(c)'
         regex = re.compile('.*?'.join(['(' + char + ')' for char in subcommand]))
         subcommand_candidates = []
-        for subcommand_name in subcommand_map.keys():
+        for subcommand_name in list(subcommand_map.keys()):
             match = regex.match(subcommand_name)
             if not match:
                 continue
@@ -1593,7 +1581,7 @@ class GitHelperCommandLineDriver(object):
             sys.argv[sys.argv.index(subcommand)] = subcommand_candidates[0].name
             return True
 
-        print >> sys.stderr, 'Ambiguous subcommand "{}": {}'.format(subcommand, ', '.join([i.decorated_name for i in subcommand_candidates]))
+        print('Ambiguous subcommand "{}": {}'.format(subcommand, ', '.join([i.decorated_name for i in subcommand_candidates])), file=sys.stderr)
         return False
 
     @classmethod
@@ -1619,7 +1607,7 @@ class GitHelperCommandLineDriver(object):
         parser.add_argument('--root_path', help='Path to root working copy', default=os.getcwd())
         parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose debug logging')
         subparsers = parser.add_subparsers(title='Subcommands', dest='subcommand_name')
-        for subcommand_name, subcommand_class in subcommand_map.items():
+        for subcommand_name, subcommand_class in list(subcommand_map.items()):
             subparser = subparsers.add_parser(subcommand_name, help=subcommand_class.__doc__)
             subcommand_class.configure_argument_parser(subparser)
 
